@@ -1,0 +1,15 @@
+# 核心依赖(CPU-only 环境, Win10 1709)
+numpy
+opencv-python
+pyyaml
+tqdm
+
+# 模型后端(可选, 按环境启用)
+# ultralytics + torch : 车辆检测 YOLOv8n (torch CPU)
+# hyperlpr3           : 中文车牌识别 (HIGH)
+# 注: 本机已验证 ultralytics + hyperlpr3 可用; 缺失时自动降级 CV 兜底
+
+# 开发/测试
+pytest
+
+# 系统前提: Visual C++ 2015-2022 Redistributable (torch/onnxruntime 加载必需)

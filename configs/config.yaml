@@ -1,0 +1,53 @@
+# ============================================================
+# 红灯停车压斑马线 - 全局配置
+# 全部参数集中在此, 改这里即可调参, 无需动代码
+# ============================================================
+
+video:
+  input: "data/input/sample.mp4"      # 输入视频路径
+  output_dir: "data/output"           # 输出目录
+
+inference:
+  device: "cpu"                       # 固定 cpu (无 GPU)
+  fps: 8                              # 车辆检测采样帧率; CPU 友好, 8fps 足够抓静止车
+  imgsz: 640                          # 推理尺寸; CPU 可降到 416/320 提速
+  conf_thres: 0.35                    # 检测置信度阈值
+  iou_thres: 0.5                      # NMS IoU 阈值
+  crosswalk_interval: 4               # 每 N 个(采样)帧重检一次斑马线
+  light_interval: 8                   # 每 N 个(采样)帧重检一次红绿灯
+
+# 模型权重 (相对本工程根目录或绝对路径)
+# 注意: 本机为 Win10 1709 (老构建), torch/onnxruntime 均无法加载, 只能通过 OpenCV-dnn 跑 ONNX。
+# 纯 CV 兜底无需任何权重即可运行; 若后续能取得权重, 放到对应路径即自动启用。
+models:
+  vehicle: "models/yolov8n.onnx"     # YOLOv8n ONNX; 缺失时自动降级为纯CV(背景减除)兜底
+  crosswalk_seg: "models/crosswalk_seg.onnx"   # 斑马线分割(可选, 缺省走 CV 兜底)
+  traffic_light: "models/traffic_light.onnx"   # 红绿灯状态模型(可选, 缺省走颜色兜底)
+  plate_ocr: "models/plate_crnn.onnx"          # 车牌字符OCR(可选, 缺省仅定位不识别)
+
+# 参与违规判定的车种 (按 COCO 类别名)
+vehicle_classes: ["car", "bus", "truck"]
+
+crosswalk:
+  method: "auto"        # auto(优先模型,无则CV) | segment | cv
+  overlap_ratio: 0.30   # 车辆面积落入斑马线比例 >= 此值 判为"压线"
+  cv_min_area: 3000     # CV 兜底时最小条纹面积阈值
+
+traffic_light:
+  method: "auto"        # auto(优先模型,无则颜色) | model | color
+  smoothing_window: 5   # 状态平滑窗口(帧), 抑制闪烁误判
+  color_min_pixels: 150 # 颜色兜底时最小亮斑像素数
+
+stationary:
+  speed_px_per_sec: 15  # 质心速度低于此值(像素/秒, 基于推理分辨率)判静止
+  sustain_frames: 8     # 连续多少(采样)帧静止才确认
+
+violation:
+  duration_frames: 8    # "红灯+静止+压线" 持续多少(采样)帧才确认违规
+  min_event_gap_sec: 5  # 同一 track 两次事件最小间隔, 去重用
+
+output:
+  annotated_video: true     # 输出带标注视频
+  csv_report: true          # 输出违规事件 CSV
+  evidence_images: true     # 输出证据截图
+  unknown_light_to_review: true  # 红灯状态未知时归入"待复核"而非直接判定

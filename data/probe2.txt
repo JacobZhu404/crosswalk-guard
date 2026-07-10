@@ -1,0 +1,3 @@
+[OK]   onnxruntime = 1.27.0
+[OK]   torch = 2.13.0+cpu
+[OK]   ultralytics = 8.4.90

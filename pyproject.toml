@@ -1,0 +1,20 @@
+[project]
+name = "redlight-crosswalk-violation"
+version = "2.0.0"
+description = "红灯停车压斑马线自动检测系统 (分层架构 v2.0)"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy",
+    "opencv-python",
+    "pyyaml",
+    "tqdm",
+]
+
+[project.optional-dependencies]
+models = ["ultralytics", "torch", "hyperlpr3"]
+dev = ["pytest"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"

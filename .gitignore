@@ -1,0 +1,35 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ---- 运行时产物(不入库) ----
+data/output/
+data/cache/
+data/processed/
+data/raw/
+runs/
+*.log
+
+# ---- 大权重/视频(外部存储) ----
+*.pt
+*.onnx
+*.pt*
+*.mp4
+*.avi
+*.mov
+
+# ---- 临时辅助脚本(下划线前缀) ----
+scripts/_*.py
+
+# ---- 归档参考(不入库,仅本地) ----
+archive/
+
+# ---- 编辑/OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
