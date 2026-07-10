@@ -1,6 +1,0 @@
-[车辆检测] 使用 ultralytics YOLOv8n (yolov8n.pt)
-[车牌] 使用 HyperLPR3 (HIGH) 检测+识别
-[完成] 帧数=3277 推理帧=820 耗时=113.0s (7.3 推理帧/秒)
-[结果] 确认违规=0  待复核=0
-[输出] D:\redlight-crosswalk-violation\data\output\run02
-EVENTS=0

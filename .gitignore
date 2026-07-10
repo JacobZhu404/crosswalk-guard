@@ -25,6 +25,12 @@ runs/
 # ---- 临时辅助脚本(下划线前缀) ----
 scripts/_*.py
 
+# ---- 散落产物/临时文件 ----
+data/*.txt
+data/*.exe
+data/*.log
+*.exe
+
 # ---- 归档参考(不入库,仅本地) ----
 archive/
 

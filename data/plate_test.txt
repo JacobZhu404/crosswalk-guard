@@ -1,6 +1,0 @@
-[FRAME] read=True shape=(720, 1280, 3)
-[PLATE] importing hyperlpr3 ...
-[PLATE] init LicensePlateCatcher (downloads models) ...
-[PLATE] ready
-[PLATE] type=<class 'list'>
-[PLATE] result=[]

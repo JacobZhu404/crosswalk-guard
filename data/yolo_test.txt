@@ -1,3 +1,0 @@
-[NET] github.com OK
-[YOLO] loading yolov8n.pt ...
-[YOLO] loaded
