@@ -1,24 +1,36 @@
-import sys, os, io, contextlib
-root = r"D:\redlight-crosswalk-violation"
-sys.path.insert(0, root)
-os.chdir(root)
-from src.pipeline import run
-from src.utils import load_config
+"""CLI 便捷入口: 委托给 v2.0 分层架构的 redlight.app.cli.run。
 
-cfg = load_config("configs/config.yaml")
-video = sys.argv[1] if len(sys.argv) > 1 else r"E:\BaiduNetdiskDownload\违章10.mp4"
-out = sys.argv[2] if len(sys.argv) > 2 else r"D:\redlight-crosswalk-violation\data\output\run10b"
+用法:
+    python scripts/run_video.py <video.mp4> [output_dir] [--preset balanced|strict|loose]
+"""
+import os
+import sys
+import argparse
 
-buf = io.StringIO()
-with contextlib.redirect_stdout(buf):
-    try:
-        events = run(cfg, video, out)
-        print(f"EVENTS={len(events)}")
-    except Exception as e:
-        import traceback
-        print("RUN ERROR:\n" + traceback.format_exc())
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "src"))
 
-log = buf.getvalue()
-print(log)
-with open(r"D:\redlight-crosswalk-violation\data\run_log.txt", "w", encoding="utf-8") as f:
-    f.write(log)
+from redlight.infrastructure.config import load_config, project_root
+from redlight.app.cli import run
+
+
+def main():
+    ap = argparse.ArgumentParser(description="红灯停车压斑马线检测 (v2.0)")
+    ap.add_argument("video")
+    ap.add_argument("output", nargs="?", default=None)
+    ap.add_argument("--preset", default="balanced",
+                    choices=["strict", "balanced", "loose"])
+    ap.add_argument("--mode", default="red_light",
+                    choices=["red_light", "pedestrian_green"])
+    ap.add_argument("--config", default=os.path.join(project_root(), "configs", "config.yaml"))
+    args = ap.parse_args()
+
+    cfg = load_config(args.config)
+    if args.output is None:
+        name = os.path.splitext(os.path.basename(args.video))[0]
+        args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}_{args.mode}")
+    run(cfg, args.video, args.output, args.preset, args.mode)
+
+
+if __name__ == "__main__":
+    main()

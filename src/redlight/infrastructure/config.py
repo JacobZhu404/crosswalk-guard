@@ -7,6 +7,10 @@ from types import SimpleNamespace
 import yaml
 
 
+def ensure_dir(p):
+    os.makedirs(p, exist_ok=True)
+
+
 def dict_to_ns(d):
     """递归把 dict 转成可用属性访问的 SimpleNamespace。"""
     if isinstance(d, dict):
@@ -21,5 +25,5 @@ def load_config(path):
 
 
 def project_root():
-    """返回工程根目录 (src/redlight/infrastructure -> 上溯两级)。"""
-    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    """返回工程根目录 (src/redlight/infrastructure -> 上溯四级)。"""
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
