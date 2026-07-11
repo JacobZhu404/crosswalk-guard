@@ -15,11 +15,11 @@ from redlight.app.cli import run
 
 
 def main():
-    ap = argparse.ArgumentParser(description="红灯停车压斑马线检测 (v2.0)")
+    ap = argparse.ArgumentParser(description="斑马线压线检测 (v2.0)")
     ap.add_argument("video")
     ap.add_argument("output", nargs="?", default=None)
     ap.add_argument("--preset", default="balanced",
-                    choices=["strict", "balanced", "loose"])
+                    choices=["strict", "balanced", "loose", "very_loose"])
     ap.add_argument("--mode", default="red_light",
                     choices=["red_light", "pedestrian_green"])
     ap.add_argument("--config", default=os.path.join(project_root(), "configs", "config.yaml"))
@@ -28,7 +28,7 @@ def main():
     cfg = load_config(args.config)
     if args.output is None:
         name = os.path.splitext(os.path.basename(args.video))[0]
-        args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}_{args.mode}")
+        args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}")
     run(cfg, args.video, args.output, args.preset, args.mode)
 
 

@@ -21,7 +21,7 @@ OCCLUSION_MIN_AREA_RATIO = 0.005  # 掩膜面积低于此比例视为斑马线�
 
 
 class ViolationEngineV2:
-    def __init__(self, preset="balanced", unknown_to_review=True, min_event_gap_sec=5):
+    def __init__(self, preset="balanced", unknown_to_review=True, min_event_gap_sec=5, mode="red_light"):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset
@@ -30,6 +30,7 @@ class ViolationEngineV2:
         self.duration = p["duration"]
         self.gap = min_event_gap_sec
         self.unknown_to_review = unknown_to_review
+        self.mode = mode if mode in ("red_light", "pedestrian_green") else "red_light"
         self.events = []
         self.active = {}
         self.last_event_time = {}
@@ -71,13 +72,20 @@ class ViolationEngineV2:
             a = self.active.setdefault(
                 tid, {"sustained": 0, "emitted": False, "cond_start": timestamp}
             )
-            # 唯一正确语义 (§5.3.1): 行人绿灯/闪烁 + 静止 + 压线 = 违规
-            if on_crosswalk and light_state in ("green", "flashing"):
-                self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
-            elif on_crosswalk and light_state == "unknown" and self.unknown_to_review and occluded:
-                self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
+            if self.mode == "red_light":
+                if on_crosswalk and light_state == "red":
+                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
+                elif on_crosswalk and light_state == "unknown" and self.unknown_to_review:
+                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
+                else:
+                    self._reset(tid)
             else:
-                self._reset(tid)
+                if on_crosswalk and light_state in ("green", "flashing"):
+                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
+                elif on_crosswalk and light_state == "unknown" and self.unknown_to_review and occluded:
+                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
+                else:
+                    self._reset(tid)
         return new_events
 
     def _accumulate(self, a, tid, st, light_state, timestamp, new_events, status):

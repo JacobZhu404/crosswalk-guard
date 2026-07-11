@@ -22,6 +22,7 @@ from ..pipeline.tracker import TrackStateManagerV2
 from ..pipeline.violation_engine import ViolationEngineV2
 from ..pipeline.visualizer import Visualizer
 from ..pipeline.dag import build_default_dag
+from ..pipeline.plate_consensus import PlateConsensus
 
 
 def run(cfg, video_path, output_dir, preset="balanced", mode="red_light"):

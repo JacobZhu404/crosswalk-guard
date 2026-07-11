@@ -17,6 +17,7 @@ SENSITIVITY_PRESETS = {
     "strict":   {"speed": 15, "sustain": 8, "duration": 8, "overlap": 0.30, "speed_window": 8, "stationary_ratio": 1.0},
     "balanced": {"speed": 30, "sustain": 5, "duration": 5, "overlap": 0.20, "speed_window": 6, "stationary_ratio": 0.7},
     "loose":    {"speed": 50, "sustain": 3, "duration": 3, "overlap": 0.15, "speed_window": 4, "stationary_ratio": 0.5},
+    "very_loose": {"speed": 80, "sustain": 2, "duration": 2, "overlap": 0.10, "speed_window": 3, "stationary_ratio": 0.4},
 }
 
 
