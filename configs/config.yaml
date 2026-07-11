@@ -1,5 +1,5 @@
 # ============================================================
-# 红灯停车压斑马线 - 全局配置
+# 斑马线行人绿灯压线检测 - 全局配置
 # 全部参数集中在此, 改这里即可调参, 无需动代码
 # ============================================================
 
@@ -15,39 +15,55 @@ inference:
   iou_thres: 0.5                      # NMS IoU 阈值
   crosswalk_interval: 4               # 每 N 个(采样)帧重检一次斑马线
   light_interval: 8                   # 每 N 个(采样)帧重检一次红绿灯
+  plate_interval: 3                   # 每 N 个(采样)帧重检一次车牌
+  plate_conf: 0.4                     # 车牌识别置信度阈值
 
-# 模型权重 (相对本工程根目录或绝对路径)
-# 注意: 本机为 Win10 1709 (老构建), torch/onnxruntime 均无法加载, 只能通过 OpenCV-dnn 跑 ONNX。
-# 纯 CV 兜底无需任何权重即可运行; 若后续能取得权重, 放到对应路径即自动启用。
+# 实际运行栈 (2026-07-11 更正, 修复 E11 配置漂移):
+#   车辆检测 = ultralytics YOLOv8n (torch CPU)
+#   车牌识别 = HyperLPR3 HIGH
+#   斑马线/红绿灯 = 纯 CV 兜底 (HSV + 形态学)
+# 下方 onnx 路径为"可选增强": 若放置对应权重则自动启用, 缺失不影响运行。
 models:
-  vehicle: "models/yolov8n.onnx"     # YOLOv8n ONNX; 缺失时自动降级为纯CV(背景减除)兜底
+  vehicle: "models/yolov8n.pt"        # YOLOv8n (torch CPU)
   crosswalk_seg: "models/crosswalk_seg.onnx"   # 斑马线分割(可选, 缺省走 CV 兜底)
-  traffic_light: "models/traffic_light.onnx"   # 红绿灯状态模型(可选, 缺省走颜色兜底)
-  plate_ocr: "models/plate_crnn.onnx"          # 车牌字符OCR(可选, 缺省仅定位不识别)
+  traffic_light: "models/traffic_light.onnx"   # 红绿灯模型(可选, 缺省走 color v2 强化版)
+  plate_ocr: "models/plate_crnn.onnx"          # 车牌 OCR(可选, 缺省走 HyperLPR3)
 
 # 参与违规判定的车种 (按 COCO 类别名)
 vehicle_classes: ["car", "bus", "truck"]
 
 crosswalk:
   method: "auto"        # auto(优先模型,无则CV) | segment | cv
-  overlap_ratio: 0.30   # 车辆面积落入斑马线比例 >= 此值 判为"压线"
+  overlap_ratio: 0.30   # 车辆面积落入斑马线比例 >= 此值 判为"压线" (可视化/参考用)
   cv_min_area: 3000     # CV 兜底时最小条纹面积阈值
 
+# 红绿灯检测器 v2 (strengthened, 见设计文档 §5.3.3)
+# 识别对象假设 = 斑马线行人信号灯 (Q5)
 traffic_light:
-  method: "auto"        # auto(优先模型,无则颜色) | model | color
-  smoothing_window: 5   # 状态平滑窗口(帧), 抑制闪烁误判
-  color_min_pixels: 150 # 颜色兜底时最小亮斑像素数
+  method: "color"             # v2 颜色兜底(强化版); 可选升级为 model(YOLO 交通灯)
+  smoothing_window: 8         # 时序聚合窗口(帧)
+  color_min_pixels: 60        # 颜色兜底时最小亮斑像素数
+  min_area_ratio: 0.0006      # 候选灯最小面积占 ROI 比例
+  max_aspect_ratio: 3.0       # 长宽比上限, 拒绝细长尾灯
+  search_band: [0.0, 0.65]    # 仅在上中部搜索(信号灯挂高处)
+  flicker_toggle_count: 2     # 窗口内可见性跳变 >= 此值 -> flashing
+  persistence_min_ratio: 0.5  # 候选出现帧占比低于此 -> 时隐时现, 判 unknown
 
+# 静止判定由 Tracker V2 的 SENSITIVITY_PRESETS 控制 (src/redlight/pipeline/tracker.py)
+# 不再由本配置单独驱动逻辑, 此处仅作说明
 stationary:
-  speed_px_per_sec: 15  # 质心速度低于此值(像素/秒, 基于推理分辨率)判静止
-  sustain_frames: 8     # 连续多少(采样)帧静止才确认
+  note: "速度/持续阈值见 tracker.SENSITIVITY_PRESETS (balanced: speed=30, sustain=5)"
 
+# 违规语义 (2026-07-11 反转, 见 §5.3.1):
+#   违规 = 行人绿灯/闪烁 + 车辆静止 + 压线(overlap >= preset.overlap)
+#   🔴红灯 = 车辆可通行(不违规); ❓unknown + 遮挡 = review
 violation:
-  duration_frames: 8    # "红灯+静止+压线" 持续多少(采样)帧才确认违规
-  min_event_gap_sec: 5  # 同一 track 两次事件最小间隔, 去重用
+  note: "违规 = 行人绿灯/闪烁 + 静止 + 压线(overlap>=preset)"
+  min_event_gap_sec: 5          # 同一 track 两次事件最小间隔, 去重用
 
 output:
   annotated_video: true     # 输出带标注视频
   csv_report: true          # 输出违规事件 CSV
   evidence_images: true     # 输出证据截图
-  unknown_light_to_review: true  # 红灯状态未知时归入"待复核"而非直接判定
+  unknown_light_to_review: true  # 斑马线被遮挡且信号未知时归入"待复核"
+  signal_assumption: "pedestrian"   # 假设信号=斑马线行人灯; 报告标注便于复核

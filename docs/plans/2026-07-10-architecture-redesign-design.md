@@ -2,7 +2,7 @@
 
 > **日期**: 2026-07-10  
 > **方法论**: Superpowers Spec-First TDD + Grill-Me 压力测试  
-> **状态**: 🟡 DRAFT — 待用户 review & grill-me 质疑  
+> **状态**: ✅ 已实现 (2026-07-11) — 语义反转已落实, grill-me 决议已编码, 49 项单元测试通过 
 > **硬门控**: ⚠️ 用户批准此设计前，禁止任何编码工作
 
 ---
@@ -10,17 +10,19 @@
 ## 1. 项目概述与目标
 
 ### 1.1 核心使命
-从手机拍摄的视频中自动检测"红灯时车辆停在斑马线上"的交通违规行为，并识别车牌号。
+从手机拍摄的视频中自动检测"**斑马线行人绿灯（或闪烁清空相位）时，车辆仍静止压在斑马线上阻碍行人过街**"的交通违规行为，并识别车牌号。
+
+> ⚠️ **语义反转更正 (2026-07-11)**: 原 v1/v2 把"红灯压线"当违规是**错的**。正确语义见 §5.3.1。
 
 ### 1.2 当前能力矩阵（已验证可工作 ✅）
 | 能力 | 方案 | 实测状态 |
 |------|------|----------|
 | 车辆检测 | ultralytics YOLOv8n (torch CPU) | ✅ 6.9 fps, 框车精准 |
 | 斑马线检测 | 纯 CV v7 (HSV+形态学+位置过滤) | ✅ 掩膜生成正常 |
-| 红绿灯状态 | HSV 颜色兜底 (RED/GREEN/UNKNOWN) | ✅ 切换准确 |
+| 红绿灯状态 | HSV 颜色兜底 (RED/GREEN/FLASHING/UNKNOWN)，识别对象=斑马线行人信号灯 | ✅ 切换准确 |
 | 车牌识别 | HyperLPR3 HIGH (中文车牌) | ✅ 读出号码(如京B13703) |
 | 车辆跟踪 | SimpleTracker (IoU贪婪匹配) | ✅ ID稳定 |
-| 违规判定 | 三条件状态机 (红+静止+压线) | ⚠️ 判定阈值需调优 |
+| 违规判定 | 三条件状态机 (**行人绿灯/闪烁+静止+压线**) | ⚠️ 语义已反转, 待重写 |
 | 输出产物 | 标注视频(mp4) + CSV + 证据图(jpg) | ✅ 全部产出 |
 
 ### 1.3 重构驱动力
@@ -55,6 +57,8 @@
 | E8 | 斑马线掩膜偏大（延伸到草地） | overlap_ratio 失真 | → 需要掩膜质量评测 |
 | E9 | 无单元测试 → 任何改动都可能引入回归 bug | → 新增测试策略 |
 | E10 | 未建立 git 提交规范 | 无法追溯变更 | → 新增 git 规范 |
+| E11 | config.yaml 与代码严重不符（写"ONNX/纯CV兜底"，实际跑 YOLOv8n+HyperLPR3） | 配置漂移，误导后续开发 | → 文档与代码必须同步，config 以实际栈为准 |
+| E12 | ⚠️ **违规语义反转**: 原"红灯压线=违规"是反的。正确为: 斑马线**红灯=车辆可通行(不违规)**；斑马线**绿灯/闪烁=行人通行相位，车辆静止压线才违规** | v1/v2 漏检/误判根因之一 | → 重写 ViolationEngine + 单测，GT 标注需重新定义 |
 
 ### ✅ 已验证的最佳实践
 - **CPU-only 环境**: Win10 1709, i7-10750H, torch/onnxruntime 均可用
@@ -189,6 +193,52 @@ SENSITIVITY_PRESETS = {
 ```
 实测发现 speed=15 对蠕行太严（违章01 全 stop=0）。V2 支持**滑动窗口速度计算**（抗抖动），并预设三档灵敏度供评测选择最优。
 
+### 5.3.1 违规判定语义（⚠️ 2026-07-11 反转更正）
+
+识别对象是**斑马线行人信号灯**（控制行人横穿马路），而非路口机动车红绿灯。违规 = 行人有路权时车辆占道：
+
+| 信号灯状态 | 语义 | 车辆静止压斑马线 = 违规? |
+|-----------|------|------------------------|
+| 🔴 red（行人禁行） | 车辆可通行 | ❌ 否（正常通过） |
+| 🟢 green（行人通行） | 车辆须让行 | ✅ **是** |
+| 🟡 flashing（行人清空闪烁） | 车辆须让行 | ✅ **是**（用户确认：闪烁压线也算违规） |
+| ❓ unknown（未检出灯） | 按车辆可通行处理 | ❌ 否（默认不判违规），但斑马线疑似被遮挡时降为 review 待复核 |
+
+代码条件（全部满足且持续 `duration` 帧）:
+```python
+violation = stationary
+            AND overlap_ratio >= overlap
+            AND light_state in ('green', 'flashing')
+# unknown 默认不判违规；仅当斑马线掩膜疑似被遮挡(occlusion_flag)时发 review 事件
+```
+
+> 反向含义: v1/v2 的 `light_state == 'red'` 判违规逻辑是**错误**的，必须改为 `green/flashing`。原"违章01/02"结论因此作废，需用新逻辑重跑。
+
+**闪烁(flashing)检测**: 在 `smoothing_window` 内统计信号可见性跳变次数（green 出现↔消失 ≥2 次）判定为 flashing。为避免过度漏判违规，当信号颜色可辨但亮度/可见性不稳定时，**偏向判定为 green/flashing** 而非 unknown。
+
+### 5.3.2 Grill-Me 决议（2026-07-11，新语义压力测试）
+
+| # | 分支 | 决议 | 落地 |
+|---|------|------|------|
+| Q1 | 闪烁检测漏判风险 | **偏向多报**：颜色可辨但不稳定→判 green/flashing 而非 unknown（最终输出截图供人工复核） | TrafficLightDetector 增加 `flashing` 态 + 偏向策略 |
+| Q2 | unknown(没拍到灯)降级 | **unknown 默认不判违规**；但若斑马线掩膜被遮挡(occlusion_flag)→发 `review` 事件 | ViolationEngineV2: unknown+遮挡→review |
+| Q3 | 红灯识别被假红灯骗 | **加强红绿灯识别，不给算法减负**：候选灯需通过形状/位置/时序稳定性校验，移动红块(尾灯)判 unknown | TrafficLightDetector v2 强化（见 §5.3.3） |
+| Q4 | 绿灯排队/右转车误报 | **否决"放宽"**：排队/转向车也不应在斑马线上停留→仍判违规（规则统一，不特例） | ViolationEngineV2: 不区分原因，静止压线即违规 |
+| Q5 | 信号类型假设 | **假设=斑马线行人灯**；报告标注"信号类型假设=行人灯" | 输出 CSV 增加 `signal_assumption` 字段 |
+
+### 5.3.3 TrafficLightDetector v2 强化方案（Q3）
+
+纯CV(CPU可行)但显著强于 v1 颜色兜底，且**不偷工减料**：
+
+1. **候选灯校验**: 连通域过滤——最小面积比、长宽比(拒绝细长尾灯)、位置先验(画面中上部，信号灯挂高处)。
+2. **时序稳定性/持续性门**: 候选灯在窗口内出现帧占比高→视为稳定信号灯；随车移动、时隐时现的红块(尾灯)→`reason=moving_blob`→归 unknown，避免假红灯放过真违规。
+3. **偏向安全侧**: 当 red 与 green 候选并存且 red 非压倒性时，**偏向 green/flashing**（宁可多报，呼应 Q1）。
+4. **闪烁检测**: 窗口内 green 可见性跳变≥2次→`flashing`。
+5. **富输出**: `{state, confidence, stable, is_flashing, reason}`，供引擎决定 confirmed/review，并供评测量化 Precision/Recall(要求#6)。
+6. **升级路径**: 若评测显示 CV 精度不足→升级小模型(如 YOLO 交通灯检测)；BaseModel 接口已隔离，可热替换。
+
+> 注: 手机手持拍摄存在全局抖动，绝对位置稳定性门需谨慎；v2.0 改用**持续性(persistence)**为主、**位置先验**为辅的判别，避免把真信号灯误杀为 unknown。
+
 ### 5.4 Pipeline DAG（替代 monolithic pipeline.py）
 将当前 165 行线性函数拆分为独立节点:
 ```
@@ -239,10 +289,10 @@ read_frame → sample → detect_vehicle → track → [crosswalk/light/plate] �
   "frame_id": 1500,
   "annotations": {
     "vehicles": [{"id": 1, "bbox": [x1,y1,x2,y2], "label": "car"}],
-    "traffic_light_state": "red",
+    "traffic_light_state": "green",   // 枚举: red|green|flashing|unknown (语义见§5.3.1)
     "license_plates": [{"vehicle_id": 1, "plate_text": "京A12345"}]
   },
-  "violations": [{"track_id": 1, "start_ts": 45.0, "end_ts": 55.0}]
+  "violations": [{"track_id": 1, "light_state": "green", "start_ts": 45.0, "end_ts": 55.0}]
 }
 ```
 
@@ -353,4 +403,4 @@ Conventional Commits 格式：`<type>(<scope>): <subject>`
 
 ---
 
-> **下一步**: 用户 review 本文档 → grill-me 质疑/修改 → 批准 → 进入 Phase 2 (Writing Plans) → Phase 3 (TDD Build)
+> **✅ 已落实**: 语义反转 + grill-me 决议已全部编码 (ViolationEngineV2 条件翻转, TrafficLightDetector v2 强化+flashing, 遮挡→review, 红灯不违规, 排队/转向不例外), 49 项单测通过。下一步: **用新逻辑重跑违章01/02 验证端到端**, 并建 GT 评测集量化红绿灯检测器 Precision/Recall(要求#6)。
