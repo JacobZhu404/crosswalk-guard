@@ -249,3 +249,39 @@ def event_metrics(pred_events, gt_events, tiou_thr=0.5, match_by_track=True):
     fn = len(gts) - len(used_g)
     p, r, f1 = precision_recall_f1(tp, fp, fn)
     return {"precision": p, "recall": r, "f1": f1, "tp": tp, "fp": fp, "fn": fn}
+
+
+# ---------------------------------------------------------------------------
+# 4. 信号灯状态分类指标 (要求#6: 量化红绿灯检测器 Precision/Recall)
+# ---------------------------------------------------------------------------
+LIGHT_CLASSES = ["red", "green", "flashing", "unknown"]
+
+
+def light_state_metrics(pred_states, gt_states, classes=None):
+    """逐帧信号灯状态分类 P/R/F1 (micro 准确率 + 每类 P/R/F1)。
+
+    识别对象 = 斑马线行人信号灯 (§5.3.1)。状态枚举见 LIGHT_CLASSES。
+    pred_states / gt_states: 等长列表, 元素为状态字符串。
+    返回:
+      accuracy : 整体帧准确率 (正确预测数 / 总数)
+      macro_f1 : 各类 f1 的宏平均
+      per_class: {cls: {precision, recall, f1, support}}
+      n        : 样本数
+    """
+    assert len(pred_states) == len(gt_states), "pred/gt 必须逐帧等长"
+    if classes is None:
+        classes = list(LIGHT_CLASSES)
+    n = len(gt_states)
+    if n == 0:
+        return {"accuracy": 0.0, "macro_f1": 0.0, "per_class": {}, "n": 0}
+    correct = sum(1 for p, g in zip(pred_states, gt_states) if p == g)
+    per_class = {}
+    for cls in classes:
+        tp = sum(1 for p, g in zip(pred_states, gt_states) if p == cls and g == cls)
+        fp = sum(1 for p, g in zip(pred_states, gt_states) if p == cls and g != cls)
+        fn = sum(1 for p, g in zip(pred_states, gt_states) if p != cls and g == cls)
+        pc, rc, f1c = precision_recall_f1(tp, fp, fn)
+        per_class[cls] = {"precision": pc, "recall": rc, "f1": f1c, "support": fn + tp}
+    macro_f1 = sum(d["f1"] for d in per_class.values()) / len(per_class)
+    return {"accuracy": correct / n, "macro_f1": macro_f1,
+            "per_class": per_class, "n": n}

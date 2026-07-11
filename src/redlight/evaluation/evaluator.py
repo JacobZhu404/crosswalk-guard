@@ -4,7 +4,7 @@
 """
 from .metrics import (
     detection_metrics, plate_accuracy, char_accuracy, province_accuracy,
-    edit_similarity, event_metrics, compute_map,
+    edit_similarity, event_metrics, compute_map, light_state_metrics,
 )
 
 
@@ -32,6 +32,10 @@ class Evaluator:
 
     def evaluate_events(self, pred_events, gt_events):
         return event_metrics(pred_events, gt_events, self.tiou_thr)
+
+    def evaluate_light_states(self, pred_states, gt_states, classes=None):
+        """逐帧信号灯状态分类评测 (要求#6)。"""
+        return light_state_metrics(pred_states, gt_states, classes)
 
     def full_report(self, pred_boxes, gt_boxes, pred_texts, gt_texts,
                     pred_events, gt_events):
