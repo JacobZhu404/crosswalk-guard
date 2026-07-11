@@ -1,0 +1,12 @@
+segment_id,start_ts,end_ts,predicted_state,predicted_reason,frame_count,mid_ts,thumb,gt_state,note
+1,0.0,0.13,red,stable_lamp,2,0.07,违章02/seg_001.jpg,,
+2,0.27,11.05,unknown,no_signal,81,5.66,违章02/seg_002.jpg,,
+3,11.18,16.3,red,stable_lamp,39,13.74,违章02/seg_003.jpg,,
+4,16.43,17.11,unknown,intermittent_rejected,6,16.77,违章02/seg_004.jpg,,
+5,17.24,37.72,red,stable_lamp,153,27.48,违章02/seg_005.jpg,,
+6,37.85,38.93,unknown,intermittent_rejected,9,38.39,违章02/seg_006.jpg,,
+7,39.06,108.7,red,stable_lamp,518,73.88,违章02/seg_007.jpg,,
+8,108.84,108.84,unknown,intermittent_rejected,1,108.84,违章02/seg_008.jpg,,
+9,108.97,109.38,red,stable_lamp,4,109.17,违章02/seg_009.jpg,,
+10,109.51,109.51,unknown,intermittent_rejected,1,109.51,违章02/seg_010.jpg,,
+11,109.65,110.32,flashing,flicker_green,6,109.98,违章02/seg_011.jpg,,
