@@ -100,6 +100,7 @@ def build_default_dag(cfg, comp):
                 best_tid = None
                 best_iou = 0.0
                 px1, py1, px2, py2 = p.get("xyxy", [0, 0, 0, 0])
+                p_center = ((px1 + px2) / 2, (py1 + py2) / 2)
                 p_area = (px2 - px1) * (py2 - py1)
                 if p_area <= 0:
                     continue
@@ -113,11 +114,18 @@ def build_default_dag(cfg, comp):
                         inter = max(0, ix2 - ix1) * max(0, iy2 - iy1)
                         b_area = (bx2 - bx1) * (by2 - by1)
                         iou = inter / min(p_area, b_area) if min(p_area, b_area) > 0 else 0.0
-                        if iou > best_iou and iou >= 0.3:
+                        if iou > best_iou and iou >= 0.2:
                             best_iou = iou
                             best_tid = tid
                 if best_tid is not None:
                     consensus.update(best_tid, p["text"], p.get("conf", 0.0), ctx["ts"])
+                else:
+                    for tid, st in states.items():
+                        if st.get("active") and st.get("box"):
+                            bx1, by1, bx2, by2 = st["box"]
+                            if bx1 <= p_center[0] <= bx2 and by1 <= p_center[1] <= by2:
+                                consensus.update(tid, p["text"], p.get("conf", 0.0), ctx["ts"])
+                                break
             ctx["consensus_plates"] = consensus.get_all()
 
     def n_evaluate(ctx):

@@ -23,12 +23,16 @@ from ..pipeline.violation_engine import ViolationEngineV2
 from ..pipeline.visualizer import Visualizer
 from ..pipeline.dag import build_default_dag
 from ..pipeline.plate_consensus import PlateConsensus
+from ..pipeline.analysis import AnalysisAccumulator, CotReporter
 
 
-def run(cfg, video_path, output_dir, preset="balanced", mode="red_light"):
+def run(cfg, video_path, output_dir, preset="balanced", cot=False, mode="red_light"):
     ensure_dir(output_dir)
     evidence_dir = os.path.join(output_dir, "evidence")
     ensure_dir(evidence_dir)
+    cot_dir = os.path.join(output_dir, "cot") if cot else None
+    if cot:
+        ensure_dir(cot_dir)
 
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
@@ -55,8 +59,29 @@ def run(cfg, video_path, output_dir, preset="balanced", mode="red_light"):
         "engine": ViolationEngineV2(
             preset, unknown_to_review=cfg.output.unknown_light_to_review, mode=mode),
         "viz": Visualizer(cfg),
+        "plate_consensus": PlateConsensus(keep_history=180),
     }
     dag = build_default_dag(cfg, comp)
+
+    # COT 可解释分析累积器 (设计需求 v2 §4): 增量累积中间态, 循环结束后渲染小作文+截图
+    acc = None
+    if cot:
+        name = os.path.splitext(os.path.basename(video_path))[0]
+        acc = AnalysisAccumulator(name, fps, (total / fps) if total else 0.0)
+
+        def n_record(ctx):
+            light = ctx.get("light")
+            lstate = ctx.get("light_state", "unknown")
+            lconf = light.get("confidence", 0.0) if isinstance(light, dict) else 0.0
+            acc.on_frame(ctx["ts"], lstate, lconf, ctx.get("states", {}),
+                         ctx.get("mask"), ctx.get("consensus_plates", {}),
+                         ctx.get("frame"), ctx.get("dets", []))
+            for ev in ctx.get("new_events", []):
+                acc.on_event(ev)
+
+        dag.add_node("record", n_record)
+        dag.add_edge("evaluate", "record")
+        dag.add_edge("record", "visualize")
 
     ctx = {
         "proc": 0, "frame": None, "ts": 0.0, "dets": [], "states": {},
@@ -87,6 +112,25 @@ def run(cfg, video_path, output_dir, preset="balanced", mode="red_light"):
     if video_writer:
         video_writer.release()
 
+    cot_path = None
+    if cot and acc is not None:
+        analysis = acc.build()
+        # 组装截图素材(灯态证据帧 / 占用峰值帧 / 车牌清晰帧)
+        frames = {
+            "light": {s: fr for s, (_, fr) in acc.light_evidence.items()},
+            "tracks": {},
+        }
+        for tid, (ratio, fr, box, mask) in acc.occ_peak.items():
+            frames["tracks"].setdefault(tid, {})["occ"] = fr
+        for tid, (conf, fr, pb, text) in acc.plate_best.items():
+            frames["tracks"].setdefault(tid, {})["plate"] = fr
+        reporter = CotReporter(cfg)
+        cot_path, _ = reporter.render(analysis, cot_dir, frames)
+        # 同时落盘结构化中间态 JSON(便于后续模块化评测/回溯)
+        with open(os.path.join(cot_dir, f"analysis_{analysis['video']}.json"),
+                  "w", encoding="utf-8") as f:
+            json.dump(analysis, f, ensure_ascii=False, indent=2)
+
     if cfg.output.csv_report:
         csv_path = os.path.join(output_dir, "violations.csv")
         cols = ["event_id", "track_id", "status", "start_ts", "end_ts",
@@ -106,6 +150,8 @@ def run(cfg, video_path, output_dir, preset="balanced", mode="red_light"):
           f"({ctx['proc'] / max(elapsed, 1e-3):.1f} 推理帧/秒)")
     print(f"[结果] 确认违规={confirmed}  待复核={review}  preset={preset}")
     print(f"[输出] {os.path.abspath(output_dir)}")
+    if cot_path:
+        print(f"[COT] 可解释报告: {os.path.abspath(cot_path)}")
     return events
 
 
@@ -117,13 +163,15 @@ def main():
     ap.add_argument("--preset", default="balanced",
                     choices=["strict", "balanced", "loose"],
                     help="违规判定灵敏度预设")
+    ap.add_argument("--cot", action="store_true",
+                    help="输出 COT 可解释小作文+截图 (设计需求 v2 §4)")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
     if args.output is None:
         name = os.path.splitext(os.path.basename(args.video))[0]
         args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}")
-    run(cfg, args.video, args.output, args.preset)
+    run(cfg, args.video, args.output, args.preset, cot=args.cot)
 
 
 if __name__ == "__main__":

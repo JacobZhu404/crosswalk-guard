@@ -18,12 +18,13 @@
 | 能力 | 方案 | 实测状态 |
 |------|------|----------|
 | 车辆检测 | ultralytics YOLOv8n (torch CPU) | ✅ 6.9 fps, 框车精准 |
-| 斑马线检测 | 纯 CV v7 (HSV+形态学+位置过滤) | ✅ 掩膜生成正常 |
-| 红绿灯状态 | HSV 颜色兜底 (RED/GREEN/FLASHING/UNKNOWN)，识别对象=斑马线行人信号灯 | ✅ 切换准确 |
-| 车牌识别 | HyperLPR3 HIGH (中文车牌) | ✅ 读出号码(如京B13703) |
-| 车辆跟踪 | SimpleTracker (IoU贪婪匹配) | ✅ ID稳定 |
-| 违规判定 | 三条件状态机 (**行人绿灯/闪烁+静止+压线**) | ⚠️ 语义已反转, 待重写 |
+| 斑马线检测 | 纯 CV **v11** (多位置条带扫描 + 车辆锚定, 修复 E17) | ✅ 跨视频泛化改善 |
+| 红绿灯状态 | CV 颜色兜底 **v5** (亮斑掩膜 + bbox 内 HSV 均值色分类, 修复 E16)，识别对象=斑马线行人信号灯 | ✅ 02/06 等绿灯窗口已修复 |
+| 车牌识别 | HyperLPR3 HIGH (中文车牌) + **PlateConsensus 多帧加权投票**(按 track_id 全局聚合) | ✅ 读出号码(如京LNE560) |
+| 车辆静止/跟踪 | TrackStateManagerV2 (滑动窗口速度, 抗抖动) + IoU 跟踪 | ✅ ID稳定 |
+| 违规判定 | 三条件状态机 (**行人绿灯/闪烁 + 静止 + 压线(footprint IoU)**) | ✅ 已实现 (violation_engine.py) |
 | 输出产物 | 标注视频(mp4) + CSV + 证据图(jpg) | ✅ 全部产出 |
+| COT 小作文+截图 | 可解释性输出(逐时段灯态/占道/车牌/结论) | 🚧 规划中 (Task #9) |
 
 ### 1.3 重构驱动力
 用户明确提出的 **0-7 条工程化要求**（2026-07-10）：
@@ -59,6 +60,13 @@
 | E10 | 未建立 git 提交规范 | 无法追溯变更 | → 新增 git 规范 |
 | E11 | config.yaml 与代码严重不符（写"ONNX/纯CV兜底"，实际跑 YOLOv8n+HyperLPR3） | 配置漂移，误导后续开发 | → 文档与代码必须同步，config 以实际栈为准 |
 | E12 | ⚠️ **违规语义反转**: 原"红灯压线=违规"是反的。正确为: 斑马线**红灯=车辆可通行(不违规)**；斑马线**绿灯/闪烁=行人通行相位，车辆静止压线才违规** | v1/v2 漏检/误判根因之一 | → 重写 ViolationEngine + 单测，GT 标注需重新定义 |
+| E13 | **footgun**: 清理"模式开关"时若残留 `mode="red_light"` 默认值，重跑会悄悄用回旧语义 | 02 重跑一度重新判错 | → 彻底删除双模式，构造函数/cli/argparse 三处入口全搜一遍 |
+| E14 | `_is_occluded` 用"掩膜触左右/上边=遮挡"对横跨路面的全宽斑马线**恒为真**(≈95%) | 误判几乎所有帧为遮挡 → 大量无效 review | → 仅当掩膜触**底边**(画面下沿截断)才判遮挡 |
+| E15 | **v7 灰度阈值把草地误判为斑马线**（gray>140 对植被也触发），真实条纹完全未覆盖 | overlap 度量的全是"车与草地"而非"车与斑马线" | → v10 梯度密度法 → v11 多位置扫描 |
+| E16 | 暗淡去饱和 LED 绿灯看不见 + 白车刹车灯被误判为红灯（02 误报 red 688 帧）；早期单候选竞争淘汰绿灯 | 绿灯窗口 green=0，红灯假阳性 | → 红绿灯 v3~v5: 多候选 + 位置先验 + **亮斑掩膜 + bbox 均值色分类** + ped=0 剔除路面车灯 |
+| E17 | **v10 单 ROI(y0=0.50) 掩膜错位**: 找到"最强条纹"不一定真实斑马线(车道线/路缘)，02/03 掩膜偏移到车体外 | overlap≈0，漏检占道 | → v11 多位置条带扫描 + 车辆锚定搜索区 |
+| E18 | **可解释性**: 最终结论=红绿灯×静止占道×车牌 三能力综合，任一不准都可能错；需可回溯"哪一步出错" | 出错难定位 | → 输出 COT 小作文(.md) + 证据截图，逐时段写灯态/占道/车牌/结论 |
+| E19 | **车牌须视频全局读取**: 不一定在违章帧，可能前半/后半才看清；按 track_id 关联占道车 | 只在违规窗口扫 → 漏读车牌 | → PlateConsensus 按 track_id 累积多帧投票，全局聚合 |
 
 ### ✅ 已验证的最佳实践
 - **CPU-only 环境**: Win10 1709, i7-10750H, torch/onnxruntime 均可用
@@ -185,10 +193,15 @@ class FrameSampler:
 
 ### 5.3 ViolationEngine V2（多档灵敏度）
 ```python
+# 实际定义见 src/redlight/pipeline/tracker.py
 SENSITIVITY_PRESETS = {
-    "strict":   {"speed": 15, "sustain": 8, "duration": 8, "overlap": 0.30},
-    "balanced": {"speed": 30, "sustain": 5, "duration": 5, "overlap": 0.20},
-    "loose":    {"speed": 50, "sustain": 3, "duration": 3, "overlap": 0.15},
+    # speed: 瞬时速度阈值(px/s); sustain: 需尾部连续低速度帧数
+    # duration: 三条件需持续帧数; overlap: 压线比例阈值
+    # speed_window: 参与统计的近期采样帧数; stationary_ratio: 低速度帧占比下限
+    "strict":     {"speed": 15, "sustain": 8, "duration": 8, "overlap": 0.30, "speed_window": 8, "stationary_ratio": 1.0},
+    "balanced":   {"speed": 30, "sustain": 5, "duration": 5, "overlap": 0.20, "speed_window": 6, "stationary_ratio": 0.7},
+    "loose":      {"speed": 50, "sustain": 3, "duration": 3, "overlap": 0.15, "speed_window": 4, "stationary_ratio": 0.5},
+    "very_loose": {"speed": 80, "sustain": 2, "duration": 2, "overlap": 0.10, "speed_window": 3, "stationary_ratio": 0.4},
 }
 ```
 实测发现 speed=15 对蠕行太严（违章01 全 stop=0）。V2 支持**滑动窗口速度计算**（抗抖动），并预设三档灵敏度供评测选择最优。
@@ -214,7 +227,7 @@ violation = stationary
 
 > 反向含义: v1/v2 的 `light_state == 'red'` 判违规逻辑是**错误**的，必须改为 `green/flashing`。原"违章01/02"结论因此作废，需用新逻辑重跑。
 
-**闪烁(flashing)检测**: 在 `smoothing_window` 内统计信号可见性跳变次数（green 出现↔消失 ≥2 次）判定为 flashing。为避免过度漏判违规，当信号颜色可辨但亮度/可见性不稳定时，**偏向判定为 green/flashing** 而非 unknown。
+**闪烁(flashing)检测**: 在 `smoothing_window` 内，需**同时观察到红灯与绿灯**，且绿灯亮灭序列的跳变次数 ≥ `flicker_toggle_count`（默认 4）才判定为 flashing。仅"green 间歇出现"而无红灯佐证时，按 green/unknown 处理，**不**误判为 flashing（修复噪声假闪烁）。当信号颜色可辨但亮度/可见性不稳定时，仍**偏向判定为 green/flashing** 而非 unknown，避免漏判违规。
 
 ### 5.3.2 Grill-Me 决议（2026-07-11，新语义压力测试）
 
@@ -226,18 +239,19 @@ violation = stationary
 | Q4 | 绿灯排队/右转车误报 | **否决"放宽"**：排队/转向车也不应在斑马线上停留→仍判违规（规则统一，不特例） | ViolationEngineV2: 不区分原因，静止压线即违规 |
 | Q5 | 信号类型假设 | **假设=斑马线行人灯**；报告标注"信号类型假设=行人灯" | 输出 CSV 增加 `signal_assumption` 字段 |
 
-### 5.3.3 TrafficLightDetector v2 强化方案（Q3）
+### 5.3.3 TrafficLightDetector v5 方案（Q3，2026-07-11 落地）
 
-纯CV(CPU可行)但显著强于 v1 颜色兜底，且**不偷工减料**：
+纯CV(CPU可行)、不偷工减料，且修复了 E16（暗淡去饱和绿灯看不见 + 白车刹车灯误判红灯）：
 
-1. **候选灯校验**: 连通域过滤——最小面积比、长宽比(拒绝细长尾灯)、位置先验(画面中上部，信号灯挂高处)。
-2. **时序稳定性/持续性门**: 候选灯在窗口内出现帧占比高→视为稳定信号灯；随车移动、时隐时现的红块(尾灯)→`reason=moving_blob`→归 unknown，避免假红灯放过真违规。
-3. **偏向安全侧**: 当 red 与 green 候选并存且 red 非压倒性时，**偏向 green/flashing**（宁可多报，呼应 Q1）。
-4. **闪烁检测**: 窗口内 green 可见性跳变≥2次→`flashing`。
-5. **富输出**: `{state, confidence, stable, is_flashing, reason}`，供引擎决定 confirmed/review，并供评测量化 Precision/Recall(要求#6)。
-6. **升级路径**: 若评测显示 CV 精度不足→升级小模型(如 YOLO 交通灯检测)；BaseModel 接口已隔离，可热替换。
+1. **亮斑掩膜**: 取 `V>=value_min & S>=sat_min` 的"被点亮的灯泡"，不卡极端饱和像素 → 接住暗淡去饱和的 LED 绿灯（v3/v4 用极端阈值只留灯泡核心，绿灯常 <30px 碎片而失败）。
+2. **均值色分类**: 对每个候选 bbox 内取 HSV **均值**判红/绿（均值色比极端像素稳定，不受高光点干扰）。
+3. **信号灯几何先验**: 信号灯 = 画面**上部**的紧凑亮斑（灯杆在斑马线上方）；车灯 = 位于路面区（`cy>pedestrian_cutoff_y`）→ `ped=0` 直接剔除，不参与聚合（彻底解耦信号灯与车灯的体积/位置差异）。
+4. **多候选 + 持续性**: 红/绿各自保留候选，仅统计 `ped>0` 的信号级候选；窗口内出现帧占比高→稳定信号，时隐时现的红块(尾灯)→归 unknown。
+5. **闪烁检测**: 见 §5.3.1（需红绿皆现 + 跳变≥4）。
+6. **富输出**: `{state, confidence, stable, is_flashing, reason, candidates}`，供引擎决定 confirmed/review，并供评测量化 Precision/Recall(要求#6)。
+7. **升级路径**: 若评测显示 CV 精度不足→升级小模型（YOLOv8n 二分类 red/green，不含 yellow）；BaseModel 接口已隔离，可热替换。
 
-> 注: 手机手持拍摄存在全局抖动，绝对位置稳定性门需谨慎；v2.0 改用**持续性(persistence)**为主、**位置先验**为辅的判别，避免把真信号灯误杀为 unknown。
+> 注: 手机手持拍摄存在全局抖动，绝对位置稳定性门需谨慎；v5 以**持续性(persistence)**为主、**位置先验**为辅的判别，避免把真信号灯误杀为 unknown。v5 在 02/06 等绿灯窗口已实测修复；07/11/01 等视频仍偏低，需继续泛化或升级模型（见 CHANGELOG 2.3.0 已知问题）。
 
 ### 5.4 Pipeline DAG（替代 monolithic pipeline.py）
 将当前 165 行线性函数拆分为独立节点:
@@ -283,6 +297,18 @@ read_frame → sample → detect_vehicle → track → [crosswalk/light/plate] �
 | End-to-End Accuracy | 视频→违规事件的端到端正确率 |
 
 ### 6.2 Ground Truth Schema（标注格式）
+
+**权威真值（实际落盘）**: `datasets/gt/events.csv`，**事件级**时段标注，列：
+`video, start_s, end_s, light_state, is_violation, plates, note`
+- `light_state` 枚举: `green` / `flashing` / `red` / `unknown`（语义见 §5.3.1）
+- `is_violation`: `1`=该时段构成违规（绿/闪 + 静止占道），`0`=不构成
+- 用于把时段展开为 per-frame GT，配合 `scripts/eval_light_all.py` 量化红绿灯状态准确率 / 宏 F1。
+
+**细粒度真值（可选/扩展）**:
+- `datasets/gt/light_state/<video>_gt.csv`：逐帧灯态模板（当前多数为空列，待人工补全）。
+- `datasets/gt/violation_events/<video>.csv`：按视频的违规事件真值（含车牌）。
+
+**概念级标注结构（参考，用于模型训练/细标）**:
 ```json
 {
   "video_id": "违章02",

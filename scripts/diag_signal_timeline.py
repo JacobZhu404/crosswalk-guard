@@ -72,7 +72,7 @@ def diagnose(video, out_csv, cfg, preset="balanced"):
             for s in states.values():
                 if not s.get("active"):
                     continue
-                ov = compute_overlap_ratio(s["box"], mask)
+                ov = compute_overlap_ratio(s["box"], mask, footprint=0.5, denom="mask")
                 max_ov = max(max_ov, ov)
                 if s.get("stationary") and ov >= overlap_thr:
                     n_ocs += 1

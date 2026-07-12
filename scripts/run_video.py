@@ -29,7 +29,7 @@ def main():
     if args.output is None:
         name = os.path.splitext(os.path.basename(args.video))[0]
         args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}")
-    run(cfg, args.video, args.output, args.preset, args.mode)
+    run(cfg, args.video, args.output, args.preset, mode=args.mode)
 
 
 if __name__ == "__main__":

@@ -62,6 +62,7 @@ class TrafficLightDetector(BaseModel):
         self.signal_prior = tuple(sp) if isinstance(sp, (list, tuple)) and len(sp) == 2 else None
         self.prior_search_radius = float(getattr(tl, "prior_search_radius", 0.13))
         self.prior_hold = int(getattr(tl, "prior_hold", 90))  # 先验模式下暗灯间歇丢失时保持旧色的最大帧数(~3s)
+        self.prior_roi_px = int(getattr(tl, "prior_roi_px", 160))  # HSV直采ROI边长(px), 吸收手持漂移; 小灯视频可加大
         # 闪烁判定
         self.flicker_toggle = int(getattr(tl, "flicker_toggle_count", 4))
         # 状态
@@ -70,6 +71,7 @@ class TrafficLightDetector(BaseModel):
         self.heads = []    # 信号头轨迹(选灯判定: 同杆红绿聚成一个头)
         self.anchor = None  # 空间锚(稳定器): 锁定静态信号灯位置 {cx,cy,last_dom,last_seen,...}
         self.global_recent = collections.deque(maxlen=self.window)  # 全局灯态时间线
+        self._last_sample = (0, 0)  # HSV直采最近一次(g_px, r_px), 供调参观察
         self._loaded = True
         self._vb = verbose
 
@@ -105,6 +107,8 @@ class TrafficLightDetector(BaseModel):
             "candidates": spots,          # 当前帧亮斑(供 COT/截图)
             "track": best,
             "anchor": self.anchor,       # 空间锚(稳定器): 锁定静态信号灯位置
+            "g_px": self._last_sample[0] if hasattr(self, "_last_sample") else 0,
+            "r_px": self._last_sample[1] if hasattr(self, "_last_sample") else 0,
         }
 
     # ---------- 选灯判定 (v7: 信号头聚类 + 面积选灯 + 持久门控) ----------
@@ -426,8 +430,8 @@ class TrafficLightDetector(BaseModel):
         h, w = self._last_frame.shape[:2]
         px, py = self.signal_prior
         # ROI覆盖整个行人信号单元: 走路图标(上) + 倒计时(中) + 站立人+等待(下)
-        # 用较大的ROI(160px)以吸收手持拍摄导致的画面内目标漂移
-        roi_px = 160
+        # 用较大的ROI以吸收手持拍摄导致的画面内目标漂移(可调: 小灯视频加大)
+        roi_px = self.prior_roi_px
         cx_i, cy_i = int(px * w), int(py * h)
         x1 = max(0, cx_i - roi_px // 2)
         y1 = max(0, cy_i - roi_px // 2)
@@ -450,6 +454,7 @@ class TrafficLightDetector(BaseModel):
         if total == 0:
             return None
         g_frac, r_frac = g_n / total, r_n / total
+        self._last_sample = (g_n, r_n)
         min_frac = 0.002  # 至少0.2%有色像素
         if g_frac < min_frac and r_frac < min_frac:
             return None
@@ -518,6 +523,12 @@ class TrafficLightDetector(BaseModel):
         if seen == 0:
             return "unknown", "no_signal", 0.0
         gr, rr = green / seen, red / seen
+        # 先验模式: 信任锁定的行人信号, 用多数投票(抗邻居红灯污染),
+        #          不判 flashing(逐帧直采噪声会误触发闪烁).
+        if self.signal_prior is not None:
+            if gr >= rr:
+                return "green", "prior_green", round(gr, 3)
+            return "red", "prior_red", round(rr, 3)
         toggles = sum(1 for i in range(1, len(seq))
                       if seq[i] != seq[i - 1]
                       and seq[i] in ("green", "red") and seq[i - 1] in ("green", "red"))

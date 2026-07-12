@@ -39,6 +39,31 @@ def test_green_confirmed():
     assert confirmed[0]["light_state"] == "green"
 
 
+def test_unknown_forward_fill_green():
+    """未知灯短时向前填充: 前后为绿灯, 中间 brief unknown 仍按绿灯判违规 (08中段)。"""
+    eng = ViolationEngineV2("balanced", fill_gap_sec=2.0)
+    mask = _make_mask()
+    evs = []
+    seq = ["green", "green", "unknown", "unknown", "green", "green"]
+    for i, ls in enumerate(seq):
+        evs += eng.evaluate(_state(1, True), mask, ls, i * 0.5)  # 0.5s 间隔 < 2s
+    confirmed = [e for e in evs if e["status"] == "confirmed"]
+    assert len(confirmed) == 1, f"forward-fill 应触发1次违规, got {len(confirmed)}"
+
+
+def test_unknown_long_gap_no_fill():
+    """超过填充窗口的长时间 unknown 不向前填充 -> 不判违规。"""
+    eng = ViolationEngineV2("balanced", fill_gap_sec=2.0)
+    mask = _make_mask()
+    evs = []
+    for t in (0.0, 0.5, 1.0, 1.5, 2.0):   # 足够前导绿帧触发首次违规
+        evs += eng.evaluate(_state(1, True), mask, "green", t)
+    evs += eng.evaluate(_state(1, True), mask, "unknown", 6.0)  # 间隔4s > 2s
+    evs += eng.evaluate(_state(1, True), mask, "unknown", 6.5)
+    confirmed = [e for e in evs if e["status"] == "confirmed"]
+    assert len(confirmed) == 1, f"长间隔unknown不应填充, got {len(confirmed)}"
+
+
 def test_flashing_confirmed():
     eng = ViolationEngineV2("balanced")
     mask = _make_mask()
@@ -82,7 +107,7 @@ def test_unknown_occluded_to_review():
     """unknown + 斑马线被遮挡(触及画面边界, 看不全) -> review (Q2)。"""
     eng = ViolationEngineV2("balanced", unknown_to_review=True)
     mask = np.zeros((400, 400), dtype=np.uint8)
-    mask[100:200, 0:300] = 255  # 触及左边界(看不全) 且 覆盖车体 -> 压线且遮挡
+    mask[100:400, 100:300] = 255  # 触及底边(斑马线被画面下沿截断, 看不全) 且 覆盖车体 -> 压线且遮挡
     evs = []
     for i in range(6):
         evs += eng.evaluate(_state(1, True), mask, "unknown", i * 0.5)

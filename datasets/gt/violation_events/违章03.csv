@@ -1,0 +1,2 @@
+event_id,video,start_ts,end_ts,light_state,light_state_source,n_vehicles_on_crosswalk,plates,notes
+1,违章03,78,133,green,user_observation,2,"[black: 车牌不可见];京ABV...",两台车占用斑马线: 黑车(车牌不可见)+银灰车(京ABV...,不完整); 用户观察该段行人灯应为绿(待核实)

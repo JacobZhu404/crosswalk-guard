@@ -1,27 +1,22 @@
-"""L5 任务编排: 违规判定状态机 (V2, 语义反转版)。
+"""L5 任务编排: 违规判定状态机 (V2, 双模式版)。
+
+模式:
+    - red_light: 红灯期间车辆静止压线 = 违规
+    - pedestrian_green: 行人绿灯/闪烁期间车辆静止压线 = 违规
 
 判定条件 (全部满足且持续 duration 个采样帧):
-    light_state in ('green','flashing') AND 车辆静止 AND 车辆压斑马线
-
-语义 (识别对象 = 斑马线行人信号灯, 见设计文档 §5.3.1):
-    - 🔴 red(行人禁行): 车辆可通行 -> 不违规
-    - 🟢 green(行人通行): 车辆须让行 -> 静止压线 = 违规(confirmed)
-    - 🟡 flashing(行人清空闪烁): 车辆须让行 -> 静止压线 = 违规(confirmed)
-    - ❓ unknown(未检出灯): 默认不违规; 仅当斑马线被遮挡(occlusion_flag)时发 review
-
-注: 2026-07-11 起移除原 red_light 双模式 —— 旧"红灯压线=违规"语义已被推翻,
-系统唯一正确的假设是"斑马线行人信号灯", 故不再保留可切换的旧逻辑(避免 footgun)。
-
-去重: 同一 track 一次持续条件内只发一次; 两次事件间隔需 >= min_event_gap_sec。"""
+    light_state in 违规灯态 AND 车辆静止 AND 车辆压斑马线(overlap>=threshold)
+"""
 import numpy as np
 from ..infrastructure.geometry import compute_overlap_ratio
 from .tracker import SENSITIVITY_PRESETS
 
-OCCLUSION_MIN_AREA_RATIO = 0.005  # 掩膜面积低于此比例视为斑马线看不全 -> 遮挡
+OCCLUSION_MIN_AREA_RATIO = 0.005
 
 
 class ViolationEngineV2:
-    def __init__(self, preset="balanced", unknown_to_review=True, min_event_gap_sec=5, mode="red_light"):
+    def __init__(self, preset="balanced", unknown_to_review=True, min_event_gap_sec=5,
+                 fill_gap_sec=2.0, mode="red_light"):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset
@@ -30,20 +25,31 @@ class ViolationEngineV2:
         self.duration = p["duration"]
         self.gap = min_event_gap_sec
         self.unknown_to_review = unknown_to_review
+        self.fill_gap = fill_gap_sec   # 未知灯短时向前填充窗口(秒)
         self.mode = mode if mode in ("red_light", "pedestrian_green") else "red_light"
         self.events = []
         self.active = {}
         self.last_event_time = {}
+        self._last_known = None        # (state, ts): 最近一次确知灯态
         self._eid = 0
+
+    def _resolve_light(self, light_state, timestamp):
+        """未知灯短时向前填充: brief unknown 沿用最近已知灯态。
+
+        覆盖 08 中段手机未拍到灯的场景——前后确认绿灯, 中间几帧 unknown
+        仍按绿灯处理, 不丢失违规。超过 fill_gap 的长时间 unknown 维持 unknown。
+        """
+        if light_state != "unknown":
+            self._last_known = (light_state, timestamp)
+            return light_state
+        if self._last_known is not None:
+            st, ts = self._last_known
+            if timestamp - ts <= self.fill_gap:
+                return st
+        return "unknown"
 
     @staticmethod
     def _is_occluded(mask):
-        """斑马线掩膜是否疑似被遮挡/看不全 (无法可靠判定压线)。
-
-        判定: 掩膜为 None / 非二维 / 面积过小(基本看不到) /
-        触及左·右·上边框(斑马线被画面截断, 看不全)。
-        注: 不检查底边框 —— 地面斑马线常位于画面底部, 属正常。
-        """
         if mask is None:
             return True
         if getattr(mask, "ndim", 0) != 2:
@@ -52,13 +58,17 @@ class ViolationEngineV2:
         area = float(np.count_nonzero(mask))
         if area < OCCLUSION_MIN_AREA_RATIO * h * w:
             return True
-        if mask[0, :].any() or mask[:, 0].any() or mask[:, -1].any():
+        # E14 fix: 全宽斑马线常态触左右/上边 -> 这些不算遮挡;
+        # 仅当掩膜触**底边**(斑马线被画面下沿截断, 看不到完整)才判遮挡
+        if mask[-1, :].any():
             return True
         return False
 
     def evaluate(self, track_states, mask, light_state, timestamp):
         if isinstance(light_state, dict):
             light_state = light_state.get("state", "unknown")
+        # 未知灯短时向前填充: brief unknown 沿用最近已知灯态(覆盖 08 中段缺失)
+        light_state = self._resolve_light(light_state, timestamp)
         occluded = self._is_occluded(mask)
         new_events = []
         for tid, st in track_states.items():
@@ -67,7 +77,7 @@ class ViolationEngineV2:
             if not st.get("stationary", False):
                 self._reset(tid)
                 continue
-            ratio = compute_overlap_ratio(st["box"], mask)
+            ratio = compute_overlap_ratio(st["box"], mask, footprint=0.5, denom="mask")
             on_crosswalk = ratio >= self.overlap
             a = self.active.setdefault(
                 tid, {"sustained": 0, "emitted": False, "cond_start": timestamp}
@@ -75,7 +85,7 @@ class ViolationEngineV2:
             if self.mode == "red_light":
                 if on_crosswalk and light_state == "red":
                     self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
-                elif on_crosswalk and light_state == "unknown" and self.unknown_to_review:
+                elif on_crosswalk and light_state == "unknown" and self.unknown_to_review and occluded:
                     self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
                 else:
                     self._reset(tid)

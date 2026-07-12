@@ -1,0 +1,2 @@
+event_id,video,start_ts,end_ts,light_state,light_state_source,n_vehicles_on_crosswalk,plates,notes
+1,违章02,21,85,green,user_observation,1,"京L NE560",白车占用斑马线; 用户观察行人灯为绿色; 后续视频确认车牌
