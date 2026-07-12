@@ -50,6 +50,7 @@ crosswalk:
 traffic_light:
   method: "color"             # v6 颜色兜底(饱和度亮斑+位置跟踪); 可选升级为 model(YOLO 交通灯)
   smoothing_window: 24        # 近窗颜色统计长度(=detect调用次数, ~3s@8fps)
+  hysteresis: 0.68            # 迟滞阈值: 已建立状态需被反色占比>=此值才翻转, 抑制抖动/瞬态误读(状态连续多秒)
   value_floor: 60             # 亮度下限(排除近黑/阴影, 但不卡高亮)
   sat_min: 130                # 亮斑饱和度下限(核心: 真实信号灯 LED S>=200, 草地/绿漆 S~100 被排除)
   min_area_px: 30             # 候选灯最小像素面积(丢最小碎片, 降 n_spots 通胀/绿树噪点)
