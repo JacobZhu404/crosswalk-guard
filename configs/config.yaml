@@ -17,6 +17,7 @@ inference:
   light_interval: 8                   # 每 N 个(采样)帧重检一次红绿灯
   plate_interval: 3                   # 每 N 个(采样)帧重检一次车牌
   plate_conf: 0.4                     # 车牌识别置信度阈值
+  plate_prior_province: "京"          # 省份先验(北京场景优先"京"), 为空则不启用
 
 # 实际运行栈 (2026-07-11 更正, 修复 E11 配置漂移):
 #   车辆检测 = ultralytics YOLOv8n (torch CPU)
@@ -26,7 +27,7 @@ inference:
 models:
   vehicle: "models/yolov8n.pt"        # YOLOv8n (torch CPU)
   crosswalk_seg: "models/crosswalk_seg.onnx"   # 斑马线分割(可选, 缺省走 CV 兜底)
-  traffic_light: "models/traffic_light.onnx"   # 红绿灯模型(可选, 缺省走 color v2 强化版)
+  traffic_light: "models/traffic_light.onnx"   # 红绿灯模型(可选, 缺省走 color v6 跟踪版)
   plate_ocr: "models/plate_crnn.onnx"          # 车牌 OCR(可选, 缺省走 HyperLPR3)
 
 # 参与违规判定的车种 (按 COCO 类别名)
@@ -37,17 +38,40 @@ crosswalk:
   overlap_ratio: 0.30   # 车辆面积落入斑马线比例 >= 此值 判为"压线" (可视化/参考用)
   cv_min_area: 3000     # CV 兜底时最小条纹面积阈值
 
-# 红绿灯检测器 v2 (strengthened, 见设计文档 §5.3.3)
+# 红绿灯检测器 v7-head (信号头聚类 + 面积选灯 + 形状分 + 空间锚稳定器, 修复 E16/E20/E23)
 # 识别对象假设 = 斑马线行人信号灯 (Q5)
+# 核心: 信号灯=固定实物 -> (a) 形状分(lamp_score)区分真灯泡与倒计时数字;
+#       (b) **空间锚稳定器**锁定静态信号灯, 迟滞抑制衣服/远树/倒计时面板对 ROI 的劫持;
+#       (c) 饱和度主导 lit = S>=sat_min & V>=value_floor 隔离高饱和纯色信号;
+#       (d) head_dist 控制聚类范围, 必须介于"同杆红绿间距(~0.10)"与"远处绿树间距(~0.148)"之间,
+#           否则绿树并入信号灯头 -> lamp_score 崩塌 -> 锚点从不锁定(07 实证坑).
+#   注: 曾试"局部对比度门控"过滤黄色按钮, 实证方向反(绿灯在亮天空前被杀/按钮在暗玻璃前被留), 已移除.
+#       按钮/衣服/树的排除完全靠 锚点+灯形分, 不靠对比度.
 traffic_light:
-  method: "color"             # v2 颜色兜底(强化版); 可选升级为 model(YOLO 交通灯)
-  smoothing_window: 8         # 时序聚合窗口(帧)
-  color_min_pixels: 60        # 颜色兜底时最小亮斑像素数
-  min_area_ratio: 0.0006      # 候选灯最小面积占 ROI 比例
-  max_aspect_ratio: 3.0       # 长宽比上限, 拒绝细长尾灯
-  search_band: [0.0, 0.65]    # 仅在上中部搜索(信号灯挂高处)
-  flicker_toggle_count: 2     # 窗口内可见性跳变 >= 此值 -> flashing
-  persistence_min_ratio: 0.5  # 候选出现帧占比低于此 -> 时隐时现, 判 unknown
+  method: "color"             # v6 颜色兜底(饱和度亮斑+位置跟踪); 可选升级为 model(YOLO 交通灯)
+  smoothing_window: 24        # 近窗颜色统计长度(=detect调用次数, ~3s@8fps)
+  value_floor: 60             # 亮度下限(排除近黑/阴影, 但不卡高亮)
+  sat_min: 130                # 亮斑饱和度下限(核心: 真实信号灯 LED S>=200, 草地/绿漆 S~100 被排除)
+  min_area_px: 30             # 候选灯最小像素面积(丢最小碎片, 降 n_spots 通胀/绿树噪点)
+  max_area_ratio: 0.008       # 面积封顶(排除车身/天空大块)
+  max_aspect_ratio: 3.5       # 长宽比上限, 拒绝细长尾灯
+  color_s_min: 22             # 颜色分类饱和度下限(低于=灰白, 忽略)
+  match_radius_ratio: 0.06    # 位置跟踪匹配半径(占帧宽比例)
+  min_persist_frames: 5       # 轨迹升为"信号"的最小出现帧数
+  track_persist_min: 0.08     # 轨迹升为"信号"的最小出现帧占比
+  signal_cy_cutoff: 0.6       # 软位置先验: cy>=此值(路面/车灯区)的轨迹不参与信号判定
+  head_area_floor: 80.0       # 信号头总面积门限: 该头面积 >= 此值才算有效信号头(排除极小噪点)
+  head_dist: 0.12             # 信号头聚类半径(归一): 需 >=同杆红绿间距(~0.10) 且 < 远处绿树间距(~0.148), 否则绿树被并入信号灯头导致 lamp_score 崩塌/锚点不锁定
+  min_contrast: 40            # ⚠️ 已弃用: 曾加"局部对比度门控"过滤按钮, 实证方向反(绿灯在亮天空前被杀/黄按钮在暗玻璃前被留), 已从 _candidates 移除. 仅留参数字段免误删.
+  lamp_score_min: 35.0        # 信号灯形状分下限: max_spot面积/候选数; 真灯泡(few-large)高, 倒计时数字(many-small)低
+  anchor_radius: 0.13         # 空间锚半径(归一): 锚附近此范围内的头才参与选灯(迟滞锁 ROI)
+  reanchor_need: 150          # 重锚所需新位置持久帧数(极大, 防瞬态红车/衣服/远树劫持)
+  anchor_hold: 30             # 锚丢失后保持旧色的最大帧数(超出 -> unknown, 契合遮挡交复核)
+  flicker_toggle_count: 4     # 窗口内绿亮灭序列跳变 >= 此值(且红也出现) -> flashing
+  # 以下为早期 v7 发射强度选灯方案的遗留参数(当前 head 聚类+面积选灯未使用, 保留以免误删):
+  lit_emission_floor: 25.0
+  lit_frac_min: 0.30
+  persistence_min_ratio: 0.5
 
 # 静止判定由 Tracker V2 的 SENSITIVITY_PRESETS 控制 (src/redlight/pipeline/tracker.py)
 # 不再由本配置单独驱动逻辑, 此处仅作说明
