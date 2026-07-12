@@ -1,6 +1,6 @@
 """生成灯态误差确认画廊 (HTML): 每视频并排 预测/GT 时间线色带 + 代表性误差帧信号灯特写。
 
-用途: 用户滚动逐张判定 mismatch 帧是 "标注错 / 算法错 / 太难放弃"。
+用途: 用户滚动逐张判定 mismatch 帧是 "算法错 / 标注错 / 都错 / 其他"。
 
 用法:
   python scripts/make_light_gallery.py
@@ -216,9 +216,10 @@ def main():
               <div class="fb">
                 <select class="verdict">
                   <option value="">--判定--</option>
-                  <option value="label_wrong"{' selected' if vv=='label_wrong' else ''}>标注错(我写反了)</option>
                   <option value="algo_wrong"{' selected' if vv=='algo_wrong' else ''}>算法错</option>
-                  <option value="too_hard"{' selected' if vv=='too_hard' else ''}>太难得放弃</option>
+                  <option value="label_wrong"{' selected' if vv=='label_wrong' else ''}>标注错</option>
+                  <option value="both_wrong"{' selected' if vv=='both_wrong' else ''}>都错</option>
+                  <option value="other"{' selected' if vv=='other' else ''}>其他</option>
                 </select>
                 <select class="reason">
                   <option value="">--原因--</option>
@@ -273,13 +274,13 @@ h1{color:#0f172a;margin:8px 0;}
 <div id="toolbar">
   <b>灯态误差确认画廊</b>
   <span>已保存 <span id="saved">0</span> 帧</span>
-  <span class="hint">每张图下方点"保存"即可标注 · 判定=标注错/算法错/太难 · 原因=颜色没看对/ROI框不对/GT段边界标反</span>
+  <span class="hint">每张图下方点"保存"即可标注 · 判定=算法错/标注错/都错/其他 · 原因=颜色没看对/ROI框不对/GT段边界标反</span>
   <button id="export">导出本地标注(JSON)</button>
 </div>
 <h1>灯态识别误差确认画廊</h1>
 <p class="intro">每张裁剪图 = 信号灯 ROI 特写。<span style="color:#3b82f6;font-weight:700;">浅蓝框</span> = 算法搜索区(它只在框内找灯);
 <span style="color:#eab308;font-weight:700;">黄圈</span> = 算法实际读取颜色的中心点。<b>点小图可放大看大图</b>。
-请判定: <b>标注错</b>(GT 写反了) / <b>算法错</b>(检测器误判) / <b>太难</b>(放弃该帧);
+请判定: <b>算法错</b>(检测器误判) / <b>标注错</b>(GT 写反了) / <b>都错</b>(我和算法都错) / <b>其他</b>;
 并选原因: <b>颜色没看对</b>(黄圈不在真灯上/读错色) / <b>ROI框不对</b>(浅蓝框没罩住真信号) / 二者都有 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
 {CARDS}
 <div id="lb" class="lightbox"><img alt="zoom"/><div class="hint">点击任意处关闭</div></div>
