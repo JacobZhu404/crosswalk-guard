@@ -133,7 +133,7 @@ def annotate_crop(fr, prior, det, label_txt):
     if Hc < 4 or Wc < 4:
         return crop
     # 浅蓝框 = 搜索区(ROI)边界, 明显内缩可见(不再贴边像图片边框)
-    cv2.rectangle(crop, (6, 6), (Wc - 7, Hc - 7), (102, 178, 255), 3)
+    cv2.rectangle(crop, (6, 6), (Wc - 7, Hc - 7), (255, 178, 102), 3)
     # 黄圈 = 算法读取颜色的中心点
     c = _detect_center(fr, det)
     if c is None:
@@ -160,7 +160,7 @@ def annotate_full(fr, prior, det, label_txt):
         ax, ay = int(cx * W), int(cy * H)
         x1, y1 = max(0, ax - roi), max(0, ay - roi)
         x2, y2 = min(W, ax + roi), min(H, ay + roi)
-        cv2.rectangle(out, (x1, y1), (x2, y2), (102, 178, 255), 3)
+        cv2.rectangle(out, (x1, y1), (x2, y2), (255, 178, 102), 3)
     c = _detect_center(fr, det)
     if c is None:
         c = (cx, cy) if prior is not None else (0.5, 0.5)
@@ -181,7 +181,7 @@ def main():
     ap.add_argument("--frames-dir", default=os.path.join(ROOT, "datasets", "frames"))
     ap.add_argument("--gt", default=os.path.join(ROOT, "datasets", "gt", "light_states.csv"))
     ap.add_argument("--priors", default=os.path.join(ROOT, "configs", "light_priors.json"))
-    ap.add_argument("--feedback", default=os.path.join(ROOT, "datasets", "gt", "light_feedback.csv"))
+    ap.add_argument("--feedback", default=os.path.join(ROOT, "data", "output", "annotated", "light_feedback.csv"))
     ap.add_argument("--max-crops", type=int, default=10)
     args = ap.parse_args()
 
@@ -268,9 +268,10 @@ def main():
                 </select>
                 <select class="reason">
                   <option value="">--原因--</option>
-                  <option value="color"{' selected' if rr=='color' else ''}>颜色没看对</option>
-                  <option value="roi"{' selected' if rr=='roi' else ''}>ROI框不对</option>
-                  <option value="both"{' selected' if rr=='both' else ''}>颜色+ROI都错</option>
+                  <option value="search_area"{' selected' if rr=='search_area' else ''}>搜索区没罩住真信号(蓝框不对)</option>
+                  <option value="reading_point"{' selected' if rr=='reading_point' else ''}>读取点没落在真灯上(黄圈不对)</option>
+                  <option value="color"{' selected' if rr=='color' else ''}>颜色读错(位置对但色错)</option>
+                  <option value="both"{' selected' if rr=='both' else ''}>搜索区+读取点都错</option>
                   <option value="gt_flipped"{' selected' if rr=='gt_flipped' else ''}>GT段边界标反</option>
                   <option value="other"{' selected' if rr=='other' else ''}>其他</option>
                 </select>
@@ -319,14 +320,13 @@ h1{color:#0f172a;margin:8px 0;}
 <div id="toolbar">
   <b>灯态误差确认画廊</b>
   <span>已保存 <span id="saved">0</span> 帧</span>
-  <span class="hint">每张图下方点"保存"即可标注 · 判定=算法错/标注错/都错/其他 · 原因=颜色没看对/ROI框不对/GT段边界标反</span>
+  <span class="hint">每张图下方点"保存"即可标注 · 判定=算法错/标注错/都错/其他 · 原因=搜索区没罩住真信号/读取点没落真灯/颜色读错/GT段边界标反</span>
   <button id="export">导出本地标注(JSON)</button>
 </div>
 <h1>灯态识别误差确认画廊</h1>
-<p class="intro">每张裁剪图 = 信号灯 ROI 特写。<span style="color:#3b82f6;font-weight:700;">浅蓝框</span> = 算法搜索区(它只在框内找灯);
-<span style="color:#eab308;font-weight:700;">黄圈</span> = 算法实际读取颜色的中心点。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
-请判定: <b>算法错</b>(检测器误判) / <b>标注错</b>(GT 写反了) / <b>都错</b>(我和算法都错) / <b>其他</b>;
-并选原因: <b>颜色没看对</b>(黄圈不在真灯上/读错色) / <b>ROI框不对</b>(浅蓝框没罩住真信号) / 二者都有 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
+<p class="intro">左=信号灯 ROI 特写(<span style="color:#3b82f6;font-weight:700;">蓝框=搜索区</span>: 算法只在此框内找灯头; <span style="color:#eab308;font-weight:700;">黄圈=读取点</span>: 算法实际取色的中心点)。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
+请判定: <b>算法错</b> / <b>标注错</b> / <b>都错</b> / <b>其他</b>;
+原因: <b>搜索区没罩住真信号</b>(蓝框不对) / <b>读取点没落在真灯上</b>(黄圈不对) / <b>颜色读错</b>(位置对但色错) / 二者都错 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
 {CARDS}
 <div id="lb" class="lightbox"><img alt="zoom"/><div class="hint">点击任意处关闭</div></div>
 <script>
@@ -354,6 +354,13 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
     if(res==='ok'){ st.textContent='已保存 ✓'; st.style.color='#16a34a'; card.classList.add('saved');
       if(!card.querySelector('.done')) card.querySelector('.meta').insertAdjacentHTML('beforeend',' <span class="done">✓已标</span>'); }
     else { st.textContent='已存本地(无服务)'; st.style.color='#d97706'; card.classList.add('saved'); }
+    // 批量便利: 把刚保存的判定/原因预填到"下一张"(错误常重复), 用户改完直接点保存即可
+    const nxt = card.nextElementSibling;
+    if(nxt && nxt.classList.contains('crop-card')){
+      nxt.querySelector('.verdict').value = p.verdict;
+      nxt.querySelector('.reason').value = p.reason;
+      nxt.querySelector('.note').value = p.note;
+    }
     updateCount();
   });
 });

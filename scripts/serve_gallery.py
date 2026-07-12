@@ -1,7 +1,7 @@
 """本地画廊服务: 托管 data/output/light_eval/ 并接收标注反馈。
 
 用途: 运行后浏览器打开 http://localhost:<port> , 在画廊里点"保存"标注误差帧,
-反馈实时追加写入 datasets/gt/light_feedback.csv (回归集原料).
+反馈实时追加写入 data/output/annotated/light_feedback.csv (回归集原料).
 
 用法:
   python scripts/serve_gallery.py            # 默认 8765
@@ -16,7 +16,7 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 EVAL_DIR = os.path.join(ROOT, "data", "output", "light_eval")
-FEEDBACK_CSV = os.path.join(ROOT, "datasets", "gt", "light_feedback.csv")
+FEEDBACK_CSV = os.path.join(ROOT, "data", "output", "annotated", "light_feedback.csv")
 HEADER = ["video", "t_sec", "frame_idx", "pred", "gt", "verdict", "reason", "note", "ts"]
 
 
