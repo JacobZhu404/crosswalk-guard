@@ -94,53 +94,84 @@ def timeline_html(segs, total_dur, label):
             f'border:1px solid #e2e8f0;">{"".join(parts)}</div>')
 
 
-def crop_signal(frame_path, prior, out_path, label_txt, det=None):
-    with open(frame_path, "rb") as f:
-        b = f.read()
-    fr = cv2.imdecode(np.frombuffer(b, np.uint8), cv2.IMREAD_COLOR)
-    if fr is None:
-        return False
-    H, W = fr.shape[:2]
-    if prior is None:
-        crop = fr.copy()
-        center = None
-    else:
-        cx, cy, roi = prior
-        ax, ay = int(cx * W), int(cy * H)
-        x1, y1 = max(0, ax - roi), max(0, ay - roi)
-        x2, y2 = min(W, ax + roi), min(H, ay + roi)
-        crop = fr[y1:y2, x1:x2]
-        # 运行检测器取"读取中心"(算法认定的灯中心), 用于在裁图上画黄圈
-        center = None
-        if det is not None:
-            try:
-                res = det.detect(fr)
-                t = res.get("track") or res.get("anchor")
-                if t and "cx" in t:
-                    center = (t["cx"] * W - x1, t["cy"] * H - y1)  # 转裁剪图坐标
-            except Exception:
-                center = None
-        if center is None:
-            center = (cx * W - x1, cy * H - y1)  # 回退: 先验中心
-    Hc, Wc = crop.shape[:2]
-    # 浅蓝框 = 算法搜索区(ROI)边界
-    cv2.rectangle(crop, (4, 4), (Wc - 5, Hc - 5), (102, 178, 255), 2)
-    # 黄圈 = 算法读取颜色的中心点
-    ccx, ccy = center
-    ccx = max(0, min(Wc - 1, int(ccx)))
-    ccy = max(0, min(Hc - 1, int(ccy)))
-    cv2.circle(crop, (ccx, ccy), 11, (0, 255, 255), 2)
-    cv2.drawMarker(crop, (ccx, ccy), (0, 255, 255), cv2.MARKER_CROSS, 10, 1)
-    # 标注文字(顶部黑条)
-    cv2.rectangle(crop, (0, 0), (Wc - 1, 28), (0, 0, 0), -1)
-    cv2.putText(crop, label_txt, (6, 19), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-    # 字节写盘, 规避 OpenCV 中文路径 imwrite 静默失败
-    ok, buf = cv2.imencode(".jpg", crop)
+def _detect_center(fr, det):
+    """跑检测器取算法认定的灯中心(归一化 cx,cy). 失败返回 None."""
+    if det is None:
+        return None
+    try:
+        res = det.detect(fr)
+        t = res.get("track") or res.get("anchor")
+        if t and "cx" in t:
+            return (float(t["cx"]), float(t["cy"]))
+    except Exception:
+        return None
+    return None
+
+
+def _save_jpg(img, out_path):
+    """字节写盘, 规避 OpenCV 中文路径 imwrite 静默失败."""
+    ok, buf = cv2.imencode(".jpg", img)
     if not ok:
         return False
     with open(out_path, "wb") as f:
         f.write(buf.tobytes())
     return True
+
+
+def annotate_crop(fr, prior, det, label_txt):
+    """信号灯 ROI 特写(小图): 浅蓝框=搜索区边界(明显内缩), 黄圈=读取点."""
+    H, W = fr.shape[:2]
+    if prior is not None:
+        cx, cy, roi = prior
+        ax, ay = int(cx * W), int(cy * H)
+        x1, y1 = max(0, ax - roi), max(0, ay - roi)
+        x2, y2 = min(W, ax + roi), min(H, ay + roi)
+    else:
+        x1, y1, x2, y2 = 0, 0, W, H
+    crop = fr[y1:y2, x1:x2].copy()
+    Hc, Wc = crop.shape[:2]
+    if Hc < 4 or Wc < 4:
+        return crop
+    # 浅蓝框 = 搜索区(ROI)边界, 明显内缩可见(不再贴边像图片边框)
+    cv2.rectangle(crop, (6, 6), (Wc - 7, Hc - 7), (102, 178, 255), 3)
+    # 黄圈 = 算法读取颜色的中心点
+    c = _detect_center(fr, det)
+    if c is None:
+        c = (cx, cy) if prior is not None else (0.5, 0.5)
+    ccx = max(0, min(Wc - 1, int(c[0] * W - x1)))
+    ccy = max(0, min(Hc - 1, int(c[1] * H - y1)))
+    cv2.circle(crop, (ccx, ccy), 12, (0, 255, 255), 2)
+    cv2.drawMarker(crop, (ccx, ccy), (0, 255, 255), cv2.MARKER_CROSS, 12, 1)
+    # 顶部黑条 + 文字
+    cv2.rectangle(crop, (0, 0), (Wc - 1, 28), (0, 0, 0), -1)
+    cv2.putText(crop, label_txt, (6, 19), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    return crop
+
+
+def annotate_full(fr, prior, det, label_txt):
+    """原始整帧(放大图): 蓝框=搜索区ROI, 黄圈=读取点 — 给标注者看"算法盯哪".
+
+    这才是用户想要的"原始图片 + 识别过程"; 点小图即弹出此图.
+    """
+    H, W = fr.shape[:2]
+    out = fr.copy()
+    if prior is not None:
+        cx, cy, roi = prior
+        ax, ay = int(cx * W), int(cy * H)
+        x1, y1 = max(0, ax - roi), max(0, ay - roi)
+        x2, y2 = min(W, ax + roi), min(H, ay + roi)
+        cv2.rectangle(out, (x1, y1), (x2, y2), (102, 178, 255), 3)
+    c = _detect_center(fr, det)
+    if c is None:
+        c = (cx, cy) if prior is not None else (0.5, 0.5)
+    ccx = max(0, min(W - 1, int(c[0] * W)))
+    ccy = max(0, min(H - 1, int(c[1] * H)))
+    cv2.circle(out, (ccx, ccy), 18, (0, 255, 255), 3)
+    cv2.drawMarker(out, (ccx, ccy), (0, 255, 255), cv2.MARKER_CROSS, 18, 1)
+    cv2.rectangle(out, (0, 0), (W - 1, 30), (0, 0, 0), -1)
+    cv2.putText(out, label_txt + "   蓝框=搜索区ROI   黄圈=读取点", (8, 20),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+    return out
 
 
 def main():
@@ -200,18 +231,32 @@ def main():
             if not os.path.exists(fp):
                 continue
             tsec = f"{float(m['t_sec']):.1f}"
-            out = os.path.join(crop_dir, f"t{tsec}.jpg")
             lab = f"t={tsec}s 预{m['pred']}/GT{m['gt']}"
-            if not crop_signal(fp, pv, out, lab, det=det):
+            with open(fp, "rb") as f:
+                b = f.read()
+            fr = cv2.imdecode(np.frombuffer(b, np.uint8), cv2.IMREAD_COLOR)
+            if fr is None:
+                continue
+            # 小图: ROI 特写(蓝框搜索区 + 黄圈读取点)
+            crop = annotate_crop(fr, pv, det, lab)
+            out = os.path.join(crop_dir, f"t{tsec}.jpg")
+            if not _save_jpg(crop, out):
                 continue
             rel = os.path.relpath(out, args.eval_dir).replace("\\", "/")
+            # 大图: 原始整帧 + 算法关注的蓝框/黄圈(点小图弹此图)
+            full = annotate_full(fr, pv, det, lab)
+            full_dir = os.path.join(args.eval_dir, "orig", v)
+            os.makedirs(full_dir, exist_ok=True)
+            out_full = os.path.join(full_dir, f"t{tsec}.jpg")
+            _save_jpg(full, out_full)
+            rel_full = os.path.relpath(out_full, args.eval_dir).replace("\\", "/")
             # 回显已标内容
             fb = feedback.get((v, tsec), {})
             vv, rr, nn = fb.get("verdict", ""), fb.get("reason", ""), fb.get("note", "")
             done_badge = ' <span class="done">✓已标</span>' if vv else ""
             crop_html += f"""
             <div class="crop-card" data-video="{v}" data-t="{tsec}" data-pred="{m['pred']}" data-gt="{m['gt']}" data-idx="{idx}">
-              <img class="zoom" src="{rel}" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="{rel}" data-full="{rel_full}" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-{m['pred']}">{m['pred']}</b> / GT <b class="p-{m['gt']}">{m['gt']}</b> (g={m['g_px']},r={m['r_px']}){done_badge}</div>
               <div class="fb">
                 <select class="verdict">
@@ -279,7 +324,7 @@ h1{color:#0f172a;margin:8px 0;}
 </div>
 <h1>灯态识别误差确认画廊</h1>
 <p class="intro">每张裁剪图 = 信号灯 ROI 特写。<span style="color:#3b82f6;font-weight:700;">浅蓝框</span> = 算法搜索区(它只在框内找灯);
-<span style="color:#eab308;font-weight:700;">黄圈</span> = 算法实际读取颜色的中心点。<b>点小图可放大看大图</b>。
+<span style="color:#eab308;font-weight:700;">黄圈</span> = 算法实际读取颜色的中心点。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
 请判定: <b>算法错</b>(检测器误判) / <b>标注错</b>(GT 写反了) / <b>都错</b>(我和算法都错) / <b>其他</b>;
 并选原因: <b>颜色没看对</b>(黄圈不在真灯上/读错色) / <b>ROI框不对</b>(浅蓝框没罩住真信号) / 二者都有 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
 {CARDS}
@@ -321,7 +366,7 @@ updateCount();
 // 点击小图放大
 const lb=document.getElementById('lb'), lbImg=lb.querySelector('img');
 document.querySelectorAll('img.zoom').forEach(im=>{
-  im.addEventListener('click',()=>{ lbImg.src=im.src; lb.classList.add('show'); });
+  im.addEventListener('click',()=>{ lbImg.src=im.dataset.full; lb.classList.add('show'); });
 });
 lb.addEventListener('click',()=>lb.classList.remove('show'));
 </script>

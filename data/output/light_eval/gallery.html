@@ -31,7 +31,7 @@ h1{color:#0f172a;margin:8px 0;}
 </div>
 <h1>灯态识别误差确认画廊</h1>
 <p class="intro">每张裁剪图 = 信号灯 ROI 特写。<span style="color:#3b82f6;font-weight:700;">浅蓝框</span> = 算法搜索区(它只在框内找灯);
-<span style="color:#eab308;font-weight:700;">黄圈</span> = 算法实际读取颜色的中心点。<b>点小图可放大看大图</b>。
+<span style="color:#eab308;font-weight:700;">黄圈</span> = 算法实际读取颜色的中心点。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
 请判定: <b>算法错</b>(检测器误判) / <b>标注错</b>(GT 写反了) / <b>都错</b>(我和算法都错) / <b>其他</b>;
 并选原因: <b>颜色没看对</b>(黄圈不在真灯上/读错色) / <b>ROI框不对</b>(浅蓝框没罩住真信号) / 二者都有 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
 
@@ -41,7 +41,7 @@ h1{color:#0f172a;margin:8px 0;}
           <div style="font-size:12px;margin:10px 0 4px;color:#475569;">代表性误差帧 (预测≠GT):</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <div class="crop-card" data-video="违章02" data-t="0.0" data-pred="unknown" data-gt="red" data-idx="0">
-              <img class="zoom" src="crops/违章02/t0.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t0.0.jpg" data-full="orig/违章02/t0.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-unknown">unknown</b> / GT <b class="p-red">red</b> (g=0,r=0)</div>
               <div class="fb">
                 <select class="verdict">
@@ -65,7 +65,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="1.9" data-pred="green" data-gt="red" data-idx="56">
-              <img class="zoom" src="crops/违章02/t1.9.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t1.9.jpg" data-full="orig/违章02/t1.9.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=43,r=165)</div>
               <div class="fb">
                 <select class="verdict">
@@ -89,7 +89,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="11.8" data-pred="green" data-gt="red" data-idx="350">
-              <img class="zoom" src="crops/违章02/t11.8.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t11.8.jpg" data-full="orig/违章02/t11.8.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=127,r=335)</div>
               <div class="fb">
                 <select class="verdict">
@@ -113,7 +113,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="22.2" data-pred="red" data-gt="green" data-idx="658">
-              <img class="zoom" src="crops/违章02/t22.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t22.2.jpg" data-full="orig/违章02/t22.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=290,r=103)</div>
               <div class="fb">
                 <select class="verdict">
@@ -137,7 +137,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="40.5" data-pred="red" data-gt="green" data-idx="1204">
-              <img class="zoom" src="crops/违章02/t40.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t40.5.jpg" data-full="orig/违章02/t40.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=363,r=322)</div>
               <div class="fb">
                 <select class="verdict">
@@ -161,7 +161,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="76.6" data-pred="red" data-gt="green" data-idx="2275">
-              <img class="zoom" src="crops/违章02/t76.6.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t76.6.jpg" data-full="orig/违章02/t76.6.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=15,r=643)</div>
               <div class="fb">
                 <select class="verdict">
@@ -185,7 +185,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="78.5" data-pred="red" data-gt="green" data-idx="2331">
-              <img class="zoom" src="crops/违章02/t78.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t78.5.jpg" data-full="orig/违章02/t78.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=9,r=482)</div>
               <div class="fb">
                 <select class="verdict">
@@ -209,7 +209,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="80.4" data-pred="red" data-gt="green" data-idx="2387">
-              <img class="zoom" src="crops/违章02/t80.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t80.4.jpg" data-full="orig/违章02/t80.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=12,r=910)</div>
               <div class="fb">
                 <select class="verdict">
@@ -233,7 +233,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="82.3" data-pred="red" data-gt="green" data-idx="2443">
-              <img class="zoom" src="crops/违章02/t82.3.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t82.3.jpg" data-full="orig/违章02/t82.3.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=11,r=186)</div>
               <div class="fb">
                 <select class="verdict">
@@ -257,7 +257,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章02" data-t="84.2" data-pred="red" data-gt="green" data-idx="2499">
-              <img class="zoom" src="crops/违章02/t84.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章02/t84.2.jpg" data-full="orig/违章02/t84.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=11,r=1400)</div>
               <div class="fb">
                 <select class="verdict">
@@ -287,7 +287,7 @@ h1{color:#0f172a;margin:8px 0;}
           <div style="font-size:12px;margin:10px 0 4px;color:#475569;">代表性误差帧 (预测≠GT):</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <div class="crop-card" data-video="违章03" data-t="0.0" data-pred="unknown" data-gt="red" data-idx="0">
-              <img class="zoom" src="crops/违章03/t0.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t0.0.jpg" data-full="orig/违章03/t0.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-unknown">unknown</b> / GT <b class="p-red">red</b> (g=0,r=0)</div>
               <div class="fb">
                 <select class="verdict">
@@ -311,7 +311,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="54.5" data-pred="green" data-gt="red" data-idx="1617">
-              <img class="zoom" src="crops/违章03/t54.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t54.5.jpg" data-full="orig/违章03/t54.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=483,r=255)</div>
               <div class="fb">
                 <select class="verdict">
@@ -335,7 +335,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="60.4" data-pred="green" data-gt="red" data-idx="1792">
-              <img class="zoom" src="crops/违章03/t60.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t60.4.jpg" data-full="orig/违章03/t60.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=498,r=246)</div>
               <div class="fb">
                 <select class="verdict">
@@ -359,7 +359,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="66.2" data-pred="green" data-gt="red" data-idx="1967">
-              <img class="zoom" src="crops/违章03/t66.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t66.2.jpg" data-full="orig/违章03/t66.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=473,r=160)</div>
               <div class="fb">
                 <select class="verdict">
@@ -383,7 +383,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="72.1" data-pred="green" data-gt="red" data-idx="2142">
-              <img class="zoom" src="crops/违章03/t72.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t72.1.jpg" data-full="orig/违章03/t72.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=376,r=395)</div>
               <div class="fb">
                 <select class="verdict">
@@ -407,7 +407,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="102.5" data-pred="red" data-gt="green" data-idx="3045">
-              <img class="zoom" src="crops/违章03/t102.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t102.5.jpg" data-full="orig/违章03/t102.5.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=2476,r=3951)</div>
               <div class="fb">
                 <select class="verdict">
@@ -431,7 +431,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="108.4" data-pred="red" data-gt="green" data-idx="3220">
-              <img class="zoom" src="crops/违章03/t108.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t108.4.jpg" data-full="orig/违章03/t108.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=2644,r=3597)</div>
               <div class="fb">
                 <select class="verdict">
@@ -455,7 +455,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="114.3" data-pred="red" data-gt="green" data-idx="3395">
-              <img class="zoom" src="crops/违章03/t114.3.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t114.3.jpg" data-full="orig/违章03/t114.3.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=496,r=5512)</div>
               <div class="fb">
                 <select class="verdict">
@@ -479,7 +479,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="120.2" data-pred="red" data-gt="green" data-idx="3570">
-              <img class="zoom" src="crops/违章03/t120.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t120.2.jpg" data-full="orig/违章03/t120.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=312,r=5613)</div>
               <div class="fb">
                 <select class="verdict">
@@ -503,7 +503,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章03" data-t="126.1" data-pred="red" data-gt="green" data-idx="3745">
-              <img class="zoom" src="crops/违章03/t126.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章03/t126.1.jpg" data-full="orig/违章03/t126.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-red">red</b> / GT <b class="p-green">green</b> (g=1193,r=4626)</div>
               <div class="fb">
                 <select class="verdict">
@@ -533,7 +533,7 @@ h1{color:#0f172a;margin:8px 0;}
           <div style="font-size:12px;margin:10px 0 4px;color:#475569;">代表性误差帧 (预测≠GT):</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">
             <div class="crop-card" data-video="违章04" data-t="0.0" data-pred="unknown" data-gt="red" data-idx="0">
-              <img class="zoom" src="crops/违章04/t0.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t0.0.jpg" data-full="orig/违章04/t0.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-unknown">unknown</b> / GT <b class="p-red">red</b> (g=0,r=0)</div>
               <div class="fb">
                 <select class="verdict">
@@ -557,7 +557,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="12.0" data-pred="green" data-gt="red" data-idx="357">
-              <img class="zoom" src="crops/违章04/t12.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t12.0.jpg" data-full="orig/违章04/t12.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=316,r=7129)</div>
               <div class="fb">
                 <select class="verdict">
@@ -581,7 +581,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="12.7" data-pred="green" data-gt="red" data-idx="378">
-              <img class="zoom" src="crops/违章04/t12.7.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t12.7.jpg" data-full="orig/违章04/t12.7.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=262,r=15532)</div>
               <div class="fb">
                 <select class="verdict">
@@ -605,7 +605,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="13.4" data-pred="green" data-gt="red" data-idx="399">
-              <img class="zoom" src="crops/违章04/t13.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t13.4.jpg" data-full="orig/违章04/t13.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=262,r=15532)</div>
               <div class="fb">
                 <select class="verdict">
@@ -629,7 +629,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="14.1" data-pred="green" data-gt="red" data-idx="420">
-              <img class="zoom" src="crops/违章04/t14.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t14.1.jpg" data-full="orig/违章04/t14.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=247,r=6099)</div>
               <div class="fb">
                 <select class="verdict">
@@ -653,7 +653,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="36.1" data-pred="green" data-gt="red" data-idx="1071">
-              <img class="zoom" src="crops/违章04/t36.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t36.1.jpg" data-full="orig/违章04/t36.1.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=125,r=8212)</div>
               <div class="fb">
                 <select class="verdict">
@@ -677,7 +677,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="37.2" data-pred="green" data-gt="red" data-idx="1106">
-              <img class="zoom" src="crops/违章04/t37.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t37.2.jpg" data-full="orig/违章04/t37.2.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=791,r=268)</div>
               <div class="fb">
                 <select class="verdict">
@@ -701,7 +701,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="38.0" data-pred="green" data-gt="red" data-idx="1127">
-              <img class="zoom" src="crops/违章04/t38.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t38.0.jpg" data-full="orig/违章04/t38.0.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=372,r=368)</div>
               <div class="fb">
                 <select class="verdict">
@@ -725,7 +725,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="38.7" data-pred="green" data-gt="red" data-idx="1148">
-              <img class="zoom" src="crops/违章04/t38.7.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t38.7.jpg" data-full="orig/违章04/t38.7.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=1061,r=1003)</div>
               <div class="fb">
                 <select class="verdict">
@@ -749,7 +749,7 @@ h1{color:#0f172a;margin:8px 0;}
               </div>
             </div>
             <div class="crop-card" data-video="违章04" data-t="39.4" data-pred="green" data-gt="red" data-idx="1169">
-              <img class="zoom" src="crops/违章04/t39.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
+              <img class="zoom" src="crops/违章04/t39.4.jpg" data-full="orig/违章04/t39.4.jpg" style="width:200px;display:block;cursor:zoom-in;"/>
               <div class="meta">预测 <b class="p-green">green</b> / GT <b class="p-red">red</b> (g=1255,r=1259)</div>
               <div class="fb">
                 <select class="verdict">
@@ -811,7 +811,7 @@ updateCount();
 // 点击小图放大
 const lb=document.getElementById('lb'), lbImg=lb.querySelector('img');
 document.querySelectorAll('img.zoom').forEach(im=>{
-  im.addEventListener('click',()=>{ lbImg.src=im.src; lb.classList.add('show'); });
+  im.addEventListener('click',()=>{ lbImg.src=im.dataset.full; lb.classList.add('show'); });
 });
 lb.addEventListener('click',()=>lb.classList.remove('show'));
 </script>
