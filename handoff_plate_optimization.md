@@ -57,19 +57,20 @@ python scripts/annotate_plate.py input_video/违章02.mp4 --save_key_frames
 
 ## 3. 当前Git环境状态
 
-- **Git命令**: ❌ 不可用(系统未安装Git)
-- **Git仓库**: ❌ 未初始化
-- **分支**: 无
-- **未提交改动**: 所有上述修改文件均未提交(共8个源文件+3个新建脚本)
+- **Git命令**: ✅ 可用(Portable版本: C:\Users\windows\gitportable\bin\git.exe)
+- **Git仓库**: ✅ 已初始化
+- **分支**: master
+- **最新提交**: 715c65a "feat: 车牌识别优化 - 省份先验+跨时间段跟踪+全局投票"
+- **提交文件**: 57个文件, 4994行新增, 173行删除
+- **未提交改动**: 无
 - **stash**: 无
-- **变更diff**: 见上述"修改文件"清单
 
-**解决建议**: 
-1. 从 https://git-scm.com/download/win 下载安装Git
-2. 或使用 winget install Git.Git 安装
-3. 安装后运行: git init && git add -A && git commit -m "feat: 车牌识别优化"
-
-**临时方案**: 创建VERSION.md和CHANGELOG.md记录当前状态
+**提交内容**:
+- 添加省份先验过滤逻辑，过滤非"京"开头的误识别车牌
+- 优化PlateConsensus模块，增加跨时间段跟踪和全局投票功能
+- 新增视频抽帧预处理脚本、静态图调优脚本、车牌标注可视化脚本
+- 新增未识别车牌分析脚本
+- 修复车辆跟踪与车牌关联逻辑
 
 ## 4. 中间产物
 

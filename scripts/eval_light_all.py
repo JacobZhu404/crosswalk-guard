@@ -20,6 +20,7 @@ GT 尊重 light_evidence 列:
 import sys
 import os
 import csv
+import json
 import argparse
 import glob
 
@@ -83,10 +84,18 @@ def main():
     ap.add_argument("--fill-gap", type=float, default=None,
                     help="未知间隙前向填充秒数(模拟引擎 unknown_light_to_review 前向填充)")
     ap.add_argument("--out", default=None, help="输出逐视频指标 CSV")
+    ap.add_argument("--priors", default=None,
+                    help="JSON: {视频名: [cx, cy, roi_px]} 行人信号先验(校准过的视频才给)")
     args = ap.parse_args()
 
     cfg = load_config(os.path.join(project_root(), "configs", "config.yaml"))
     ev = Evaluator()
+
+    priors = {}
+    if args.priors and os.path.exists(args.priors):
+        with open(args.priors, encoding="utf-8") as f:
+            priors = json.load(f)
+        print(f"[priors] 加载 {len(priors)} 个视频的行人信号先验")
 
     # 载入段级 GT (含 light_evidence)
     gt_by_video = {}
@@ -106,6 +115,10 @@ def main():
         fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
         interval = max(1, int(round(fps / SAMPLE_FPS)))
         det = TrafficLightDetector(cfg, verbose=False)
+        pr = priors.get(name)
+        if pr:
+            det.signal_prior = (float(pr[0]), float(pr[1]))
+            det.prior_roi_px = int(pr[2])
         pred_states, ts_list = [], []
         fi = 0
         while True:

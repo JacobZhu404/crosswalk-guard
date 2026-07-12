@@ -20,13 +20,16 @@ from redlight.models.traffic_light import TrafficLightDetector
 from redlight.infrastructure.config import load_config
 
 
-def draw(video, out_dir, max_sec=45, every_shot=5.0, draw_min_area=15, prior=None):
+def draw(video, out_dir, max_sec=45, every_shot=5.0, draw_min_area=15, prior=None, prior_roi=None):
     cfg = load_config("configs/config.yaml")
     det = TrafficLightDetector(cfg, verbose=False)
     if prior is not None:
         # 行人信号位置先验(由 identify_pedestrian_signal.py 用 GT 标定得出): 仅在此附近选灯
         det.signal_prior = tuple(prior)
         print(f"[prior] 锁定行人信号 @ {prior}")
+    if prior_roi is not None:
+        det.prior_roi_px = int(prior_roi)
+        print(f"[prior] ROI = {prior_roi}px")
     cap = cv2.VideoCapture(video)
     fps = cap.get(cv2.CAP_PROP_FPS) or 8
     W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -141,5 +144,7 @@ if __name__ == "__main__":
     ap.add_argument("--prior", type=float, nargs=2, default=None,
                     metavar=("CX", "CY"),
                     help="行人信号位置先验(归一化 cx cy), 仅在此附近选灯, 永不重锚")
+    ap.add_argument("--roi", type=int, default=None,
+                    help="HSV直采ROI边长px(小灯视频加大, 如04用220)")
     args = ap.parse_args()
-    draw(args.video, args.out, max_sec=args.sec, prior=args.prior)
+    draw(args.video, args.out, max_sec=args.sec, prior=args.prior, prior_roi=args.roi)

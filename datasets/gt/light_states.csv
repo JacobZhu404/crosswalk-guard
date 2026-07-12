@@ -1,0 +1,9 @@
+video,start_s,end_s,state,confidence,note
+违章02,0,20.9,red,confirmed,用户口述 21s 红变绿; 你已肉眼确认
+违章02,20.9,85,green,confirmed,用户口述 + 标注视频肉眼确认
+违章02,85,999,red,confirmed,85s+ 红(标注视频尾段确认)
+违章03,0,73,red,confirmed,用户 GT: 0-73 红(含遮挡/公交车反光推断)
+违章03,74,134,green,confirmed,用户 GT: 74-134 绿(仅反光可见, 难例)
+违章03,135,999,red,confirmed,尾段红(检测器尾段确认)
+违章04,0,41.7,red,tentative,检测器推论时间线, 待你确认
+违章04,42.4,999,green,tentative,检测器推论时间线, 待你确认
