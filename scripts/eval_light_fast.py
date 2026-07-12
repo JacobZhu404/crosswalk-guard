@@ -117,7 +117,8 @@ def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1)
         state = res.get("state", "unknown")
         g_px = res.get("g_px", 0)
         r_px = res.get("r_px", 0)
-        rows.append((t, idx, state, g_px, r_px))
+        conf = res.get("confidence", 0.0)
+        rows.append((t, idx, state, g_px, r_px, conf))
         if i % 50 == 0:
             sys.stderr.write(f"    {video} frame {i}/{len(files)} t={t:.1f}s {state}\n")
 
@@ -127,7 +128,7 @@ def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1)
     correct = 0
     total_confirmed = 0
     conf_mat = {}
-    for t, idx, state, g_px, r_px in rows:
+    for t, idx, state, g_px, r_px, conf in rows:
         gt_st, gt_conf = gt_state_at(gt_segs, t)
         # 混淆矩阵(计入全部)
         conf_mat.setdefault(gt_st, {}).setdefault(state, 0)
@@ -136,7 +137,7 @@ def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1)
         pred_records.append({
             "video": video, "t_sec": round(t, 2), "frame_idx": idx,
             "pred": state, "gt": gt_st, "gt_conf": gt_conf,
-            "g_px": g_px, "r_px": r_px,
+            "g_px": g_px, "r_px": r_px, "conf": round(conf, 3),
         })
         if is_confirmed:
             total_confirmed += 1
@@ -242,7 +243,7 @@ def main():
     for r in results:
         pred_csv = os.path.join(args.out, f"pred_{r['video']}.csv")
         with open(pred_csv, "w", encoding="utf-8", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "g_px", "r_px"])
+            w = csv.DictWriter(f, fieldnames=["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "g_px", "r_px", "conf"])
             w.writeheader()
             w.writerows(r["pred_records"])
         for m in r["mismatches"]:
@@ -250,7 +251,7 @@ def main():
 
     mm_csv = os.path.join(args.out, "mismatch_all.csv")
     with open(mm_csv, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "g_px", "r_px"])
+        w = csv.DictWriter(f, fieldnames=["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "g_px", "r_px", "conf"])
         w.writeheader()
         w.writerows(all_mm)
     print(f"\n逐帧预测: {args.out}/pred_*.csv")

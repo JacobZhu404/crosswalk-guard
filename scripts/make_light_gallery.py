@@ -118,7 +118,16 @@ def _save_jpg(img, out_path):
     return True
 
 
-def annotate_crop(fr, prior, det, label_txt):
+def _conf_bgr(conf):
+    """置信度 -> 颜色: 绿>=0.85 / 黄0.6-0.85 / 红<0.6 (BGR)."""
+    if conf >= 0.85:
+        return (0, 180, 0)
+    if conf >= 0.6:
+        return (0, 215, 230)
+    return (0, 0, 220)
+
+
+def annotate_crop(fr, prior, det, label_txt, conf=0.0):
     """信号灯 ROI 特写(小图): 浅蓝框=搜索区边界(明显内缩), 黄圈=读取点."""
     H, W = fr.shape[:2]
     if prior is not None:
@@ -142,13 +151,19 @@ def annotate_crop(fr, prior, det, label_txt):
     ccy = max(0, min(Hc - 1, int(c[1] * H - y1)))
     cv2.circle(crop, (ccx, ccy), 12, (0, 255, 255), 2)
     cv2.drawMarker(crop, (ccx, ccy), (0, 255, 255), cv2.MARKER_CROSS, 12, 1)
-    # 顶部黑条 + 文字
+    # 顶部黑条 + 文字 + 置信度色块
     cv2.rectangle(crop, (0, 0), (Wc - 1, 28), (0, 0, 0), -1)
     cv2.putText(crop, label_txt, (6, 19), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+    # 右上角置信度色块 + 数字
+    cb = _conf_bgr(conf)
+    bar_w = 64
+    cv2.rectangle(crop, (Wc - bar_w - 4, 4), (Wc - 4, 24), cb, -1)
+    cv2.putText(crop, f"{conf:.2f}", (Wc - bar_w, 19), cv2.FONT_HERSHEY_SIMPLEX,
+                0.55, (255, 255, 255), 1)
     return crop
 
 
-def annotate_full(fr, prior, det, label_txt):
+def annotate_full(fr, prior, det, label_txt, conf=0.0):
     """原始整帧(放大图): 蓝框=搜索区ROI, 黄圈=读取点 — 给标注者看"算法盯哪".
 
     这才是用户想要的"原始图片 + 识别过程"; 点小图即弹出此图.
@@ -171,6 +186,11 @@ def annotate_full(fr, prior, det, label_txt):
     cv2.rectangle(out, (0, 0), (W - 1, 30), (0, 0, 0), -1)
     cv2.putText(out, label_txt + "   蓝框=搜索区ROI   黄圈=读取点", (8, 20),
                 cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+    # 右上角置信度色块 + 数字(真实时序置信度, 来自评测脚本)
+    cb = _conf_bgr(conf)
+    cv2.rectangle(out, (W - 130, 4), (W - 8, 26), cb, -1)
+    cv2.putText(out, f"置信度 {conf:.2f}", (W - 126, 20),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 1)
     return out
 
 
@@ -231,6 +251,7 @@ def main():
             if not os.path.exists(fp):
                 continue
             tsec = f"{float(m['t_sec']):.1f}"
+            conf = float(m.get("conf", 0.0))
             lab = f"t={tsec}s 预{m['pred']}/GT{m['gt']}"
             with open(fp, "rb") as f:
                 b = f.read()
@@ -238,13 +259,13 @@ def main():
             if fr is None:
                 continue
             # 小图: ROI 特写(蓝框搜索区 + 黄圈读取点)
-            crop = annotate_crop(fr, pv, det, lab)
+            crop = annotate_crop(fr, pv, det, lab, conf=conf)
             out = os.path.join(crop_dir, f"t{tsec}.jpg")
             if not _save_jpg(crop, out):
                 continue
             rel = os.path.relpath(out, args.eval_dir).replace("\\", "/")
             # 大图: 原始整帧 + 算法关注的蓝框/黄圈(点小图弹此图)
-            full = annotate_full(fr, pv, det, lab)
+            full = annotate_full(fr, pv, det, lab, conf=conf)
             full_dir = os.path.join(args.eval_dir, "orig", v)
             os.makedirs(full_dir, exist_ok=True)
             out_full = os.path.join(full_dir, f"t{tsec}.jpg")
@@ -254,10 +275,11 @@ def main():
             fb = feedback.get((v, tsec), {})
             vv, rr, nn = fb.get("verdict", ""), fb.get("reason", ""), fb.get("note", "")
             done_badge = ' <span class="done">✓已标</span>' if vv else ""
+            conf_color = "#16a34a" if conf >= 0.85 else ("#d97706" if conf >= 0.6 else "#dc2626")
             crop_html += f"""
             <div class="crop-card" data-video="{v}" data-t="{tsec}" data-pred="{m['pred']}" data-gt="{m['gt']}" data-idx="{idx}">
               <img class="zoom" src="{rel}" data-full="{rel_full}" style="width:200px;display:block;cursor:zoom-in;"/>
-              <div class="meta">预测 <b class="p-{m['pred']}">{m['pred']}</b> / GT <b class="p-{m['gt']}">{m['gt']}</b> (g={m['g_px']},r={m['r_px']}){done_badge}</div>
+              <div class="meta">预测 <b class="p-{m['pred']}">{m['pred']}</b> / GT <b class="p-{m['gt']}">{m['gt']}</b> <span class="conf" style="background:{conf_color}">置信度 {conf:.2f}</span>{done_badge}</div>
               <div class="fb">
                 <select class="verdict">
                   <option value="">--判定--</option>
@@ -306,6 +328,7 @@ h1{color:#0f172a;margin:8px 0;}
 .meta{font-size:11px;padding:4px 6px;color:#334155;}
 .p-green{color:#16a34a;font-weight:700;} .p-red{color:#dc2626;font-weight:700;} .p-unknown{color:#6b7280;}
 .done{color:#16a34a;font-size:10px;margin-left:4px;}
+.conf{display:inline-block;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;}
 .fb{padding:6px;display:flex;flex-direction:column;gap:4px;font-size:11px;background:#f8fafc;}
 .fb select,.fb input{font-size:11px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;}
 .fb .save{background:#0f172a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;align-self:flex-start;}
@@ -326,7 +349,8 @@ h1{color:#0f172a;margin:8px 0;}
 <p class="intro">左=信号灯 ROI 特写(<span style="color:#3b82f6;font-weight:700;">蓝框=搜索区</span>: 算法只在此框内找灯头; <span style="color:#eab308;font-weight:700;">黄圈=读取点</span>: 算法实际取色的中心点)。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
 请判定: <b>算法错</b> / <b>标注错</b> / <b>都错</b> / <b>其他</b>;
 原因按判定树选(读取点必在搜索区内, 故<b>搜索区错⇒读取点也错</b>, 二者都错不算独立类):
-<b>搜索区没罩住真信号</b>(蓝框没罩住/仅边缘勉强罩住) → <b>读取点没落在真灯上</b>(蓝框对但黄圈偏) → <b>颜色读错</b>(黄圈在真灯上但色被反射/白边读翻) / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
+<b>搜索区没罩住真信号</b>(蓝框没罩住/仅边缘勉强罩住) → <b>读取点没落在真灯上</b>(蓝框对但黄圈偏) → <b>颜色读错</b>(黄圈在真灯上但色被反射/白边读翻) / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。
+<b>置信度</b>=最近若干帧里该状态占比(来自评测脚本时序融合, 非单帧): <span style="color:#16a34a;font-weight:700;">绿≥0.85</span>高 / <span style="color:#d97706;font-weight:700;">黄0.6–0.85</span>中 / <span style="color:#dc2626;font-weight:700;">红&lt;0.6</span>低(难帧, 融合层用邻域高置信弥补)。</p>
 {CARDS}
 <div id="lb" class="lightbox"><img alt="zoom"/><div class="hint">点击任意处关闭</div></div>
 <script>
