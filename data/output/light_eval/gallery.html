@@ -32,7 +32,8 @@ h1{color:#0f172a;margin:8px 0;}
 <h1>灯态识别误差确认画廊</h1>
 <p class="intro">左=信号灯 ROI 特写(<span style="color:#3b82f6;font-weight:700;">蓝框=搜索区</span>: 算法只在此框内找灯头; <span style="color:#eab308;font-weight:700;">黄圈=读取点</span>: 算法实际取色的中心点)。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
 请判定: <b>算法错</b> / <b>标注错</b> / <b>都错</b> / <b>其他</b>;
-原因: <b>搜索区没罩住真信号</b>(蓝框不对) / <b>读取点没落在真灯上</b>(黄圈不对) / <b>颜色读错</b>(位置对但色错) / 二者都错 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
+原因按判定树选(读取点必在搜索区内, 故<b>搜索区错⇒读取点也错</b>, 二者都错不算独立类):
+<b>搜索区没罩住真信号</b>(蓝框没罩住/仅边缘勉强罩住) → <b>读取点没落在真灯上</b>(蓝框对但黄圈偏) → <b>颜色读错</b>(黄圈在真灯上但色被反射/白边读翻) / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
 
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
           <h2 style="margin:0 0 8px;font-size:18px;color:#0f172a;">违章02</h2>
@@ -55,7 +56,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -80,7 +80,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -105,7 +104,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -127,10 +125,9 @@ h1{color:#0f172a;margin:8px 0;}
                 </select>
                 <select class="reason">
                   <option value="">--原因--</option>
-                  <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
+                  <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -152,10 +149,9 @@ h1{color:#0f172a;margin:8px 0;}
                 </select>
                 <select class="reason">
                   <option value="">--原因--</option>
-                  <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
+                  <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -180,7 +176,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -205,7 +200,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -230,7 +224,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -255,7 +248,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -280,7 +272,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -311,7 +302,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other" selected>其他</option>
                 </select>
@@ -335,8 +325,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -360,8 +349,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -385,8 +373,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -410,8 +397,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -435,8 +421,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -460,8 +445,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -485,8 +469,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -510,8 +493,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -535,8 +517,7 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="">--原因--</option>
                   <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
-                  <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
+                  <option value="color" selected>颜色读错(位置对但色错)</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -567,7 +548,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -592,7 +572,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -617,7 +596,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -642,7 +620,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -664,10 +641,9 @@ h1{color:#0f172a;margin:8px 0;}
                 </select>
                 <select class="reason">
                   <option value="">--原因--</option>
-                  <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
+                  <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -689,10 +665,9 @@ h1{color:#0f172a;margin:8px 0;}
                 </select>
                 <select class="reason">
                   <option value="">--原因--</option>
-                  <option value="search_area">搜索区没罩住真信号(蓝框不对)</option>
+                  <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both" selected>搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -717,7 +692,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -742,7 +716,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -767,7 +740,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>
@@ -792,7 +764,6 @@ h1{color:#0f172a;margin:8px 0;}
                   <option value="search_area" selected>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point">读取点没落在真灯上(黄圈不对)</option>
                   <option value="color">颜色读错(位置对但色错)</option>
-                  <option value="both">搜索区+读取点都错</option>
                   <option value="gt_flipped">GT段边界标反</option>
                   <option value="other">其他</option>
                 </select>

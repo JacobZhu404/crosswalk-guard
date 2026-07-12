@@ -271,7 +271,6 @@ def main():
                   <option value="search_area"{' selected' if rr=='search_area' else ''}>搜索区没罩住真信号(蓝框不对)</option>
                   <option value="reading_point"{' selected' if rr=='reading_point' else ''}>读取点没落在真灯上(黄圈不对)</option>
                   <option value="color"{' selected' if rr=='color' else ''}>颜色读错(位置对但色错)</option>
-                  <option value="both"{' selected' if rr=='both' else ''}>搜索区+读取点都错</option>
                   <option value="gt_flipped"{' selected' if rr=='gt_flipped' else ''}>GT段边界标反</option>
                   <option value="other"{' selected' if rr=='other' else ''}>其他</option>
                 </select>
@@ -326,7 +325,8 @@ h1{color:#0f172a;margin:8px 0;}
 <h1>灯态识别误差确认画廊</h1>
 <p class="intro">左=信号灯 ROI 特写(<span style="color:#3b82f6;font-weight:700;">蓝框=搜索区</span>: 算法只在此框内找灯头; <span style="color:#eab308;font-weight:700;">黄圈=读取点</span>: 算法实际取色的中心点)。<b>点小图看原始整帧</b>(蓝框=搜索区, 黄圈=读取点)。
 请判定: <b>算法错</b> / <b>标注错</b> / <b>都错</b> / <b>其他</b>;
-原因: <b>搜索区没罩住真信号</b>(蓝框不对) / <b>读取点没落在真灯上</b>(黄圈不对) / <b>颜色读错</b>(位置对但色错) / 二者都错 / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
+原因按判定树选(读取点必在搜索区内, 故<b>搜索区错⇒读取点也错</b>, 二者都错不算独立类):
+<b>搜索区没罩住真信号</b>(蓝框没罩住/仅边缘勉强罩住) → <b>读取点没落在真灯上</b>(蓝框对但黄圈偏) → <b>颜色读错</b>(黄圈在真灯上但色被反射/白边读翻) / GT段边界标反 / 其他。时间线: 绿=绿灯, 红=红灯, 灰=unknown。</p>
 {CARDS}
 <div id="lb" class="lightbox"><img alt="zoom"/><div class="hint">点击任意处关闭</div></div>
 <script>
