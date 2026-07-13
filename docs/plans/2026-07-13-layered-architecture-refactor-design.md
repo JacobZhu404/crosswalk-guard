@@ -134,4 +134,5 @@
 - 长视频中间态内存:8fps 几千帧,可接受。
 - 重构期回归:每搬一块必保 `run_tl_tests` + `pytest tests/` 绿;②上线前用现有 `eval_light_all`(prior-free)对齐新旧灯态输出。
 - 大幅运镜稳掩膜(design v2 D5 遗留)不在本 spec。
+- **已知缺口(Agnes review #3)**:`fuse_light` 目前不产出 `evidence`(visible/occluded/inferred)字段 → `decision.py` 的 review 分支(依赖 `evidence in occluded/inferred`)当前**不可达**。evidence 打标是 ② 的**后续能力**(需遮挡检测 / 交叉引用斑马线掩膜可见度),届时 review 分支才生效。在此之前遮挡→review 仍由旧 `ViolationEngineV2` 承担,接线时一并迁移。
 </content>

@@ -27,7 +27,7 @@ inference:
 models:
   vehicle: "models/yolov8n.pt"        # YOLOv8n (torch CPU)
   crosswalk_seg: "models/crosswalk_seg.onnx"   # 斑马线分割(可选, 缺省走 CV 兜底)
-  traffic_light: "models/traffic_light.onnx"   # 红绿灯模型(可选, 缺省走 color v6 跟踪版)
+  traffic_light: "models/traffic_light.onnx"   # 红绿灯模型(可选, 缺省走 color v7-stable 兜底)
   plate_ocr: "models/plate_crnn.onnx"          # 车牌 OCR(可选, 缺省走 HyperLPR3)
   ped_signal_onnx: "models/ped_signal.onnx"    # 行人信号状态分类器(可选, 缺省回退 color 路径; M1 Phase2 训练产出)
 

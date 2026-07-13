@@ -20,6 +20,7 @@ def main():
     ap.add_argument("output", nargs="?", default=None)
     ap.add_argument("--preset", default="balanced",
                     choices=["strict", "balanced", "loose", "very_loose"])
+    ap.add_argument("--cot", action="store_true", help="输出 COT 可解释小作文+截图 (透传给 cli.run)")
     ap.add_argument("--config", default=os.path.join(project_root(), "configs", "config.yaml"))
     args = ap.parse_args()
 
@@ -27,7 +28,7 @@ def main():
     if args.output is None:
         name = os.path.splitext(os.path.basename(args.video))[0]
         args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}")
-    run(cfg, args.video, args.output, args.preset)
+    run(cfg, args.video, args.output, args.preset, cot=args.cot)
 
 
 if __name__ == "__main__":
