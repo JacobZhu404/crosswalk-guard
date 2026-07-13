@@ -74,6 +74,12 @@ class TrafficLightDetector(BaseModel):
         self._last_sample = (0, 0)  # HSV直采最近一次(g_px, r_px), 供调参观察
         self._loaded = True
         self._vb = verbose
+        # M1 重设计(spec M1-D2/D4/D6): ped_classifier 路径。缺权重时 available=False -> 回退 color。
+        self.method = str(getattr(tl, "method", "color"))
+        models = getattr(cfg, "models", None)
+        clf_path = getattr(models, "ped_signal_onnx", None) if models is not None else None
+        from .signal_state_classifier import SignalStateClassifier
+        self.classifier = SignalStateClassifier(clf_path, verbose=verbose)
 
     def load(self, weights_path=None):
         self._loaded = True
@@ -86,10 +92,13 @@ class TrafficLightDetector(BaseModel):
         return self.detect(frame, crosswalk_mask)
 
     # ---------- 主入口 ----------
-    def detect(self, frame, crosswalk_mask=None):
+    def detect(self, frame, crosswalk_mask=None, yolo_light_boxes=None):
         self._fi += 1
         if frame is not None:
             self._last_w = frame.shape[1]
+        # M1 ped_classifier 路径(分类器可用时); 否则回退到下方 color 路径
+        if self.method == "ped_classifier" and getattr(self.classifier, "available", False):
+            return self._detect_ped(frame, yolo_light_boxes or [])
         spots = self._candidates(frame)
         self._update_tracks(spots)       # 单灯轨迹(可视化/COT 定位)
         self._update_heads(spots)        # 信号头轨迹(选灯判定)
@@ -110,6 +119,29 @@ class TrafficLightDetector(BaseModel):
             "g_px": self._last_sample[0] if hasattr(self, "_last_sample") else 0,
             "r_px": self._last_sample[1] if hasattr(self, "_last_sample") else 0,
         }
+
+    # ---------- M1 ped_classifier 路径: 候选并集 + 状态分类 + 现有时序平滑 ----------
+    def _detect_ped(self, frame, yolo_light_boxes):
+        """候选=YOLO灯框∪HSV亮斑 -> 分类器判 walk/stand/off -> 复用 global_recent 平滑。"""
+        from .signal_candidates import build_candidates
+        h, w = (frame.shape[0], frame.shape[1]) if frame is not None else (1, 1)
+        hsv_boxes = [s["box"] for s in self._candidates(frame)]   # 复用 HSV 亮斑框
+        cands = build_candidates(yolo_light_boxes, hsv_boxes, w, h)
+        obs, best_conf = None, 0.0
+        for c in cands:
+            x1, y1, x2, y2 = c["box"]
+            roi = frame[max(0, y1):y2, max(0, x1):x2] if frame is not None else None
+            label, conf = self.classifier.classify(roi)
+            if label == "off":
+                continue
+            if conf > best_conf:
+                best_conf = conf
+                obs = "green" if label == "walk" else "red"
+        self.global_recent.append(obs)
+        state, reason, conf = self._state_from_global()
+        return {"state": state, "confidence": conf, "stable": obs is not None,
+                "is_flashing": state == "flashing", "reason": "ped_" + reason,
+                "candidates": cands, "track": None, "anchor": None, "g_px": 0, "r_px": 0}
 
     # ---------- 选灯判定 (v7: 信号头聚类 + 面积选灯 + 持久门控) ----------
     def _cluster_heads(self, spots):
