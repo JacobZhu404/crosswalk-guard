@@ -28,29 +28,14 @@ os.environ["TQDM_DISABLE"] = "1"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-import cv2
 from redlight.infrastructure.config import load_config, project_root
 from redlight.models.traffic_light import TrafficLightDetector
 from redlight.evaluation.evaluator import Evaluator
+from redlight.evaluation.gt_lookup import load_light_segments, expand_light_evidence
+from redlight.evaluation.video_sampler import VideoSampler
 
 
 SAMPLE_FPS = 8
-
-
-def expand_gt(gt_map):
-    """返回闭包: ts -> (gt_state_for_detector, evidence)
-    - visible 段: 期望检测器输出字面 light_state
-    - inferred/occluded 段: 期望输出 unknown (灯不可见, 进 review)
-    - unknown 段(无 evidence): 期望 unknown
-    """
-    def fn(ts):
-        for a, b, stt, ev in gt_map:
-            if a <= ts <= b:
-                if ev in ("inferred", "occluded"):
-                    return "unknown", ev
-                return stt, (ev or "visible")
-        return "unknown", "n/a"
-    return fn
 
 
 def forward_fill(states, ts_list, gap_sec):
@@ -98,12 +83,7 @@ def main():
         print(f"[priors] 加载 {len(priors)} 个视频的行人信号先验")
 
     # 载入段级 GT (含 light_evidence)
-    gt_by_video = {}
-    with open(os.path.join(ROOT, "datasets", "gt", "events.csv"), encoding="utf-8") as f:
-        for r in csv.DictReader(f):
-            gt_by_video.setdefault(r["video"], []).append(
-                (float(r["start_s"]), float(r["end_s"]),
-                 r["light_state"], r.get("light_evidence", "") or ""))
+    gt_by_video = load_light_segments(os.path.join(ROOT, "datasets", "gt", "events.csv"))
 
     videos = sorted(glob.glob(os.path.join(ROOT, "input_video", "违章*.mp4")))
     all_pred, all_gt = [], []
@@ -111,27 +91,18 @@ def main():
     rows = []
     for V in videos:
         name = os.path.splitext(os.path.basename(V))[0]
-        cap = cv2.VideoCapture(V)
-        fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
-        interval = max(1, int(round(fps / SAMPLE_FPS)))
         det = TrafficLightDetector(cfg, verbose=False)
         pr = priors.get(name)
         if pr:
             det.signal_prior = (float(pr[0]), float(pr[1]))
             det.prior_roi_px = int(pr[2])
         pred_states, ts_list = [], []
-        fi = 0
-        while True:
-            ret, fr = cap.read()
-            if not ret:
-                break
-            if fi % interval == 0:
+        with VideoSampler(V, sample_fps=SAMPLE_FPS, use_grab=False) as sampler:
+            for fi, ts, fr in sampler:
                 pred_states.append(det.detect(fr).get("state"))
-                ts_list.append(fi / fps)
-            fi += 1
-        cap.release()
+                ts_list.append(ts)
 
-        gt_fn = expand_gt(gt_by_video.get(name, []))
+        gt_fn = expand_light_evidence(gt_by_video.get(name, []))
         pairs = [gt_fn(ts) for ts in ts_list]
         gt_states = [s for s, _ in pairs]
         gt_ev = [ev for _, ev in pairs]

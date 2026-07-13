@@ -19,43 +19,15 @@ import sys
 import csv
 import json
 import argparse
-import glob
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 
-import cv2
 import numpy as np
 from redlight.infrastructure.config import load_config
 from redlight.models.traffic_light import TrafficLightDetector
-
-
-def load_manifest(frames_dir):
-    """返回 {(video, frame_idx): timestamp} 与帧尺寸。"""
-    mp = os.path.join(frames_dir, "manifest.csv")
-    table = {}
-    if os.path.exists(mp):
-        with open(mp, encoding="utf-8-sig") as f:
-            for r in csv.DictReader(f):
-                try:
-                    table[(r["video"], int(r["frame_idx"]))] = float(r["timestamp"])
-                except (KeyError, ValueError):
-                    pass
-    return table
-
-
-def load_gt(gt_path):
-    """返回 {video: [(start, end, state, confidence), ...]} (按 start 升序)。"""
-    g = {}
-    with open(gt_path, encoding="utf-8-sig") as f:
-        for r in csv.DictReader(f):
-            v = r["video"]
-            g.setdefault(v, []).append(
-                (float(r["start_s"]), float(r["end_s"]), r["state"], r.get("confidence", "confirmed"))
-            )
-    for v in g:
-        g[v].sort(key=lambda x: x[0])
-    return g
+from redlight.evaluation.gt_lookup import load_light_state_csv, state_at
+from redlight.evaluation.frame_dataset import FrameDataset
 
 
 def load_priors(path):
@@ -73,26 +45,9 @@ def load_priors(path):
     return out
 
 
-def gt_state_at(segs, t):
-    for s, e, st, conf in segs:
-        if s <= t <= e:
-            return st, conf
-    # 兜底: 取最近段
-    if segs:
-        return segs[-1][2], segs[-1][3]
-    return "unknown", "confirmed"
-
-
-def robust_imread(path):
-    with open(path, "rb") as f:
-        b = f.read()
-    return cv2.imdecode(np.frombuffer(b, np.uint8), cv2.IMREAD_COLOR)
-
-
-def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1):
-    vdir = os.path.join(frames_dir, video)
-    files = sorted(glob.glob(os.path.join(vdir, "frame_*.jpg")))
-    if not files:
+def eval_video(video, dataset, gt_segs, prior, cfg, sample_every=1):
+    frames = list(dataset.iter_video(video))
+    if not frames:
         return None
     det = TrafficLightDetector(cfg, verbose=False)
     if prior is not None:
@@ -104,14 +59,10 @@ def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1)
         print(f"  [{video}] 无 prior (自由选灯)")
 
     rows = []
-    for i, fp in enumerate(files):
-        idx = int(os.path.basename(fp)[6:-4])  # frame_000123.jpg -> 123
-        t = manifest.get((video, idx))
-        if t is None:
-            # 从文件名推断: 抽帧 step 已知不可靠, 用相邻 manifest 估计; 这里退化为 0
-            t = 0.0
-        frame = robust_imread(fp)
+    for i, (idx, t, frame) in enumerate(frames):
         if frame is None:
+            continue
+        if sample_every > 1 and i % sample_every != 0:
             continue
         res = det.detect(frame)
         state = res.get("state", "unknown")
@@ -120,7 +71,7 @@ def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1)
         conf = res.get("confidence", 0.0)
         rows.append((t, idx, state, g_px, r_px, conf))
         if i % 50 == 0:
-            sys.stderr.write(f"    {video} frame {i}/{len(files)} t={t:.1f}s {state}\n")
+            sys.stderr.write(f"    {video} frame {i}/{len(frames)} t={t:.1f}s {state}\n")
 
     # 逐帧对 GT
     pred_records = []
@@ -129,7 +80,7 @@ def eval_video(video, frames_dir, manifest, gt_segs, prior, cfg, sample_every=1)
     total_confirmed = 0
     conf_mat = {}
     for t, idx, state, g_px, r_px, conf in rows:
-        gt_st, gt_conf = gt_state_at(gt_segs, t)
+        gt_st, gt_conf = state_at(gt_segs, t)
         # 混淆矩阵(计入全部)
         conf_mat.setdefault(gt_st, {}).setdefault(state, 0)
         conf_mat[gt_st][state] += 1
@@ -191,8 +142,8 @@ def main():
 
     os.makedirs(args.out, exist_ok=True)
     cfg = load_config(os.path.join(ROOT, "configs", "config.yaml"))
-    manifest = load_manifest(args.frames_dir)
-    gt = load_gt(args.gt)
+    dataset = FrameDataset(args.frames_dir)
+    gt = load_light_state_csv(args.gt)
     priors = load_priors(args.priors)
 
     videos = args.videos or ["违章02", "违章03", "违章04"]
@@ -202,7 +153,7 @@ def main():
     results = []
     for v in videos:
         prior = priors.get(v)
-        r = eval_video(v, args.frames_dir, manifest, gt[v], prior, cfg)
+        r = eval_video(v, dataset, gt[v], prior, cfg)
         if r:
             results.append(r)
             acc = r["acc"]
