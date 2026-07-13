@@ -107,3 +107,15 @@ def _occ(run):
     ovs = [ov for _t, ov in run]
     return make_occupancy_interval(run[0][0], run[-1][0],
                                    round(max(ovs), 3), round(sum(ovs) / len(ovs), 3))
+
+
+def interval_intersect(a_list, b_list):
+    """两组区间 [[s,e],...] 的交集(供判定层③做 绿段∩静止∩压线)。零长(相切)不计。"""
+    out = []
+    for a in a_list:
+        for b in b_list:
+            s, e = max(a[0], b[0]), min(a[1], b[1])
+            if e > s:
+                out.append([s, e])
+    out.sort()
+    return out

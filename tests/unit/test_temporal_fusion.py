@@ -1,6 +1,8 @@
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-from redlight.pipeline.temporal_fusion import fuse_light, intervals_from_flags, fuse_occupancy
+from redlight.pipeline.temporal_fusion import (
+    fuse_light, intervals_from_flags, fuse_occupancy, interval_intersect,
+)
 
 
 def _obs(states, dt=0.125):
@@ -78,3 +80,10 @@ def test_fuse_occupancy_base_threshold():
     samples = [(0.0, 0.02), (1.0, 0.3), (2.0, 0.3)]
     out = fuse_occupancy(samples, base_thr=0.05)
     assert len(out) == 1 and out[0]["start_s"] == 1.0
+
+
+def test_interval_intersect_basic():
+    assert interval_intersect([[0, 10]], [[5, 15]]) == [[5, 10]]
+    assert interval_intersect([[0, 5], [10, 15]], [[3, 12]]) == [[3, 5], [10, 12]]
+    assert interval_intersect([[0, 5]], [[6, 10]]) == []        # 不相交
+    assert interval_intersect([[0, 5]], [[5, 10]]) == []        # 相切(零长)不算
