@@ -5,7 +5,9 @@ TrafficLightDetector._state_from_global + hysteresis 的语义, 但操作完整�
 时变红线(A-D2): unknown 段内单帧跳过; 连续 unknown 超阈开新 unknown 段, 不前填。
 """
 from collections import deque
-from .intermediate_state import make_light_segment, merge_adjacent_segments
+from .intermediate_state import (
+    make_light_segment, merge_adjacent_segments, make_occupancy_interval,
+)
 
 
 def _window_state(win, flicker_toggle):
@@ -56,3 +58,52 @@ def fuse_light(observations, window=24, hysteresis=0.68, flicker_toggle=4, unkno
         end = raw[i + 1][0] if i + 1 < len(raw) else ts
         segs.append(make_light_segment(ts, end, state, conf))
     return merge_adjacent_segments(segs)
+
+
+# ---- 时变区间聚合(② tracks/occupancy, 供③区间代数) ----
+def intervals_from_flags(samples):
+    """samples=[(ts, bool)] -> [[start_s, end_s], ...] 每段极大 True 连续段。
+
+    用于静止区间(stationary): 把逐帧静止布尔序列折成区间。end=段内最后一个 True 的 ts。
+    """
+    out = []
+    run_start = None
+    last_true = None
+    for ts, flag in samples:
+        if flag:
+            if run_start is None:
+                run_start = ts
+            last_true = ts
+        else:
+            if run_start is not None:
+                out.append([run_start, last_true])
+                run_start = None
+    if run_start is not None:
+        out.append([run_start, last_true])
+    return out
+
+
+def fuse_occupancy(samples, base_thr=0.0):
+    """samples=[(ts, overlap)] -> [occupancy_interval, ...] 每段 overlap>base_thr 连续区间。
+
+    支持断续压线(越线-回退-再越线 -> 多段)。每段带 max_overlap / avg_overlap。
+    base_thr 仅过滤极小噪声; 判定阈值(preset overlap)留在判定层③施加(A-D3)。
+    """
+    out = []
+    run = []          # [(ts, overlap), ...]
+    for ts, ov in samples:
+        if ov > base_thr:
+            run.append((ts, ov))
+        else:
+            if run:
+                out.append(_occ(run))
+                run = []
+    if run:
+        out.append(_occ(run))
+    return out
+
+
+def _occ(run):
+    ovs = [ov for _t, ov in run]
+    return make_occupancy_interval(run[0][0], run[-1][0],
+                                   round(max(ovs), 3), round(sum(ovs) / len(ovs), 3))

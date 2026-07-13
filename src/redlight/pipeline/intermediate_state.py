@@ -24,3 +24,21 @@ def merge_adjacent_segments(segments):
         else:
             out.append(dict(s))
     return out
+
+
+def make_occupancy_interval(start_s, end_s, max_overlap, avg_overlap):
+    """一段连续压线区间(overlap>0)。阈值由判定层③按 preset 施加, 本层不预筛(A-D3)。"""
+    return {"start_s": start_s, "end_s": end_s,
+            "max_overlap": max_overlap, "avg_overlap": avg_overlap}
+
+
+def make_track(track_id, vehicle_class=None, plate=None,
+               stationary_intervals=None, occupancy_intervals=None):
+    """一条轨迹的中间态。
+
+    时间不变: vehicle_class / plate(全局投票结果)。
+    时变: stationary_intervals=[[s,e],...]、occupancy_intervals=[make_occupancy_interval...]。
+    """
+    return {"track_id": track_id, "vehicle_class": vehicle_class, "plate": plate,
+            "stationary_intervals": list(stationary_intervals or []),
+            "occupancy_intervals": list(occupancy_intervals or [])}
