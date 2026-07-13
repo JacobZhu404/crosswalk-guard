@@ -53,4 +53,10 @@
 - **处置**: 分支未 push、全绿(74 passed), **不重写历史**(Lingma 可能仍在改, 重写 tip 会打乱其工作树); 以此节更正署名。
 - **规则(所有 agent 遵守)**: 本仓库**禁止 `git add -A`/`git add .`**, 只 `git add <明确路径>` 且提交前 `git status` 确认无他人在途改动被误纳。
 - 当前测试基线: `.venv` 下 `pytest tests/` = **74 passed**(含 Lingma 的 MOTA)。
+
+## 会话进展 + 第二次(更严重)协作事故 (2026-07-13 晚, Claude Code)
+- **M1 Phase1 运行时管线已完成**(计划 `docs/plans/2026-07-13-m1-phase1-runtime-plumbing.md`): T1 候选并集(IoMin去重)/ T2 状态分类器 ONNX 包装(优雅回退)/ T3 vehicle 暴露 COCO traffic-light 框 / T4 traffic_light `ped_classifier` 编排分支 / T5 dag 路由灯框 / T6 config。**全套 pytest = 85 passed, run_tl_tests 10/10**。无权重时自动回退 color 路径, 可安全合入且不改现有行为。Phase2(数据+训练产出 `models/ped_signal.onnx`)/ Phase3(LOVO + prior-free 评测)待做。
+- **⚠️ 严重事故: 多 agent 共享同一工作树 + 同一 HEAD。** Lingma(eval 重构)在共享工作树 `git checkout` 到 `main` 再到新分支 `refactor/eval-common-modules`, **把我的 checkout 一起切走**, 丢失了未提交的 T4 编辑(已在隔离 worktree 重做); 已提交工作全部安全。
+- **处置 + 规则**: 我已迁到独立 worktree `/Users/jacob/personal/crosswalk-guard-fix`(分支 `fix/code-doc-discrepancies`)继续。**所有 agent 今后各用独立 git worktree 或 clone**; 主目录随时可能在别的 agent 分支上。
+- **分支现状**(均基于 `ae115d3`, 待有网机器 push): `fix/code-doc-discrepancies`(我: 一致性修复 + Lingma MOTA + M1 spec/plan + M1 Phase1); `refactor/eval-common-modules`(Lingma: eval 共用模块)。建议合并顺序: 先合 fix 分支, Lingma 重构再 rebase 其上。
 </content>
