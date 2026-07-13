@@ -142,6 +142,29 @@ class TestGetFrame:
             assert ds.get_frame("违章02", 999) is None
 
 
+class TestVideoDuration:
+    def test_from_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            _make_manifest(td, [
+                {"video": "违章02", "frame_idx": "0", "timestamp": "0.0", "file_path": ""},
+                {"video": "违章02", "frame_idx": "10", "timestamp": "1.25", "file_path": ""},
+                {"video": "违章02", "frame_idx": "20", "timestamp": "2.50", "file_path": ""},
+            ])
+            ds = FrameDataset(td)
+            assert ds.video_duration("违章02") == 2.50
+
+    def test_no_manifest(self):
+        with tempfile.TemporaryDirectory() as td:
+            os.makedirs(os.path.join(td, "违章02"))
+            ds = FrameDataset(td)
+            assert ds.video_duration("违章02") == 0.0
+
+    def test_missing_video(self):
+        with tempfile.TemporaryDirectory() as td:
+            ds = FrameDataset(td)
+            assert ds.video_duration("不存在") == 0.0
+
+
 class TestVideos:
     def test_combines_manifest_and_dirs(self):
         with tempfile.TemporaryDirectory() as td:

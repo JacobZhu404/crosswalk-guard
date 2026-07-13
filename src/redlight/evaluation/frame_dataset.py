@@ -130,6 +130,22 @@ class FrameDataset:
             return robust_imread(fp)
         return None
 
+    def video_duration(self, video_name: str) -> float:
+        """返回视频的最大 timestamp（秒）。
+
+        优先从 manifest 的 timestamp 字段计算；无 manifest 时无法推断，返回 0.0。
+
+        Args:
+            video_name: 视频名称
+
+        Returns:
+            最大 timestamp，无数据时返回 0.0
+        """
+        entries = self._video_entries.get(video_name, [])
+        if entries:
+            return max((e.get("timestamp", 0.0) for e in entries), default=0.0)
+        return 0.0
+
     def videos(self) -> List[str]:
         """返回有数据的所有视频名列表。"""
         known = set(self._video_entries.keys())

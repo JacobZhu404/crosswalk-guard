@@ -175,6 +175,42 @@ class TestContextManager:
             assert cap.release.called
 
 
+class TestProperties:
+    def test_duration_s(self):
+        pytest.importorskip("cv2")
+        with patch("cv2.VideoCapture") as MockCap:
+            cap = MagicMock()
+            cap.isOpened.return_value = True
+            cap.get.side_effect = lambda k: 25.0 if k == 5 else 250
+            MockCap.return_value = cap
+            vs = VideoSampler("dummy.mp4", sample_fps=8)
+            assert vs.duration_s == 10.0  # 250/25
+            vs.release()
+
+    def test_estimated_samples(self):
+        pytest.importorskip("cv2")
+        with patch("cv2.VideoCapture") as MockCap:
+            cap = MagicMock()
+            cap.isOpened.return_value = True
+            cap.get.side_effect = lambda k: 24.0 if k == 5 else 240
+            MockCap.return_value = cap
+            vs = VideoSampler("dummy.mp4", sample_fps=8)
+            assert vs.interval == 3
+            assert vs.estimated_samples == 80  # 240 // 3
+            vs.release()
+
+    def test_estimated_samples_zero_frames(self):
+        pytest.importorskip("cv2")
+        with patch("cv2.VideoCapture") as MockCap:
+            cap = MagicMock()
+            cap.isOpened.return_value = True
+            cap.get.side_effect = lambda k: 25.0 if k == 5 else 0
+            MockCap.return_value = cap
+            vs = VideoSampler("dummy.mp4", sample_fps=8)
+            assert vs.estimated_samples == 0
+            vs.release()
+
+
 class TestOpenFailure:
     def test_raises_on_open_failure(self):
         pytest.importorskip("cv2")

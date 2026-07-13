@@ -154,10 +154,17 @@ def state_at(segments: List[Tuple], timestamp: float) -> Tuple[str, str]:
     for s, e, st, meta in segments:
         if s <= timestamp <= e:
             return st, meta
-    # 兜底: 取最近段（最后一段）
-    if segments:
-        return segments[-1][2], segments[-1][3]
-    return "unknown", "confirmed"
+    # 兜底: 取最近段（按边界距离）
+    if not segments:
+        return "unknown", "confirmed"
+    best_seg = segments[0]
+    best_dist = min(abs(timestamp - segments[0][0]), abs(timestamp - segments[0][1]))
+    for seg in segments[1:]:
+        dist = min(abs(timestamp - seg[0]), abs(timestamp - seg[1]))
+        if dist < best_dist:
+            best_dist = dist
+            best_seg = seg
+    return best_seg[2], best_seg[3]
 
 
 def expand_light_evidence(

@@ -95,5 +95,19 @@ class VideoSampler:
             self._cap.release()
             self._released = True
 
+    # ---------- 便捷属性 ----------
+
+    @property
+    def duration_s(self) -> float:
+        """视频总时长（秒）。"""
+        return self.total_frames / self.fps if self.fps > 0 else 0.0
+
+    @property
+    def estimated_samples(self) -> int:
+        """预估采样帧数（用于进度条）。"""
+        if self.total_frames <= 0:
+            return 0
+        return max(0, self.total_frames // self.interval)
+
     def __del__(self):
         self.release()

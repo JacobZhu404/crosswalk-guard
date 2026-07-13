@@ -159,9 +159,19 @@ class TestStateAt:
         assert state_at(segs, 21.0) == ("red", "visible")  # 闭合区间: 先命中先返回
         assert state_at(segs, 30.0) == ("green", "visible")
 
-    def test_miss_fallback(self):
+    def test_miss_fallback_after_last(self):
         segs = [(0.0, 21.0, "red", "visible")]
-        assert state_at(segs, 100.0) == ("red", "visible")  # 兜底返回最后一段
+        assert state_at(segs, 100.0) == ("red", "visible")  # 兜底返回最近段（即最后一段）
+
+    def test_miss_fallback_before_first(self):
+        segs = [(10.0, 21.0, "red", "visible")]
+        assert state_at(segs, 5.0) == ("red", "visible")  # 兜底返回最近段（即第一段）
+
+    def test_miss_fallback_between_segments(self):
+        segs = [(0.0, 10.0, "red", "visible"), (20.0, 30.0, "green", "visible")]
+        # timestamp=15 位于两段之间，离 (0,10) 的 end 距离为 5，离 (20,30) 的 start 距离为 5
+        # 先出现的段优先
+        assert state_at(segs, 15.0) == ("red", "visible")
 
     def test_empty(self):
         assert state_at([], 10.0) == ("unknown", "confirmed")
