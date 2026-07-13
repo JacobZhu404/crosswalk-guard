@@ -273,8 +273,8 @@ def test_mota_fp_fn():
     assert m["fp"] == 1
     assert m["fn"] == 1
     assert m["id_switches"] == 0
-    # mota = 1 - (1+1+0)/3 = 1/3
-    assert math.isclose(m["mota"], 1 / 3)
+    # mota = 1 - (1+1+0)/3 = 1/3 ≈ 0.3333 (round 到 4 位)
+    assert math.isclose(m["mota"], 1 / 3, abs_tol=1e-4)
 
 
 def test_mota_no_gt():
