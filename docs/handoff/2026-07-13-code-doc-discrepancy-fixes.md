@@ -77,3 +77,17 @@
 3. `python scripts/train_ped_signal.py` → 看 LOVO 平均 acc + 导出 `models/ped_signal.onnx`；把 `configs/config.yaml` 的 `traffic_light.method` 设 `ped_classifier` 即启用。
 `datasets/ped_signal/` 建议 commit 进 git(小, 训练数据), 跨机 pull 复用, 免再传大视频。
 > 备注: main 有未 push 提交(网络间歇性超时); 联网稳定后 `git push origin main`。
+
+## 分层架构 ②③ 落地 + 收尾 (2026-07-13 深夜, Claude Code + CC2 + Agnes)
+权威架构 spec: `docs/plans/2026-07-13-layered-architecture-refactor-design.md`(v2 + §11 实现进度)。
+- **②③ 已打通并接线**:① `observe`(单帧) → ② `temporal_fusion`(fuse_light/tag_evidence/intervals_from_flags/fuse_occupancy)+ `intermediate_state`(schema) → ③ `decision.decide_violations`(区间代数)→ `BatchViolationEngine`(accumulate→decide)在 cli/dag 里替换流式 evaluate。**复用纯函数,未重造判定逻辑。**
+- **review(D1)已恢复**:`tag_evidence` 给 unknown+遮挡段打 `evidence=occluded`,`accumulate` 逐帧记遮挡。
+- **修了两处协作事故**:(a) `4d675be` 提交 dag.py 调 observe 却未提交可用 test_dag → main 红;(b) 补救的 test_dag 往 sys.modules 塞残缺 mock cv2、污染全局 → 挂 19 测试。已改 `pytest.importorskip("cv2")`(cv2 机真跑、cv2-less 跳过、零污染)。
+- **Agnes review 裁决**:#1(_resolve_light 红灯误判)/#11(ctx KeyError)经核实**为错**,未采纳;#3(evidence)已修;#5/#7/#14 已清;其余低优。
+- **当前 main = `cbdee17`**:~205 测试全绿、`run_tl_tests` 10/10、树干净、已 push。
+
+### 剩余(非阻塞, 见 spec §11)
+② 空间锚拆分;①`observe`→接 M1 `ped_classifier`(卡数据);真实视频端到端验证(卡数据);旧 `ViolationEngineV2` 退役;④ COT;⑤ 画廊统一(Lingma)。
+
+### 多 agent 现状
+CC(我)= ②③ + M1 + 收尾;Lingma = 画廊/GT 基建(`2d85fac` BaseGalleryBuilder + eval_temporal_fusion 已提交);CC2/Agnes = review + 接线协助。**铁律不变**:各用独立 worktree/clone、scoped `git add`、先 spec 后实现、勿并行改同一模块。

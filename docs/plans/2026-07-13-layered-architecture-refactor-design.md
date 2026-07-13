@@ -134,5 +134,22 @@
 - 长视频中间态内存:8fps 几千帧,可接受。
 - 重构期回归:每搬一块必保 `run_tl_tests` + `pytest tests/` 绿;②上线前用现有 `eval_light_all`(prior-free)对齐新旧灯态输出。
 - 大幅运镜稳掩膜(design v2 D5 遗留)不在本 spec。
-- **已知缺口(Agnes review #3)**:`fuse_light` 目前不产出 `evidence`(visible/occluded/inferred)字段 → `decision.py` 的 review 分支(依赖 `evidence in occluded/inferred`)当前**不可达**。evidence 打标是 ② 的**后续能力**(需遮挡检测 / 交叉引用斑马线掩膜可见度),届时 review 分支才生效。在此之前遮挡→review 仍由旧 `ViolationEngineV2` 承担,接线时一并迁移。
-</content>
+- ~~**已知缺口(Agnes review #3)**:`fuse_light` 不产出 `evidence` → review 分支不可达。~~ **已解决(2026-07-13)**:新增 `temporal_fusion.tag_evidence(segments, occ_samples)`(有色段=visible;unknown+遮挡=occluded),`BatchViolationEngine.accumulate` 逐帧记遮挡、`decide` 调 tag_evidence → review 分支复活(D1)。
+
+---
+
+## 11. 实现进度 (2026-07-13, main=cbdee17, ~205 测试绿, 已 push)
+
+✅ **已落地**:
+- **① `TrafficLightDetector.observe()`** 单帧观测(暂用 HSV 主色;M1 `ped_classifier` 训练出来后替换)。
+- **② `temporal_fusion`**:`fuse_light`(窗投+迟滞+闪烁+unknown分段)、`tag_evidence`(evidence 打标)、`intervals_from_flags`、`fuse_occupancy`、`interval_intersect`;`intermediate_state`(light_segments / make_track / make_occupancy_interval schema)。
+- **③ `decision.decide_violations`**(区间交集代数;overlap 阈值在此施加,A-D3)。
+- **接线 `BatchViolationEngine`**(accumulate→decide)替换流式 evaluate,cli/dag 已用;**review(D1)已恢复**。
+- 测试全覆盖,`test_dag` 用 `importorskip("cv2")` 去全局 mock 污染。
+
+🔲 **剩余(非阻塞)**:
+- ② **空间锚拆分**(anchor 跨帧保持归②;①出 cx/cy/lamp_score),见 §6。
+- ①`observe` → 接 **M1 `ped_classifier`**(卡数据同步)。
+- **真实视频端到端**跑通 BatchViolationEngine(卡数据,同 M1 Phase2)。
+- 旧 **`ViolationEngineV2` 退役**(批处理稳定后删,目前并存)。
+- **④ COT** 消费中间态、**⑤ 画廊统一**(Lingma)。
