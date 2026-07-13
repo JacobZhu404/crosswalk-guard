@@ -85,6 +85,24 @@ class TrafficLightDetector(BaseModel):
     def load(self, weights_path=None):
         self._loaded = True
 
+    def observe(self, frame):
+        """单帧灯态观测(供 TemporalFusion 消费): 只出这帧看到什么, 不做跨帧时序。
+
+        obs ∈ 'green'|'red'|'off'|None。用单帧候选主色, 不 append global_recent、
+        不跑 _state_from_global(那是②的活)。无内部状态改变 -> 同帧多次调用一致。
+        本期最简实现(候选主色); 空间锚/分类器出 obs 是后续 Task(spec §6)。
+        """
+        spots = self._candidates(frame)
+        greens = sum(s["area"] for s in spots if s.get("color") == "green")
+        reds = sum(s["area"] for s in spots if s.get("color") == "red")
+        if greens == 0 and reds == 0:
+            obs, conf = "off", 0.0
+        elif greens >= reds:
+            obs, conf = "green", round(greens / (greens + reds), 3)
+        else:
+            obs, conf = "red", round(reds / (greens + reds), 3)
+        return {"obs": obs, "conf": conf, "candidates": spots}
+
     def get_info(self):
         return ModelInfo(name="TrafficLightDetector", version="color-v7-stable",
                          classes=["red", "green", "flashing", "unknown"], input_size=(0, 0))
