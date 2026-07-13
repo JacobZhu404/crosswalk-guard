@@ -37,6 +37,18 @@ except Exception:
     _HAS_TORCH = False
 
 
+def extract_light_boxes(raw_dets, conf_min=0.25):
+    """从原始检测(每项含 name/xyxy/conf)过滤 COCO 'traffic light' 框。
+
+    返回 [(x1,y1,x2,y2), ...] 像素整数框。用于给 M1 做候选(spec M1-D2)。
+    """
+    out = []
+    for d in raw_dets:
+        if d.get("name") == "traffic light" and float(d.get("conf", 0.0)) >= conf_min:
+            out.append(tuple(int(v) for v in d["xyxy"]))
+    return out
+
+
 def _iou(a, b):
     ax1, ay1, ax2, ay2 = a
     bx1, by1, bx2, by2 = b
@@ -107,6 +119,7 @@ class VehicleDetector(BaseModel):
         super().__init__()
         self.cfg = cfg
         self.tracker = SimpleTracker()
+        self.last_light_boxes = []   # M1: 同一次 YOLO 推理暴露的 COCO traffic-light 框
         self.classes = set(getattr(cfg, "vehicle_classes", ["car", "bus", "truck", "motorcycle"]))
         self.imgsz = getattr(cfg.inference, "imgsz", 640)
         self.conf = getattr(cfg.inference, "conf_thres", 0.35)
@@ -194,15 +207,20 @@ class VehicleDetector(BaseModel):
     def _detect_ultra(self, frame):
         results = self.model(frame, imgsz=self.imgsz, conf=self.conf, iou=self.iou, verbose=False)
         dets = []
+        raw = []
         for r in results:
             for b in r.boxes:
                 cls = int(b.cls[0])
                 name = self.model.names[cls]
+                xyxy = [float(v) for v in b.xyxy[0].tolist()]
+                raw.append({"name": name, "xyxy": xyxy, "conf": float(b.conf[0])})
                 if name not in self.classes:
                     continue
-                x1, y1, x2, y2 = [float(v) for v in b.xyxy[0].tolist()]
+                x1, y1, x2, y2 = xyxy
                 dets.append({"id": -1, "xyxy": [x1, y1, x2, y2],
                              "conf": float(b.conf[0]), "cls": name})
+        # M1: 复用同一次推理, 额外暴露 traffic-light 框(不进车辆跟踪)
+        self.last_light_boxes = extract_light_boxes(raw, conf_min=0.25)
         return dets
 
     def _detect_model(self, frame):
