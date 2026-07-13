@@ -21,27 +21,9 @@
     global_best = pc.get_global_best(track_id)
 """
 import os
-import sys
 from collections import defaultdict
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-
-def levenshtein(a, b):
-    if a == b:
-        return 0
-    m, n = len(a), len(b)
-    dp = list(range(n + 1))
-    for i in range(1, m + 1):
-        prev = dp[0]; dp[0] = i
-        for j in range(1, n + 1):
-            cur = dp[j]
-            if a[i - 1] == b[j - 1]:
-                dp[j] = prev
-            else:
-                dp[j] = 1 + min(prev, dp[j], dp[j - 1])
-            prev = cur
-    return dp[n]
+from ..evaluation.metrics import levenshtein
 
 
 class PlateConsensus:
