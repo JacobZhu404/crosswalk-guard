@@ -1,3 +1,8 @@
+> ⚠️ **已过时 / SUPERSEDED (2026-07-13)**：本文档是早期车牌优化的历史快照，其中若干说法**已不成立**，勿据此操作：
+> - "恢复双模式支持 (red_light/pedestrian_green)"、`--mode red_light` —— **双模式已删除**，语义锁定 `pedestrian_green`(E12/E13)，`--mode` 参数已移除。
+> - 分支 `master` —— 本仓库 trunk 是 **`main`**，已转 trunk-based 开发。
+> 车牌模块的**当前**事实以代码 + `docs/plans/2026-07-12-design-requirements-v2.md` 为准。保留本文仅作历史参考。
+
 # Handoff 交接快照 [任务ID: PLATE_RECOGNITION_OPTIMIZATION]
 
 ## 1. 核心任务目标

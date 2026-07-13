@@ -64,16 +64,11 @@ traffic_light:
   signal_cy_cutoff: 0.6       # 软位置先验: cy>=此值(路面/车灯区)的轨迹不参与信号判定
   head_area_floor: 80.0       # 信号头总面积门限: 该头面积 >= 此值才算有效信号头(排除极小噪点)
   head_dist: 0.12             # 信号头聚类半径(归一): 需 >=同杆红绿间距(~0.10) 且 < 远处绿树间距(~0.148), 否则绿树被并入信号灯头导致 lamp_score 崩塌/锚点不锁定
-  min_contrast: 40            # ⚠️ 已弃用: 曾加"局部对比度门控"过滤按钮, 实证方向反(绿灯在亮天空前被杀/黄按钮在暗玻璃前被留), 已从 _candidates 移除. 仅留参数字段免误删.
   lamp_score_min: 35.0        # 信号灯形状分下限: max_spot面积/候选数; 真灯泡(few-large)高, 倒计时数字(many-small)低
   anchor_radius: 0.13         # 空间锚半径(归一): 锚附近此范围内的头才参与选灯(迟滞锁 ROI)
   reanchor_need: 150          # 重锚所需新位置持久帧数(极大, 防瞬态红车/衣服/远树劫持)
   anchor_hold: 30             # 锚丢失后保持旧色的最大帧数(超出 -> unknown, 契合遮挡交复核)
   flicker_toggle_count: 4     # 窗口内绿亮灭序列跳变 >= 此值(且红也出现) -> flashing
-  # 以下为早期 v7 发射强度选灯方案的遗留参数(当前 head 聚类+面积选灯未使用, 保留以免误删):
-  lit_emission_floor: 25.0
-  lit_frac_min: 0.30
-  persistence_min_ratio: 0.5
 
 # 静止判定由 Tracker V2 的 SENSITIVITY_PRESETS 控制 (src/redlight/pipeline/tracker.py)
 # 不再由本配置单独驱动逻辑, 此处仅作说明
