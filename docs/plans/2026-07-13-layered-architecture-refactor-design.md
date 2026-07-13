@@ -91,6 +91,8 @@
 - 判定层对 `light_segments`(绿/闪) × `tracks[].stationary_intervals` × `occupancy_intervals`(按 preset overlap 阈值取合格子区间)做**区间交集**;`occupancy_intervals` 存完整列表(非单一 `max_overlap`)以支持断续压线,且**阈值留在③**(preset 参数)而非②预筛。
 - **COT / 判定输出派生字段**(可在③输出或中间态派生):交集区间的**起止秒 + 持续时长 + max/avg overlap + 车牌读取帧**(回溯截图用)。
 
+> ✅ **灯态部分 schema 已锁定 v1(2026-07-13)**:实现于 `src/redlight/pipeline/intermediate_state.py`(`make_light_segment` / `merge_adjacent_segments` / `LIGHT_STATES`),由 `pipeline/temporal_fusion.fuse_light` 产出并被 12 个单测覆盖。**Lingma 的 `eval_temporal_fusion.py`(eval-b)现可开写**:消费 `fuse_light([(ts,obs,conf)...])` 输出的 `light_segments`,对比 `datasets/gt/light_states.csv`(用 `GTLookup.load_light_state_csv` + `metrics.light_state_metrics`)。tracks/occupancy 部分 schema 待后续 TemporalFusion 扩展再锁。
+
 ## 6. 现有模块 → 目标层映射 + 拆分清单
 
 | 目标层 | 现有 | 改动 |
