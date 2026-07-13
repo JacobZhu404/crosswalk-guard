@@ -17,7 +17,12 @@ def save_jpg(img: np.ndarray, out_path: str) -> bool:
         是否成功写入
     """
     import cv2
-    ok, buf = cv2.imencode(".jpg", img)
+    if img is None or getattr(img, "size", 0) == 0:
+        return False
+    try:
+        ok, buf = cv2.imencode(".jpg", img)
+    except cv2.error:
+        return False
     if not ok:
         return False
     with open(out_path, "wb") as f:
@@ -52,6 +57,9 @@ def robust_imread(path: str) -> np.ndarray:
         BGR 图像数组，失败返回 None
     """
     import cv2
-    with open(path, "rb") as f:
-        b = f.read()
+    try:
+        with open(path, "rb") as f:
+            b = f.read()
+    except OSError:
+        return None
     return cv2.imdecode(np.frombuffer(b, np.uint8), cv2.IMREAD_COLOR)
