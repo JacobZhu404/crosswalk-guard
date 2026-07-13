@@ -90,6 +90,8 @@ def build_default_dag(cfg, comp):
             res = tl.detect(ctx["frame"], yolo_light_boxes=boxes)
             ctx["light"] = res
             ctx["light_state"] = res.get("state", "unknown") if isinstance(res, dict) else res
+            # ②③ 接线: 同时收集单帧观测供批处理决策
+            ctx["light_observation"] = tl.observe(ctx["frame"])
 
     def n_plate(ctx):
         if ctx["proc"] % plate_int == 0:
@@ -133,50 +135,24 @@ def build_default_dag(cfg, comp):
                                 break
             ctx["consensus_plates"] = consensus.get_all()
 
-    def n_evaluate(ctx):
-        ctx["new_events"] = engine.evaluate(ctx["states"], ctx["mask"], ctx["light_state"], ctx["ts"])
+    def n_accumulate(ctx):
+        # ②③ 接线: 逐帧收集原始观测与跟踪状态, 供视频结束后批处理决策
+        engine.accumulate(
+            ctx["states"], ctx.get("mask"),
+            ctx.get("light_observation", {}), ctx["ts"]
+        )
 
     def n_visualize(ctx):
         ctx["disp"] = viz.draw(ctx["frame"], ctx["dets"], ctx["states"],
                                ctx["mask"], ctx["light_state"], ctx["plates"])
-
-    def n_output(ctx):
-        for ev in ctx["new_events"]:
-            plate_text = ""
-            consensus_plates = ctx.get("consensus_plates", {})
-            if ev["track_id"] in consensus_plates:
-                plate_text = consensus_plates[ev["track_id"]]["text"]
-            if not plate_text:
-                for p in ctx.get("plates", []):
-                    if p.get("text"):
-                        plate_text = p["text"]
-                        break
-            if ctx["cfg"].output.evidence_images:
-                fname = f"ev{ev['event_id']:04d}_tid{ev['track_id']}"
-                if plate_text:
-                    fname += f"_{plate_text}"
-                fname += ".jpg"
-                fpath = os.path.join(ctx["evidence_dir"], fname)
-                cv2.imwrite(fpath, ctx["frame"])
-                ev["evidence_image"] = fpath
-            ctx["csv_rows"].append({
-                "event_id": ev["event_id"], "track_id": ev["track_id"],
-                "status": ev["status"], "start_ts": ev["start_ts"],
-                "end_ts": ev["end_ts"], "vehicle_class": ev["vehicle_class"],
-                "confidence": ev["confidence"], "light_state": ev["light_state"],
-                "signal_assumption": ctx["cfg"].output.signal_assumption,
-                "plate": plate_text, "evidence_image": ev.get("evidence_image", ""),
-            })
-            ev["plate"] = plate_text
 
     dag.add_node("detect", n_detect)
     dag.add_node("track", n_track)
     dag.add_node("crosswalk", n_crosswalk)
     dag.add_node("light", n_light)
     dag.add_node("plate", n_plate)
-    dag.add_node("evaluate", n_evaluate)
+    dag.add_node("accumulate", n_accumulate)
     dag.add_node("visualize", n_visualize)
-    dag.add_node("output", n_output)
     if consensus:
         dag.add_node("consensus", n_consensus)
 
@@ -186,9 +162,8 @@ def build_default_dag(cfg, comp):
     dag.add_edge("light", "plate")
     if consensus:
         dag.add_edge("plate", "consensus")
-        dag.add_edge("consensus", "evaluate")
+        dag.add_edge("consensus", "accumulate")
     else:
-        dag.add_edge("plate", "evaluate")
-    dag.add_edge("evaluate", "visualize")
-    dag.add_edge("visualize", "output")
+        dag.add_edge("plate", "accumulate")
+    dag.add_edge("accumulate", "visualize")
     return dag

@@ -20,7 +20,7 @@ from ..models.crosswalk import CrosswalkDetector
 from ..models.traffic_light import TrafficLightDetector
 from ..models.plate import PlateRecognizer
 from ..pipeline.tracker import TrackStateManagerV2
-from ..pipeline.violation_engine import ViolationEngineV2
+from ..pipeline.violation_engine import BatchViolationEngine
 from ..pipeline.visualizer import Visualizer
 from ..pipeline.dag import build_default_dag
 from ..pipeline.plate_consensus import PlateConsensus
@@ -51,14 +51,26 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
         fourcc = cv2.VideoWriter_fourcc(*"mp4v")
         video_writer = cv2.VideoWriter(out_path, fourcc, fps, (W, H))
 
+    # ②③ 接线: fuse_light 参数来自 cfg.traffic_light
+    tl_cfg = getattr(cfg, "traffic_light", None)
+    fuse_kwargs = {
+        "window": int(getattr(tl_cfg, "smoothing_window", 24)),
+        "hysteresis": float(getattr(tl_cfg, "hysteresis", 0.68)),
+        "flicker_toggle": int(getattr(tl_cfg, "flicker_toggle_count", 4)),
+        "unknown_hold": int(getattr(tl_cfg, "anchor_hold", 30)),
+    }
     comp = {
         "vehicle": VehicleDetector(cfg),
         "crosswalk": CrosswalkDetector(cfg),
         "light": TrafficLightDetector(cfg),
         "plate": PlateRecognizer(cfg),
         "trackstate": TrackStateManagerV2(preset),
-        "engine": ViolationEngineV2(
-            preset, unknown_to_review=cfg.output.unknown_light_to_review),
+        "engine": BatchViolationEngine(
+            preset=preset,
+            sample_fps=cfg.inference.fps,
+            unknown_to_review=cfg.output.unknown_light_to_review,
+            fuse_kwargs=fuse_kwargs,
+        ),
         "viz": Visualizer(cfg, preset=preset),
         "plate_consensus": PlateConsensus(keep_history=180),
     }
@@ -77,17 +89,16 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
             acc.on_frame(ctx["ts"], lstate, lconf, ctx.get("states", {}),
                          ctx.get("mask"), ctx.get("consensus_plates", {}),
                          ctx.get("frame"), ctx.get("dets", []))
-            for ev in ctx.get("new_events", []):
-                acc.on_event(ev)
+            # on_event 延迟到视频结束后统一调用(批处理决策完成后)
 
         dag.add_node("record", n_record)
-        dag.add_edge("evaluate", "record")
+        dag.add_edge("accumulate", "record")
         dag.add_edge("record", "visualize")
 
     ctx = {
         "proc": 0, "frame": None, "ts": 0.0, "dets": [], "states": {},
-        "mask": None, "light": "unknown", "light_state": "unknown", "plates": [], "new_events": [],
-        "csv_rows": [], "video_writer": video_writer, "evidence_dir": evidence_dir,
+        "mask": None, "light": "unknown", "light_state": "unknown", "plates": [],
+        "video_writer": video_writer, "evidence_dir": evidence_dir,
         "cfg": cfg, "disp": None,
     }
     last_disp = None
@@ -113,8 +124,18 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
     if video_writer:
         video_writer.release()
 
+    # ②③ 接线: 视频结束后批处理决策
+    events = comp["engine"].decide()
+
+    # 证据截图 + CSV 输出(批处理后)
+    _write_outputs(events, video_path, evidence_dir, output_dir, cfg,
+                   comp.get("plate_consensus"))
+
     cot_path = None
     if cot and acc is not None:
+        # 批处理完成后统一回填事件到 COT
+        for ev in events:
+            acc.on_event(ev)
         analysis = acc.build()
         # 组装截图素材(灯态证据帧 / 占用峰值帧 / 车牌清晰帧)
         frames = {
@@ -132,19 +153,7 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
                   "w", encoding="utf-8") as f:
             json.dump(analysis, f, ensure_ascii=False, indent=2)
 
-    if cfg.output.csv_report:
-        csv_path = os.path.join(output_dir, "violations.csv")
-        cols = ["event_id", "track_id", "status", "start_ts", "end_ts",
-                "vehicle_class", "confidence", "light_state", "signal_assumption",
-                "plate", "evidence_image"]
-        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=cols)
-            w.writeheader()
-            for row in ctx["csv_rows"]:
-                w.writerow(row)
-
     elapsed = time.time() - t0
-    events = comp["engine"].events
     confirmed = sum(1 for e in events if e["status"] == "confirmed")
     review = sum(1 for e in events if e["status"] == "review")
     print(f"[完成] 帧数={frame_idx} 推理帧={ctx['proc']} 耗时={elapsed:.1f}s "
@@ -154,6 +163,55 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
     if cot_path:
         print(f"[COT] 可解释报告: {os.path.abspath(cot_path)}")
     return events
+
+
+def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus):
+    """批处理后生成 CSV 与证据截图。"""
+    # 收集车牌
+    consensus_plates = consensus.get_all() if consensus else {}
+
+    # 证据截图: 重新打开视频 seek 到事件 start_ts
+    if cfg.output.evidence_images and events:
+        cap2 = cv2.VideoCapture(video_path)
+        for ev in events:
+            ts = ev["start_ts"]
+            cap2.set(cv2.CAP_PROP_POS_MSEC, int(ts * 1000))
+            ret, frame = cap2.read()
+            if not ret:
+                continue
+            plate_text = ""
+            tid = ev["track_id"]
+            if tid in consensus_plates:
+                plate_text = consensus_plates[tid]["text"]
+            fname = f"ev{ev['event_id']:04d}_tid{tid}"
+            if plate_text:
+                fname += f"_{plate_text}"
+            fname += ".jpg"
+            fpath = os.path.join(evidence_dir, fname)
+            cv2.imwrite(fpath, frame)
+            ev["evidence_image"] = fpath
+            ev["plate"] = plate_text
+        cap2.release()
+
+    if cfg.output.csv_report:
+        csv_path = os.path.join(output_dir, "violations.csv")
+        cols = ["event_id", "track_id", "status", "start_ts", "end_ts",
+                "vehicle_class", "confidence", "light_state", "signal_assumption",
+                "plate", "evidence_image"]
+        with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=cols)
+            w.writeheader()
+            for ev in events:
+                w.writerow({
+                    "event_id": ev["event_id"], "track_id": ev["track_id"],
+                    "status": ev["status"], "start_ts": ev["start_ts"],
+                    "end_ts": ev["end_ts"], "vehicle_class": ev.get("vehicle_class", ""),
+                    "confidence": ev.get("confidence", 0.0),
+                    "light_state": ev["light_state"],
+                    "signal_assumption": cfg.output.signal_assumption,
+                    "plate": ev.get("plate", ""),
+                    "evidence_image": ev.get("evidence_image", ""),
+                })
 
 
 def main():
