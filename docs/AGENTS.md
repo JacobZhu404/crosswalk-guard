@@ -25,6 +25,7 @@
 | `human-jacob` | Jacob Zhu（人类，仓库主 / 合并权限） | 最终裁决、合并到 main | — | — | active |
 | `senior-dev` | Senior Developer（高级开发工程师） | 检测算法 / 评测基建 / 文档 | `agent/senior-dev/*` | `data/output/senior-dev/` | active |
 | `eval-agent` | 并行测评 Agent | 红绿灯 / 事件级评测 | `agent/eval-agent/*` | `data/output/eval-agent/` | active（确切名待用户确认） |
+| `plate-agent` | Plate Recognition Agent（车牌识别 Agent） | 车牌识别优化 / 评测集 / 标注画廊 | `agent/plate-agent/*` | `data/output/plate-agent/` | active |
 | _（新 agent 在此追加）_ | | | `agent/<id>/*` | `data/output/<id>/` | |
 
 **署名邮箱约定**：`<agent-id>@crosswalk-guard.agents`（虚拟域，仅用于 commit trailer 标识，不收发邮件）。
