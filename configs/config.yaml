@@ -29,6 +29,7 @@ models:
   crosswalk_seg: "models/crosswalk_seg.onnx"   # 斑马线分割(可选, 缺省走 CV 兜底)
   traffic_light: "models/traffic_light.onnx"   # 红绿灯模型(可选, 缺省走 color v6 跟踪版)
   plate_ocr: "models/plate_crnn.onnx"          # 车牌 OCR(可选, 缺省走 HyperLPR3)
+  ped_signal_onnx: "models/ped_signal.onnx"    # 行人信号状态分类器(可选, 缺省回退 color 路径; M1 Phase2 训练产出)
 
 # 参与违规判定的车种 (按 COCO 类别名)
 vehicle_classes: ["car", "bus", "truck"]
@@ -48,7 +49,7 @@ crosswalk:
 #   注: 曾试"局部对比度门控"过滤黄色按钮, 实证方向反(绿灯在亮天空前被杀/按钮在暗玻璃前被留), 已移除.
 #       按钮/衣服/树的排除完全靠 锚点+灯形分, 不靠对比度.
 traffic_light:
-  method: "color"             # v7-stable 颜色兜底(饱和度亮斑+信号头聚类+空间锚); 可选升级为 model(YOLO 交通灯)
+  method: "color"             # color(默认,v7-stable 颜色兜底) | ped_classifier(候选并集+状态分类器,需 ped_signal.onnx) | model
   smoothing_window: 24        # 近窗颜色统计长度(=detect调用次数, ~3s@8fps)
   value_floor: 60             # 亮度下限(排除近黑/阴影, 但不卡高亮)
   sat_min: 130                # 亮斑饱和度下限(核心: 真实信号灯 LED S>=200, 草地/绿漆 S~100 被排除)
