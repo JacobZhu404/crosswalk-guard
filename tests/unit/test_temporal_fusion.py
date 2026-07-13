@@ -1,8 +1,9 @@
 import os, sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from redlight.pipeline.temporal_fusion import (
-    fuse_light, intervals_from_flags, fuse_occupancy, interval_intersect,
+    fuse_light, intervals_from_flags, fuse_occupancy, interval_intersect, tag_evidence,
 )
+from redlight.pipeline.intermediate_state import make_light_segment
 
 
 def _obs(states, dt=0.125):
@@ -87,3 +88,24 @@ def test_interval_intersect_basic():
     assert interval_intersect([[0, 5], [10, 15]], [[3, 12]]) == [[3, 5], [10, 12]]
     assert interval_intersect([[0, 5]], [[6, 10]]) == []        # 不相交
     assert interval_intersect([[0, 5]], [[5, 10]]) == []        # 相切(零长)不算
+
+
+# ---- tag_evidence: 给 unknown 段按遮挡打 evidence (恢复 review, D1) ----
+def test_tag_evidence_visible_for_color():
+    segs = [make_light_segment(0, 20, "green", 0.9), make_light_segment(20, 40, "red", 0.8)]
+    out = tag_evidence(segs, [])
+    assert out[0]["evidence"] == "visible" and out[1]["evidence"] == "visible"
+
+
+def test_tag_evidence_unknown_occluded():
+    segs = [make_light_segment(0, 20, "green", 0.9), make_light_segment(20, 50, "unknown", 0.3)]
+    occ = [(t, False) for t in range(0, 20)] + [(t, True) for t in range(20, 50)]
+    out = tag_evidence(segs, occ)
+    assert out[1]["evidence"] == "occluded"
+
+
+def test_tag_evidence_unknown_not_occluded_stays_none():
+    segs = [make_light_segment(20, 50, "unknown", 0.3)]
+    occ = [(t, False) for t in range(20, 50)]
+    out = tag_evidence(segs, occ)
+    assert out[0]["evidence"] is None

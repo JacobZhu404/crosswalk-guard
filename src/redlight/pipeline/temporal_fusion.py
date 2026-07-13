@@ -109,6 +109,29 @@ def _occ(run):
                                    round(max(ovs), 3), round(sum(ovs) / len(ovs), 3))
 
 
+def tag_evidence(segments, occ_samples):
+    """给 light_segments 打 evidence(恢复 decide 的 review 分支, D1)。
+
+    有色段(green/red/flashing) -> "visible"(直接看到灯色);
+    unknown 段: 若其时段被遮挡(occ_samples) -> "occluded"(灯存在但被挡, 交 review), 否则保持 None。
+    occ_samples: [(ts, occluded_bool)](由 BatchViolationEngine.accumulate 用 _is_occluded 逐帧记录)。
+    """
+    occ_intervals = intervals_from_flags(occ_samples)
+    out = []
+    for s in segments:
+        seg = dict(s)
+        if seg["state"] in ("green", "red", "flashing"):
+            seg["evidence"] = "visible"
+        elif seg["state"] == "unknown" and _overlaps_any(seg["start_s"], seg["end_s"], occ_intervals):
+            seg["evidence"] = "occluded"
+        out.append(seg)
+    return out
+
+
+def _overlaps_any(s, e, intervals):
+    return any(b >= s and a <= e for a, b in intervals)   # 闭区间相交(含零长段)
+
+
 def interval_intersect(a_list, b_list):
     """两组区间 [[s,e],...] 的交集(供判定层③做 绿段∩静止∩压线)。零长(相切)不计。"""
     out = []

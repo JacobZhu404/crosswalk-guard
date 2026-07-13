@@ -147,6 +147,7 @@ class BatchViolationEngine:
         self.unknown_to_review = unknown_to_review
         self.fuse_kwargs = dict(fuse_kwargs) if fuse_kwargs else {}
         self._light_obs = []       # [(ts, obs, conf), ...]
+        self._occ_samples = []     # [(ts, occluded_bool), ...] 供 evidence 打标(review, D1)
         self._track_samples = {}   # tid -> [{ts, stationary, box, overlap, cls, conf}, ...]
         self.events = []
 
@@ -165,6 +166,8 @@ class BatchViolationEngine:
             obs = light_observation.get("obs", "off")
             conf = light_observation.get("conf", 0.0)
         self._light_obs.append((timestamp, obs, conf))
+        # 逐帧遮挡(灯 unknown + 斑马线被挡时用于打 evidence=occluded -> review, D1)
+        self._occ_samples.append((timestamp, ViolationEngineV2._is_occluded(mask)))
 
         for tid, st in track_states.items():
             if not st.get("active"):
@@ -183,12 +186,15 @@ class BatchViolationEngine:
 
     def decide(self):
         """视频结束后调用, 产出与 ViolationEngineV2 兼容格式的事件列表."""
-        from .temporal_fusion import fuse_light, intervals_from_flags, fuse_occupancy
+        from .temporal_fusion import (
+            fuse_light, intervals_from_flags, fuse_occupancy, tag_evidence,
+        )
         from .decision import decide_violations
         from .intermediate_state import make_track
 
-        # ②层: 灯态时序融合
+        # ②层: 灯态时序融合 + evidence 打标(unknown+遮挡 -> occluded, 恢复 review, D1)
         light_segments = fuse_light(self._light_obs, **self.fuse_kwargs)
+        light_segments = tag_evidence(light_segments, self._occ_samples)
 
         # ②层: track 区间聚合
         tracks = []
