@@ -165,7 +165,11 @@ redlight-crosswalk-violation/
 
 ---
 
-## 10. 下一步
+## 10. 多 Agent 协作规范
+
+本项目有多个 agent 并行工作（算法 / 测评 / 文档）。**所有协作者必须先读 [`docs/AGENTS.md`](docs/AGENTS.md)**：含 Agent 注册表与署名规范、分支 / 输出目录隔离、红线禁止操作、共享 GT 文件协议、提交署名与合并流程。核心红线：不碰别人分支与输出目录、不对共享树 `reset/checkout/clean`、改 GT 必须分区并立即提交、每条提交带 `Co-Authored-By` 署名。
+
+## 11. 下一步
 
 把你的手机视频放到 `input_video/`，我们一起：
 1. 跑 `run_video.py` 看 baseline 效果；
