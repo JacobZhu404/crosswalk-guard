@@ -59,4 +59,21 @@
 - **⚠️ 严重事故: 多 agent 共享同一工作树 + 同一 HEAD。** Lingma(eval 重构)在共享工作树 `git checkout` 到 `main` 再到新分支 `refactor/eval-common-modules`, **把我的 checkout 一起切走**, 丢失了未提交的 T4 编辑(已在隔离 worktree 重做); 已提交工作全部安全。
 - **处置 + 规则**: 我已迁到独立 worktree `/Users/jacob/personal/crosswalk-guard-fix`(分支 `fix/code-doc-discrepancies`)继续。**所有 agent 今后各用独立 git worktree 或 clone**; 主目录随时可能在别的 agent 分支上。
 - **分支现状**(均基于 `ae115d3`, 待有网机器 push): `fix/code-doc-discrepancies`(我: 一致性修复 + Lingma MOTA + M1 spec/plan + M1 Phase1); `refactor/eval-common-modules`(Lingma: eval 共用模块)。建议合并顺序: 先合 fix 分支, Lingma 重构再 rebase 其上。
-</content>
+
+## 分支合并 + M1 Phase2 工具链 (2026-07-13 深夜, Claude Code)
+- **已全部合并到 `main` 并转 trunk-based 开发**(用户定策): `fix` FF 进 main; `refactor/eval-common-modules` 3-way 零冲突合入; 联网后 `feat/light-eval-v2`(另一 agent/WorkBuddy: color 路径 prior 重标定 + 迟滞 + 灯态GT/回归)也合入(**剔除其强制入库的 gitignore 生成物 `data/output/light_eval/*`**)。临时分支已删(本地+远程), 只剩 `main`。合并暴露的 Lingma `image_utils` 2 红测已修(空图→False/缺失→None)。
+- **M1 Phase2 工具链完成(数据到位即可训, 本机已合成数据验证契约)**:
+  - `src/redlight/data_pipeline/ped_signal_dataset.py`: 纯核心 `light_state_to_label`/`assign_crop_labels`(先验挑信号其余off)/`crop_box`/`lovo_folds`/`load_labeled_crops` + `extract_crops`。8 单测。
+  - `scripts/build_ped_signal_crops.py`: 抽候选ROI+弱标签→`datasets/ped_signal/`(**版本化训练数据, 非 gitignore**)。真实 GT+先验冒烟通过。
+  - `scripts/train_ped_signal.py`: tiny CNN→LOVO→`torch.onnx`(dynamo=False)导出 `models/ped_signal.onnx`。**`--smoke` 合成数据契约自检通过**(train acc 1.00 → ONNX → cv2.dnn/SignalStateClassifier 分类 [walk,stand,off] 正确)。
+  - pyproject 加 `train` extra(torch+onnx); 运行时只需 cv2.dnn。本机 `.venv` 另装 onnx 1.22。
+- **当前测试基线: `pytest tests/` = 145 passed, run_tl_tests 10/10**(本机 .venv)。
+- **⚠️ 数据卡点**: 本机无源视频/预抽帧(`datasets/frames/` gitignore, 只在 Windows; 本机仅 30 张未标 light_eval crop)。`datasets/ped_signal/` 尚空。
+
+### 下一步动作 (唯一首要)
+在有视频/帧的机器上产出真实 crop 数据集, 三步:
+1. `python scripts/build_ped_signal_crops.py --frames-dir datasets/frames`(或 `--video-dir input_video`)→ 生成 `datasets/ped_signal/{crops, labels.csv}`。
+2. 灯态画廊人工校验 crop 标签置 `verified=1`(尤其无先验的 01/05/06/07/08/09/11)。
+3. `python scripts/train_ped_signal.py` → 看 LOVO 平均 acc + 导出 `models/ped_signal.onnx`；把 `configs/config.yaml` 的 `traffic_light.method` 设 `ped_classifier` 即启用。
+`datasets/ped_signal/` 建议 commit 进 git(小, 训练数据), 跨机 pull 复用, 免再传大视频。
+> 备注: main 有未 push 提交(网络间歇性超时); 联网稳定后 `git push origin main`。
