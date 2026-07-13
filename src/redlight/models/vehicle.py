@@ -8,6 +8,7 @@ import numpy as np
 
 from ..models.base_model import BaseModel, ModelInfo, Detection
 from ..infrastructure.config import project_root
+from ..infrastructure.geometry import iou
 
 COCO_CLASSES = [
     "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck",
@@ -49,19 +50,6 @@ def extract_light_boxes(raw_dets, conf_min=0.25):
     return out
 
 
-def _iou(a, b):
-    ax1, ay1, ax2, ay2 = a
-    bx1, by1, bx2, by2 = b
-    ix1, iy1 = max(ax1, bx1), max(ay1, by1)
-    ix2, iy2 = min(ax2, bx2), min(ay2, by2)
-    iw, ih = max(0.0, ix2 - ix1), max(0.0, iy2 - iy1)
-    inter = iw * ih
-    area_a = max(0.0, (ax2 - ax1) * (ay2 - ay1))
-    area_b = max(0.0, (bx2 - bx1) * (by2 - by1))
-    union = area_a + area_b - inter
-    return inter / union if union > 0 else 0.0
-
-
 class SimpleTracker:
     """基于 IoU 的轻量多目标跟踪器。"""
 
@@ -90,9 +78,9 @@ class SimpleTracker:
             for ti, tid in enumerate(track_ids):
                 if tid in matched_tr:
                     continue
-                iou = _iou(dets[di]["xyxy"], track_boxes[ti])
-                if iou > best_iou:
-                    best_iou, best_t = iou, tid
+                iou_val = iou(dets[di]["xyxy"], track_boxes[ti])
+                if iou_val > best_iou:
+                    best_iou, best_t = iou_val, tid
             if best_t is not None and best_iou >= self.iou_thresh:
                 dets[di]["id"] = best_t
                 self.tracks[best_t] = dets[di]["xyxy"]
