@@ -115,3 +115,32 @@ def test_dag_end_to_end_violation():
     assert len(confirmed) == 1
     assert confirmed[0]["track_id"] == 1
     assert confirmed[0]["light_state"] == "green"
+
+
+def test_dag_passes_yolo_light_boxes():
+    """M1: dag 把 vehicle.last_light_boxes 传给 light.detect(yolo_light_boxes=...)。"""
+    cfg = _minimal_cfg()
+    captured = {}
+
+    class _LightMock:
+        def detect(self, frame, crosswalk_mask=None, yolo_light_boxes=None):
+            captured["boxes"] = yolo_light_boxes
+            return {"state": "green"}
+
+    class _VehMock:
+        last_light_boxes = [(1, 2, 3, 4)]
+        def detect(self, frame):
+            return [{"id": 1, "xyxy": [0, 0, 10, 10], "cls": "car", "conf": 0.9}]
+
+    comp = {
+        "vehicle": _VehMock(), "crosswalk": _Mock(None), "light": _LightMock(),
+        "plate": _Mock([]), "trackstate": TrackStateManagerV2("balanced"),
+        "engine": ViolationEngineV2("balanced"), "viz": _Mock(None),
+    }
+    dag = build_default_dag(cfg, comp)
+    ctx = {"proc": 1, "frame": None, "ts": 0.0, "dets": [], "states": {},
+           "mask": None, "light": "unknown", "light_state": "unknown",
+           "plates": [], "new_events": [], "csv_rows": [], "video_writer": None,
+           "evidence_dir": "/tmp", "cfg": cfg, "disp": None}
+    dag.run(ctx)
+    assert captured["boxes"] == [(1, 2, 3, 4)]

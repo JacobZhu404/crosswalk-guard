@@ -85,7 +85,9 @@ def build_default_dag(cfg, comp):
 
     def n_light(ctx):
         if ctx["proc"] % light_int == 0:
-            res = tl.detect(ctx["frame"])
+            # M1: 把 vehicle 检测器同一次推理暴露的 traffic-light 框传给灯检测器(候选并集)
+            boxes = getattr(det, "last_light_boxes", None)
+            res = tl.detect(ctx["frame"], yolo_light_boxes=boxes)
             ctx["light"] = res
             ctx["light_state"] = res.get("state", "unknown") if isinstance(res, dict) else res
 
