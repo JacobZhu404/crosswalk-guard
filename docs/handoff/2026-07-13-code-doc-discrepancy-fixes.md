@@ -46,4 +46,11 @@
 之后再由用户 push 分支(此环境网络对 github 超时, push 需在有网机器执行), 供 Windows 端同步; 合 `main` 前建议 Windows 也跑一遍(hyperlpr3 真实车牌栈)。
 
 > 状态更新(2026-07-13, Claude Code): P0/P1 修复 + 3 条陈旧夹具已在 Mac(.venv, cv2)全量验证通过。
+
+## 多 agent 协作事件 + 署名更正 (2026-07-13, Claude Code 记录)
+- **MOTA 指标(M6, design v2 §5.1 缺口)由 Lingma 实现**: `evaluation/metrics.py` 的 `mota_metrics` + `evaluator.py` + `tests/unit/test_metrics.py` 的 MOTA 用例。**功劳归 Lingma。**
+- **协作事故**: Lingma 在**共享工作树**里边改 MOTA(未提交), 我(Claude Code)用 `git add -A` 提交自己的改动时**误把 Lingma 的 MOTA 未提交改动扫进了 commit `78dfe38` / `d7a5c72`**, 导致其工作被并入我的 commit、未正确署名。Lingma 的 handoff(`2026-07-13-lingma-full-analysis.md`)也在两次提交间被创建又删除(其主动让位给本权威 handoff)。
+- **处置**: 分支未 push、全绿(74 passed), **不重写历史**(Lingma 可能仍在改, 重写 tip 会打乱其工作树); 以此节更正署名。
+- **规则(所有 agent 遵守)**: 本仓库**禁止 `git add -A`/`git add .`**, 只 `git add <明确路径>` 且提交前 `git status` 确认无他人在途改动被误纳。
+- 当前测试基线: `.venv` 下 `pytest tests/` = **74 passed**(含 Lingma 的 MOTA)。
 </content>
