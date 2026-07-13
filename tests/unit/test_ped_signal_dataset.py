@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from redlight.data_pipeline.ped_signal_dataset import (
-    light_state_to_label, assign_crop_labels, crop_box,
+    light_state_to_label, assign_crop_labels, crop_box, lovo_folds,
 )
 
 
@@ -56,3 +56,33 @@ def test_crop_box_clips_to_bounds():
     sub = crop_box(frame, (95, 95, 130, 130), pad_ratio=0.0)  # 越界
     assert sub.shape[0] > 0 and sub.shape[1] > 0
     assert sub.shape[0] <= 5 and sub.shape[1] <= 5
+
+
+# ---- lovo_folds: 留一视频交叉验证分折 ----
+def _row(video, label, verified=1):
+    return {"video": video, "label": label, "verified": verified, "crop_path": f"{video}_{label}.jpg"}
+
+
+def test_lovo_folds_one_per_video():
+    rows = [_row("v1", "walk"), _row("v1", "off"), _row("v2", "stand"), _row("v3", "walk")]
+    folds = lovo_folds(rows)
+    assert {f[0] for f in folds} == {"v1", "v2", "v3"}   # 每视频一折
+    v1 = next(f for f in folds if f[0] == "v1")
+    test_videos = {r["video"] for r in v1[2]}
+    train_videos = {r["video"] for r in v1[1]}
+    assert test_videos == {"v1"}                          # 测试折=留出视频
+    assert train_videos == {"v2", "v3"}                   # 训练=其余
+    assert v1[0] not in train_videos                      # 无泄漏
+
+
+def test_lovo_folds_filters_unlabeled_and_unverified():
+    rows = [_row("v1", "walk", verified=1), _row("v1", None, verified=1),
+            _row("v2", "stand", verified=0), _row("v2", "off", verified=1)]
+    folds = lovo_folds(rows, verified_only=True)
+    all_rows = [r for f in folds for r in f[1] + f[2]]
+    # 只保留 label 非空 且 verified=1: v1-walk, v2-off (v1-None 和 v2-stand(未校验) 被剔除)
+    labels = sorted({(r["video"], r["label"]) for r in all_rows})
+    assert labels == [("v1", "walk"), ("v2", "off")]
+    # 无泄漏: 每折测试视频不出现在其训练集
+    for tv, train, test in folds:
+        assert all(r["video"] != tv for r in train)

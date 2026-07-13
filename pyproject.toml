@@ -12,6 +12,8 @@ dependencies = [
 
 [project.optional-dependencies]
 models = ["ultralytics", "torch", "hyperlpr3"]
+# 训练/导出 M1 行人信号分类器 ONNX 用(运行时只需 opencv 的 cv2.dnn, 不需 torch/onnx)
+train = ["torch", "onnx"]
 dev = ["pytest"]
 
 [tool.pytest.ini_options]

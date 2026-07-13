@@ -118,6 +118,42 @@ def extract_crops(frame_iter, video, state_at_fn, candidates_fn, out_dir,
     return rows
 
 
+def lovo_folds(rows, verified_only=False):
+    """留一视频交叉验证分折 (M1 spec §6): 每个视频轮流做测试集, 其余做训练集。
+
+    rows: list of dict, 至少含 'video','label'(可含 'verified')。
+    verified_only=True: 只用 label 非空且 verified==1 的行(人工校验过的)。
+    返回: list of (test_video, train_rows, test_rows)。
+    """
+    def _ok(r):
+        if r.get("label") in (None, ""):
+            return False
+        if verified_only and int(r.get("verified", 0)) != 1:
+            return False
+        return True
+    usable = [r for r in rows if _ok(r)]
+    videos = sorted({r["video"] for r in usable})
+    folds = []
+    for v in videos:
+        test = [r for r in usable if r["video"] == v]
+        train = [r for r in usable if r["video"] != v]
+        folds.append((v, train, test))
+    return folds
+
+
+def load_labeled_crops(csv_path, verified_only=False):
+    """读 labels.csv 为 rows(dict list); verified_only 时过滤未校验/无标签。"""
+    rows = []
+    if not os.path.isfile(csv_path):
+        return rows
+    with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
+        for r in csv.DictReader(f):
+            if verified_only and (r.get("label") in (None, "") or int(r.get("verified", 0) or 0) != 1):
+                continue
+            rows.append(r)
+    return rows
+
+
 def write_labels_csv(rows, path):
     """写/追加 labels.csv (crop 数据集索引)。"""
     exists = os.path.isfile(path)
