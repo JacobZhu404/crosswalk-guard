@@ -78,7 +78,7 @@ class TrafficLightDetector(BaseModel):
         # M1 重设计(spec M1-D2/D4/D6): ped_classifier 路径。缺权重时 available=False -> 回退 color。
         self.method = str(getattr(tl, "method", "color"))
         models = getattr(cfg, "models", None)
-        clf_path = getattr(models, "ped_signal_onnx", None) if models is not None else None
+        clf_path = getattr(models, "ped_signal_model", None) if models is not None else None
         from .signal_state_classifier import SignalStateClassifier
         self.classifier = SignalStateClassifier(clf_path, verbose=verbose)
 
