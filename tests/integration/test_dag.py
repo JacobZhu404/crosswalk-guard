@@ -89,8 +89,10 @@ def test_dag_end_to_end_violation():
     mask = np.zeros((400, 400), dtype=np.uint8)
     mask[100:200, 100:300] = 255
     comp = {
-        # 每帧返回同一辆静止车, 完全落在 mask 内
-        "vehicle": _Mock([{"id": 1, "xyxy": [120, 120, 220, 220], "cls": "car", "conf": 0.9}]),
+        # 每帧返回同一辆静止车; 车体下半部(footprint=0.5)落在 mask 内。
+        # 占用按 D2 分母=mask: 车下半部(y150-200)∩mask = 50*100 = 5000 / (mask 20000) = 0.25
+        # >= balanced.overlap(0.20), 满足压线。
+        "vehicle": _Mock([{"id": 1, "xyxy": [120, 100, 220, 200], "cls": "car", "conf": 0.9}]),
         "crosswalk": _Mock(mask),
         "light": _Mock("green"),
         "plate": _Mock([]),

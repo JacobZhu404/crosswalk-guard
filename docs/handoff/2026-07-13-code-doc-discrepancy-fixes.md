@@ -7,9 +7,10 @@
 以**代码为准**核对工程,修掉一批"代码 ≠ 文档/注释/测试"的接线错误、崩溃点与默认值 footgun (不改识别算法骨架)。
 
 ## 已确认事实
-- 环境: 本机 macOS / Python 3.7.5, **无 cv2/torch/ultralytics/hyperlpr3** → 主流程与依赖 cv2 的测试**无法在本机跑**,须 Windows 端验证。
-- 已让 `geometry.py` 的 `cv2` 改为**函数内延迟导入** → 纯逻辑测试(engine/tracker/metrics)现可在无 OpenCV 的编码机运行。
-- **45 个纯逻辑单测全绿** (`PYTHONPATH=src python3 -m pytest tests/unit/test_violation_engine_v2.py tests/unit/test_tracker_v2.py tests/unit/test_metrics.py tests/unit/test_light_metrics.py -q`)。
+- 环境: 本机 = **Apple M4 / arm64**。已建 `.venv`(homebrew **python3.11**, 已在 .gitignore),装了核心 CV 栈(**cv2 5.0.0 / numpy 2.4.6 / pyyaml / tqdm / pytest**)。torch/torchvision/ultralytics 后台安装中(网络慢);hyperlpr3 暂未装(可选, 代码有 `_HAS_HL` 降级)。系统默认 `python3` 是 3.7.5(太老), **务必用 `.venv`**。
+- 已让 `geometry.py` 的 `cv2` 改为**函数内延迟导入** → 纯逻辑测试在无 OpenCV 机也能跑。
+- **本机全量测试已全绿**(装了 cv2 后): `source .venv/bin/activate && python -m pytest tests/ -q` → **64 passed**;`python scripts/run_tl_tests.py` → **10/10**。含 cv2 的 geometry/traffic_light/dag 集成测试也已在 Mac 验证通过。
+- 集成/单测中 **3 条陈旧夹具**(D2 分母=mask 迁移遗留, box 尺寸按旧 box-分母写)已按 mask 分母+footprint=0.5 重算: `test_violation_engine_v2` 2 条 + `test_dag` 1 条。它们在 HEAD 上本就失败(先被 mode footgun 挡在前面,没暴露)。
 - 关键裁决: `ViolationEngineV2` 之前**默认 `mode="red_light"`(已废弃的旧语义)**,直接导致引擎单测(test_green_confirmed/test_red_not_violation 等)在 HEAD 上**本就失败**。这是 plate-agent 恢复双模式与 traffic-light-agent 测试/设计 v2 的冲突。**按权威规格(design v2 + E12/E13)裁决: 删除双模式, 锁定 pedestrian_green。**
 - `test_loose_catches_partial_overlap` / `test_unknown_occluded_to_review` 两条 fixture 是 **D2(分母=mask)迁移遗留的陈旧夹具**(注释仍写 box 分母 0.25),与我的改动无关;已按 mask 分母+footprint=0.5 重算夹具,保持原测试意图。
 
@@ -39,9 +40,10 @@
 - 多 agent 协作: 署名、勿互相覆盖;冲突由 Claude Code 依权威规格裁决。
 
 ## 下一步动作 (唯一首要)
-**在 Windows(有 cv2/torch/ultralytics/hyperlpr3)拉取本分支, 跑三处验证:**
-1. `python scripts/run_tl_tests.py`(红绿灯 10/10 应仍过);
-2. `python -m pytest tests/ -q`(含 cv2 的 geometry/traffic_light/dag 集成测试);
-3. `python scripts/run_video.py input_video/违章02.mp4 --preset balanced` 冒烟,确认默认即 pedestrian_green 语义 + `--cot` 不再崩。
-通过后再合入 `main` 并 push,供其他机器同步。
+**本机测试已全绿, 剩真实模型冒烟。** 待后台 torch/ultralytics 装完, 在 `.venv` 里跑一次真实推理冒烟:
+`source .venv/bin/activate && python scripts/run_video.py input_video/违章02.mp4 --preset balanced`
+——确认默认即 pedestrian_green 语义、`--cot` 不再崩、YOLO 权重按 `models/yolov8n.pt` 加载。
+之后再由用户 push 分支(此环境网络对 github 超时, push 需在有网机器执行), 供 Windows 端同步; 合 `main` 前建议 Windows 也跑一遍(hyperlpr3 真实车牌栈)。
+
+> 状态更新(2026-07-13, Claude Code): P0/P1 修复 + 3 条陈旧夹具已在 Mac(.venv, cv2)全量验证通过。
 </content>

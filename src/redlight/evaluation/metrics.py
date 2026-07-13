@@ -5,7 +5,11 @@
   2. OCR(车牌): 字符准确率 / 整牌准确率 / 编辑距离 / 省份准确率
   3. 事件(违规): 基于 track_id + Temporal-IoU 的事件级 P/R/F1
   4. 区间: Temporal-IoU
+  5. 掩膜: mask-IoU (M3 斑马线)
+  6. 跟踪: CLEAR MOT MOTA + ID Switch (M6)
 """
+import numpy as np
+
 from ..infrastructure.geometry import iou  # 复用基础设施几何
 
 
@@ -252,7 +256,113 @@ def event_metrics(pred_events, gt_events, tiou_thr=0.5, match_by_track=True):
 
 
 # ---------------------------------------------------------------------------
-# 4. 信号灯状态分类指标 (要求#6: 量化红绿灯检测器 Precision/Recall)
+# 4. 掩膜指标 (M3 斑马线)
+# ---------------------------------------------------------------------------
+def mask_iou(pred_mask, gt_mask):
+    """二值掩膜的 IoU (Intersection over Union)。
+
+    Args:
+        pred_mask: ndarray, 二值 (0/1 或 0/255 或 bool)
+        gt_mask:   ndarray, 同上, 与 pred_mask 同 shape
+
+    Returns:
+        float: IoU ∈ [0, 1]; 两者均为空 mask 时返回 1.0 (视为完全一致)
+    """
+    if pred_mask is None or gt_mask is None:
+        return 0.0
+    if pred_mask.shape != gt_mask.shape:
+        return 0.0
+    p = pred_mask > 0
+    g = gt_mask > 0
+    inter = int(np.logical_and(p, g).sum())
+    union = int(np.logical_or(p, g).sum())
+    if union == 0:
+        return 1.0
+    return float(inter / union)
+
+
+# ---------------------------------------------------------------------------
+# 5. 跟踪指标 (M6 MOTA / ID Switch)
+# ---------------------------------------------------------------------------
+def mota_metrics(pred_frames, gt_frames, iou_thr=0.5):
+    """CLEAR MOT MOTA + ID Switch 计数。
+
+    Args:
+        pred_frames: list of dict per frame {track_id: [x1,y1,x2,y2], ...}
+        gt_frames:   list of dict per frame {gt_id: [x1,y1,x2,y2], ...}
+        iou_thr:     匹配阈值 (默认 0.5)
+
+    Returns:
+        dict: {
+            "mota": float, "precision": float, "recall": float,
+            "tp": int, "fp": int, "fn": int, "id_switches": int,
+            "n_gt": int, "n_pred": int,
+        }
+    """
+    total_tp = total_fp = total_fn = total_idsw = total_gt = total_pred = 0
+    gt_prev_match = {}  # gt_id -> prev_pred_tid
+
+    for pf, gf in zip(pred_frames, gt_frames):
+        p_items = list(pf.items())   # [(tid, box), ...]
+        g_items = list(gf.items())   # [(gid, box), ...]
+
+        # 贪心 IoU 匹配
+        pairs = []
+        for pi, (ptid, pb) in enumerate(p_items):
+            for gi, (ggid, gb) in enumerate(g_items):
+                i = iou(pb, gb)
+                if i >= iou_thr:
+                    pairs.append((i, pi, gi, ptid, ggid))
+        pairs.sort(reverse=True)
+
+        used_p, used_g = set(), set()
+        matched = []  # list of (ptid, ggid)
+        for _, pi, gi, ptid, ggid in pairs:
+            if pi in used_p or gi in used_g:
+                continue
+            used_p.add(pi)
+            used_g.add(gi)
+            matched.append((ptid, ggid))
+
+        tp = len(matched)
+        fp = len(p_items) - len(used_p)
+        fn = len(g_items) - len(used_g)
+
+        # ID Switch: 同一 gt 上一帧匹配的 pred 与本帧不同
+        for ptid, ggid in matched:
+            if ggid in gt_prev_match and gt_prev_match[ggid] != ptid:
+                total_idsw += 1
+
+        # 更新 gt->pred 映射（只保留本帧有匹配的 gt）
+        gt_prev_match = {ggid: ptid for ptid, ggid in matched}
+
+        total_tp += tp
+        total_fp += fp
+        total_fn += fn
+        total_gt += len(g_items)
+        total_pred += len(p_items)
+
+    # MOTA = 1 - (FN + FP + IDSW) / GT
+    if total_gt > 0:
+        mota = 1.0 - (total_fn + total_fp + total_idsw) / total_gt
+    else:
+        mota = 1.0  # 无 gt 时定义为完美
+
+    precision = total_tp / (total_tp + total_fp) if (total_tp + total_fp) > 0 else 0.0
+    recall = total_tp / (total_tp + total_fn) if (total_tp + total_fn) > 0 else 0.0
+
+    return {
+        "mota": round(mota, 4),
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "tp": total_tp, "fp": total_fp, "fn": total_fn,
+        "id_switches": total_idsw,
+        "n_gt": total_gt, "n_pred": total_pred,
+    }
+
+
+# ---------------------------------------------------------------------------
+# 6. 信号灯状态分类指标 (要求#6: 量化红绿灯检测器 Precision/Recall)
 # ---------------------------------------------------------------------------
 LIGHT_CLASSES = ["red", "green", "flashing", "unknown"]
 

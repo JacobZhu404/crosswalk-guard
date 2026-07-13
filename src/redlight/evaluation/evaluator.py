@@ -5,6 +5,7 @@
 from .metrics import (
     detection_metrics, plate_accuracy, char_accuracy, province_accuracy,
     edit_similarity, event_metrics, compute_map, light_state_metrics,
+    mask_iou, mota_metrics,
 )
 
 
@@ -36,6 +37,14 @@ class Evaluator:
     def evaluate_light_states(self, pred_states, gt_states, classes=None):
         """逐帧信号灯状态分类评测 (要求#6)。"""
         return light_state_metrics(pred_states, gt_states, classes)
+
+    def evaluate_mask(self, pred_mask, gt_mask):
+        """斑马线掩膜 IoU 评测 (M3)。"""
+        return {"mask_iou": mask_iou(pred_mask, gt_mask)}
+
+    def evaluate_tracking(self, pred_frames, gt_frames):
+        """跟踪 MOTA / ID Switch 评测 (M6)。"""
+        return mota_metrics(pred_frames, gt_frames, self.iou_thr)
 
     def full_report(self, pred_boxes, gt_boxes, pred_texts, gt_texts,
                     pred_events, gt_events):
