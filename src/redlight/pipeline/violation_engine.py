@@ -1,11 +1,13 @@
-"""L5 任务编排: 违规判定状态机 (V2, 双模式版)。
+"""L5 任务编排: 违规判定状态机 (V2)。
 
-模式:
-    - red_light: 红灯期间车辆静止压线 = 违规
-    - pedestrian_green: 行人绿灯/闪烁期间车辆静止压线 = 违规
+违规语义 (E12 反转, 权威见 docs/plans/2026-07-12-design-requirements-v2.md):
+    违规 = 行人绿灯/闪烁清空相位 AND 车辆静止 AND 车辆压斑马线(overlap>=threshold),
+    且持续 duration 个采样帧。
+    🔴 红灯 = 车辆可通行, 不算违规。
+    ❓ 灯态未知 + 斑马线被遮挡 -> review (交人复核, D1), 绝不自动 confirmed。
 
-判定条件 (全部满足且持续 duration 个采样帧):
-    light_state in 违规灯态 AND 车辆静止 AND 车辆压斑马线(overlap>=threshold)
+E13 教训: 旧"红灯压线=违规"语义已废弃。曾有 mode=red_light/pedestrian_green 双模式开关,
+默认指向旧语义, 是 footgun (破坏了本模块单测并与权威需求相悖), 已彻底删除。
 """
 import numpy as np
 from ..infrastructure.geometry import compute_overlap_ratio
@@ -16,7 +18,7 @@ OCCLUSION_MIN_AREA_RATIO = 0.005
 
 class ViolationEngineV2:
     def __init__(self, preset="balanced", unknown_to_review=True, min_event_gap_sec=5,
-                 fill_gap_sec=2.0, mode="red_light"):
+                 fill_gap_sec=2.0):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset
@@ -26,7 +28,6 @@ class ViolationEngineV2:
         self.gap = min_event_gap_sec
         self.unknown_to_review = unknown_to_review
         self.fill_gap = fill_gap_sec   # 未知灯短时向前填充窗口(秒)
-        self.mode = mode if mode in ("red_light", "pedestrian_green") else "red_light"
         self.events = []
         self.active = {}
         self.last_event_time = {}
@@ -82,20 +83,14 @@ class ViolationEngineV2:
             a = self.active.setdefault(
                 tid, {"sustained": 0, "emitted": False, "cond_start": timestamp}
             )
-            if self.mode == "red_light":
-                if on_crosswalk and light_state == "red":
-                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
-                elif on_crosswalk and light_state == "unknown" and self.unknown_to_review and occluded:
-                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
-                else:
-                    self._reset(tid)
+            # 违规 = 行人绿灯/闪烁 + 静止 + 压线 (E12 语义; 红灯不违规)
+            if on_crosswalk and light_state in ("green", "flashing"):
+                self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
+            # 灯态未知 + 斑马线被遮挡 -> review (D1, 安全侧交人复核)
+            elif on_crosswalk and light_state == "unknown" and self.unknown_to_review and occluded:
+                self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
             else:
-                if on_crosswalk and light_state in ("green", "flashing"):
-                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "confirmed")
-                elif on_crosswalk and light_state == "unknown" and self.unknown_to_review and occluded:
-                    self._accumulate(a, tid, st, light_state, timestamp, new_events, "review")
-                else:
-                    self._reset(tid)
+                self._reset(tid)
         return new_events
 
     def _accumulate(self, a, tid, st, light_state, timestamp, new_events, status):

@@ -124,9 +124,15 @@ class VehicleDetector(BaseModel):
         # 1) ultralytics YOLOv8n (torch CPU)
         if _HAS_ULT:
             try:
-                yolo_path = weights_path or getattr(self.cfg.models, "vehicle_pt",
-                                                    os.path.join(project_root(), "yolov8n.pt"))
-                if os.path.isfile(yolo_path):
+                # 读 config 的 models.vehicle(如 "models/yolov8n.pt"); 相对路径按工程根解析。
+                # 兼容旧字段 vehicle_pt; 都缺省时回退工程根 yolov8n.pt。
+                cfg_path = getattr(self.cfg.models, "vehicle", None) or \
+                    getattr(self.cfg.models, "vehicle_pt", None)
+                if cfg_path and not os.path.isabs(cfg_path):
+                    cfg_path = os.path.join(project_root(), cfg_path)
+                yolo_path = weights_path or cfg_path or \
+                    os.path.join(project_root(), "yolov8n.pt")
+                if yolo_path.endswith(".pt") and os.path.isfile(yolo_path):
                     self.model = YOLO(yolo_path)
                     self.use_ultra = True
                     self._backend = "ultralytics"

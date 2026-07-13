@@ -20,8 +20,6 @@ def main():
     ap.add_argument("output", nargs="?", default=None)
     ap.add_argument("--preset", default="balanced",
                     choices=["strict", "balanced", "loose", "very_loose"])
-    ap.add_argument("--mode", default="red_light",
-                    choices=["red_light", "pedestrian_green"])
     ap.add_argument("--config", default=os.path.join(project_root(), "configs", "config.yaml"))
     args = ap.parse_args()
 
@@ -29,7 +27,7 @@ def main():
     if args.output is None:
         name = os.path.splitext(os.path.basename(args.video))[0]
         args.output = os.path.join(project_root(), "data", "output", f"run_{name}_{args.preset}")
-    run(cfg, args.video, args.output, args.preset, mode=args.mode)
+    run(cfg, args.video, args.output, args.preset)
 
 
 if __name__ == "__main__":

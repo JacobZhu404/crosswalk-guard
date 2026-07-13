@@ -10,6 +10,7 @@ import sys
 import argparse
 import time
 import csv
+import json
 
 import cv2
 
@@ -26,7 +27,7 @@ from ..pipeline.plate_consensus import PlateConsensus
 from ..pipeline.analysis import AnalysisAccumulator, CotReporter
 
 
-def run(cfg, video_path, output_dir, preset="balanced", cot=False, mode="red_light"):
+def run(cfg, video_path, output_dir, preset="balanced", cot=False):
     ensure_dir(output_dir)
     evidence_dir = os.path.join(output_dir, "evidence")
     ensure_dir(evidence_dir)
@@ -57,8 +58,8 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, mode="red_lig
         "plate": PlateRecognizer(cfg),
         "trackstate": TrackStateManagerV2(preset),
         "engine": ViolationEngineV2(
-            preset, unknown_to_review=cfg.output.unknown_light_to_review, mode=mode),
-        "viz": Visualizer(cfg),
+            preset, unknown_to_review=cfg.output.unknown_light_to_review),
+        "viz": Visualizer(cfg, preset=preset),
         "plate_consensus": PlateConsensus(keep_history=180),
     }
     dag = build_default_dag(cfg, comp)
@@ -161,7 +162,7 @@ def main():
     ap.add_argument("--video", required=True, help="输入视频路径")
     ap.add_argument("--output", default=None, help="输出目录 (默认 data/output/run_<name>)")
     ap.add_argument("--preset", default="balanced",
-                    choices=["strict", "balanced", "loose"],
+                    choices=["strict", "balanced", "loose", "very_loose"],
                     help="违规判定灵敏度预设")
     ap.add_argument("--cot", action="store_true",
                     help="输出 COT 可解释小作文+截图 (设计需求 v2 §4)")

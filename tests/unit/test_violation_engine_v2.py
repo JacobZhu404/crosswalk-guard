@@ -104,13 +104,18 @@ def test_not_stationary_no_event():
 
 
 def test_unknown_occluded_to_review():
-    """unknown + 斑马线被遮挡(触及画面边界, 看不全) -> review (Q2)。"""
+    """unknown + 斑马线被遮挡(触及画面边界, 看不全) -> review (Q2)。
+
+    占用比例按 D2 分母=mask 计算(footprint=0.5 只取车体下半部):
+      mask 面积 = 300*200 = 60000; 车体下半部(y 250-400)∩mask ≈ 149*200 ≈ 29800
+      -> ratio ≈ 0.50 >= balanced.overlap(0.20), 满足压线。
+    """
     eng = ViolationEngineV2("balanced", unknown_to_review=True)
     mask = np.zeros((400, 400), dtype=np.uint8)
     mask[100:400, 100:300] = 255  # 触及底边(斑马线被画面下沿截断, 看不全) 且 覆盖车体 -> 压线且遮挡
     evs = []
     for i in range(6):
-        evs += eng.evaluate(_state(1, True), mask, "unknown", i * 0.5)
+        evs += eng.evaluate(_state(1, True, box=(100, 100, 300, 400)), mask, "unknown", i * 0.5)
     reviews = [e for e in evs if e["status"] == "review"]
     assert len(reviews) == 1
 
@@ -155,12 +160,16 @@ def test_preset_selects_overlap():
 
 
 def test_loose_catches_partial_overlap():
-    """loose(overlap=0.15) 能抓部分压线, strict(0.30) 抓不到。"""
+    """loose(overlap=0.15) 能抓部分压线, strict(0.30) 抓不到。
+
+    占用比例按 D2 分母=mask(footprint=0.5): mask 面积=100*200=20000;
+    车体下半部(y 100-150)∩mask = 50*90 = 4500 -> ratio=0.225, 落在 (0.15, 0.30)。
+    """
     eng_loose = ViolationEngineV2("loose")
     eng_strict = ViolationEngineV2("strict")
     mask = np.zeros((400, 400), dtype=np.uint8)
     mask[100:200, 100:300] = 255
-    box = (280, 100, 360, 200)  # 重叠 2000 / box 8000 = 0.25, 落在 (0.15, 0.30)
+    box = (100, 50, 190, 150)  # footprint 下半部 (100,100,190,150), ∩mask=4500 / 20000 = 0.225
     evs_l, evs_s = [], []
     for i in range(6):
         ts = i * 0.5

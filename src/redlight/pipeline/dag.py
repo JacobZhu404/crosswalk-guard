@@ -78,7 +78,10 @@ def build_default_dag(cfg, comp):
 
     def n_crosswalk(ctx):
         if ctx["proc"] % cw_int == 0:
-            ctx["mask"] = cw.detect(ctx["frame"])
+            # 传入车辆框以启用 v11 车辆锚定加分(斑马线通常在静止车附近, 修复 E17 泛化);
+            # detect 在 track 之后运行, ctx["dets"] 已就绪。
+            vb = [d["xyxy"] for d in ctx.get("dets", [])]
+            ctx["mask"] = cw.detect(ctx["frame"], vb)
 
     def n_light(ctx):
         if ctx["proc"] % light_int == 0:

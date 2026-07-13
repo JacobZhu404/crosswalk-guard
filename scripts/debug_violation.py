@@ -34,7 +34,7 @@ def main():
     tl = TrafficLightDetector(cfg)
     
     tracker = TrackStateManagerV2("loose")
-    engine = ViolationEngineV2("loose", mode="red_light")
+    engine = ViolationEngineV2("loose")
     
     frame_idx = 0
     proc = 0

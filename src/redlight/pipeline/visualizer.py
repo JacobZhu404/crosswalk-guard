@@ -6,12 +6,16 @@ import cv2
 import numpy as np
 
 from ..infrastructure.geometry import mask_to_contour, compute_overlap_ratio
+from .tracker import SENSITIVITY_PRESETS
 
 
 class Visualizer:
-    def __init__(self, cfg):
+    def __init__(self, cfg, preset="balanced"):
         self.cfg = cfg
-        self.overlap = getattr(cfg.crosswalk, "overlap_ratio", 0.30)
+        # 与违规引擎保持一致: 用所选 preset 的 overlap 阈值(而非 cfg.crosswalk.overlap_ratio),
+        # 否则标注视频里的红框/HUD 与 violations.csv 的判定对不上。
+        p = SENSITIVITY_PRESETS.get(preset, SENSITIVITY_PRESETS["balanced"])
+        self.overlap = p["overlap"]
 
     def draw(self, frame, dets, track_states, mask, light_state, plates=None):
         if isinstance(light_state, dict):
@@ -32,7 +36,7 @@ class Visualizer:
             x1, y1, x2, y2 = [int(v) for v in d["xyxy"]]
             st = track_states.get(tid, {})
             stationary = st.get("stationary", False)
-            ratio = compute_overlap_ratio(d["xyxy"], mask)
+            ratio = compute_overlap_ratio(d["xyxy"], mask, footprint=0.5, denom="mask")
             violating = (
                 stationary and ratio >= self.overlap
                 and light_state in ("green", "flashing")
@@ -72,7 +76,7 @@ class Visualizer:
         n_stop = sum(1 for d in dets if track_states.get(d["id"], {}).get("stationary"))
         n_viol = sum(1 for d in dets
                      if track_states.get(d["id"], {}).get("stationary")
-                     and compute_overlap_ratio(d["xyxy"], mask) >= self.overlap
+                     and compute_overlap_ratio(d["xyxy"], mask, footprint=0.5, denom="mask") >= self.overlap
                      and light_state in ("green", "flashing"))
         hud = f"veh={n_veh} stop={n_stop} viol/rev={n_viol}"
         cv2.putText(disp, hud, (8, disp.shape[0] - 12), cv2.FONT_HERSHEY_SIMPLEX,

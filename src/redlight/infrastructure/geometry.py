@@ -1,5 +1,8 @@
-"""L1 基础设施: 几何计算工具 (纯函数, 易测)。"""
-import cv2
+"""L1 基础设施: 几何计算工具 (纯函数, 易测)。
+
+注: cv2 仅 mask_to_contour 用到, 改为函数内延迟导入 —— 使 iou/compute_overlap_ratio
+    这些纯逻辑函数(及依赖它们的 violation_engine 单测)在无 OpenCV 的编码机上也能导入/测试。
+"""
 import numpy as np
 
 
@@ -52,6 +55,7 @@ def compute_overlap_ratio(box, mask, footprint=1.0, denom="box"):
 
 def mask_to_contour(mask, min_area=500):
     """从 mask 取最大连通域轮廓, 用于可视化。无则返回 None。"""
+    import cv2  # 延迟导入: 仅可视化路径需要 OpenCV
     if mask is None:
         return None
     m = mask.astype(np.uint8)

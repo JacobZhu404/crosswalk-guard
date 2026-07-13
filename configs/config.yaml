@@ -48,7 +48,7 @@ crosswalk:
 #   注: 曾试"局部对比度门控"过滤黄色按钮, 实证方向反(绿灯在亮天空前被杀/按钮在暗玻璃前被留), 已移除.
 #       按钮/衣服/树的排除完全靠 锚点+灯形分, 不靠对比度.
 traffic_light:
-  method: "color"             # v6 颜色兜底(饱和度亮斑+位置跟踪); 可选升级为 model(YOLO 交通灯)
+  method: "color"             # v7-stable 颜色兜底(饱和度亮斑+信号头聚类+空间锚); 可选升级为 model(YOLO 交通灯)
   smoothing_window: 24        # 近窗颜色统计长度(=detect调用次数, ~3s@8fps)
   value_floor: 60             # 亮度下限(排除近黑/阴影, 但不卡高亮)
   sat_min: 130                # 亮斑饱和度下限(核心: 真实信号灯 LED S>=200, 草地/绿漆 S~100 被排除)

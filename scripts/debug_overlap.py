@@ -27,7 +27,7 @@ def main():
     cw = CrosswalkDetector(cfg)
     tl = TrafficLightDetector(cfg)
     tracker = TrackStateManagerV2("loose")
-    engine = ViolationEngineV2("loose", mode="red_light")
+    engine = ViolationEngineV2("loose")
 
     cw_int = 4
     mask = None

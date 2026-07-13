@@ -71,7 +71,7 @@ class AnalysisAccumulator:
             if not st.get("active"):
                 continue
             rec = self.track_records.setdefault(tid, {
-                "tid": tid, "vehicle_class": st.get("vehicle_class", "car"),
+                "tid": tid, "vehicle_class": st.get("cls", "car"),
                 "occ_peak": 0.0, "occ_first": None, "occ_last": None,
                 "occ_peak_box": None, "plate_reads": [], "violation": None,
             })
@@ -87,9 +87,9 @@ class AnalysisAccumulator:
                         rec["occ_peak_box"] = list(box)
                         if frame is not None and mask is not None:
                             self.occ_peak[tid] = (ratio, frame.copy(), list(box), mask.copy())
-            # 车牌读取(全局聚合, 见 E19)
+            # 车牌读取(全局聚合, 见 E19); PlateConsensus 摘要用 avg_conf 键(无 conf)
             text = consensus_plates.get(tid, {}).get("text") if consensus_plates else None
-            conf = consensus_plates.get(tid, {}).get("conf", 0.0) if consensus_plates else 0.0
+            conf = consensus_plates.get(tid, {}).get("avg_conf", 0.0) if consensus_plates else 0.0
             if text:
                 rec["plate_reads"].append((ts, text, conf))
                 if frame is not None and conf >= self.plate_best.get(tid, (0,))[0]:
