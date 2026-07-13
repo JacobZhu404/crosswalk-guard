@@ -28,6 +28,10 @@ class TrafficLightDetector(BaseModel):
         tl = getattr(cfg, "traffic_light", None)
         # 时序窗口(近窗颜色统计长度, 单位=detect调用次数)
         self.window = int(getattr(tl, "smoothing_window", 24))
+        # 迟滞阈值(0-1): 已建立的状态需被反色占比超过此值才翻转 -> 抑制抖动/瞬态误读,
+        # 呼应"红绿灯状态连续多秒". 不翻转时仍返回真实占比作为 confidence, 供融合层判断低置信.
+        self.hysteresis = float(getattr(tl, "hysteresis", 0.68))
+        self._last_state = None  # 已提交状态(迟滞用)
         # 1) 自适应亮斑参数
         self.value_floor = int(getattr(tl, "value_floor", 60))   # 亮度下限(避免接住近黑)
         self.sat_min = int(getattr(tl, "sat_min", 35))            # 亮斑饱和度下限(排除灰白反光)
@@ -553,22 +557,51 @@ class TrafficLightDetector(BaseModel):
         red = sum(1 for c in seq if c == "red")
         seen = green + red
         if seen == 0:
+            self._last_state = "unknown"
             return "unknown", "no_signal", 0.0
         gr, rr = green / seen, red / seen
-        # 先验模式: 信任锁定的行人信号, 用多数投票(抗邻居红灯污染),
+        hyst = self.hysteresis
+        # 先验模式: 信任锁定的行人信号, 用迟滞多数投票(抗邻居红灯污染/瞬态抖动),
         #          不判 flashing(逐帧直采噪声会误触发闪烁).
         if self.signal_prior is not None:
-            if gr >= rr:
+            last = self._last_state
+            if last == "green":
+                if rr >= hyst:
+                    self._last_state = "red"
+                    return "red", "prior_red", round(rr, 3)
+                self._last_state = "green"
                 return "green", "prior_green", round(gr, 3)
+            if last == "red":
+                if gr >= hyst:
+                    self._last_state = "green"
+                    return "green", "prior_green", round(gr, 3)
+                self._last_state = "red"
+                return "red", "prior_red", round(rr, 3)
+            # 初始: 纯多数投票定锚
+            if gr >= rr:
+                self._last_state = "green"
+                return "green", "prior_green", round(gr, 3)
+            self._last_state = "red"
             return "red", "prior_red", round(rr, 3)
+        # 无先验模式: 同样用迟滞稳定时间线
         toggles = sum(1 for i in range(1, len(seq))
                       if seq[i] != seq[i - 1]
                       and seq[i] in ("green", "red") and seq[i - 1] in ("green", "red"))
         if green > 0 and red > 0 and toggles >= self.flicker_toggle and gr < 0.6 and rr < 0.6:
+            self._last_state = "flashing"
             return "flashing", "flicker", round(max(gr, rr), 3)
+        last = self._last_state
+        if last == "green" and rr >= hyst:
+            self._last_state = "red"
+            return "red", "track_red", round(rr, 3)
+        if last == "red" and gr >= hyst:
+            self._last_state = "green"
+            return "green", "track_green", round(gr, 3)
         if gr >= 0.6:
+            self._last_state = "green"
             return "green", "track_green", round(gr, 3)
         if rr >= 0.6:
+            self._last_state = "red"
             return "red", "track_red", round(rr, 3)
         if seen < max(3, 0.3 * len(seq)):
             return "unknown", "intermittent", round(max(gr, rr), 3)

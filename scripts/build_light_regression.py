@@ -42,21 +42,23 @@ def main():
                     continue
                 rows.append({
                     "video": r["video"],
+                    "frame_idx": r.get("frame_idx", ""),
                     "t_sec": f"{t:.1f}",
                     "expected_state": gt,
                     "pred_was": r.get("pred", ""),
                     "reason": r.get("reason", ""),
                 })
 
-    # 按 (video, t_sec) 去重
+    # 按 (video, frame_idx) 去重(优先 frame_idx, 回退 t_sec)
     seen = {}
     for r in rows:
-        seen[(r["video"], r["t_sec"])] = r
+        key = (r["video"], r.get("frame_idx") or r["t_sec"])
+        seen[key] = r
     out = sorted(seen.values(), key=lambda r: (r["video"], float(r["t_sec"])))
 
     os.makedirs(os.path.dirname(args.dst), exist_ok=True)
     with open(args.dst, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["video", "t_sec", "expected_state", "pred_was", "reason"])
+        w = csv.DictWriter(f, fieldnames=["video", "frame_idx", "t_sec", "expected_state", "pred_was", "reason"])
         w.writeheader()
         w.writerows(out)
 
