@@ -20,13 +20,13 @@
 
 新 agent 入项目，**先在此表加一行**；后续提交用对应的 `Co-Authored-By` 署名。
 
-| Agent ID | 显示名 | 职责 | 分支前缀 | 输出目录 | 状态 |
+| Agent ID | 显示名 | 职责 | 分支策略 | 输出目录 | 状态 |
 |---|---|---|---|---|---|
 | `human-jacob` | Jacob Zhu（人类，仓库主 / 合并权限） | 最终裁决、合并到 main | — | — | active |
-| `senior-dev` | Senior Developer（高级开发工程师） | 检测算法 / 评测基建 / 文档 | `agent/senior-dev/*` | `data/output/senior-dev/` | active |
-| `eval-agent` | 并行测评 Agent | 红绿灯 / 事件级评测 | `agent/eval-agent/*` | `data/output/eval-agent/` | active（确切名待用户确认） |
-| `plate-agent` | Plate Recognition Agent（车牌识别 Agent） | 车牌识别优化 / 评测集 / 标注画廊 | `agent/plate-agent/*` | `data/output/plate-agent/` | active |
-| _（新 agent 在此追加）_ | | | `agent/<id>/*` | `data/output/<id>/` | |
+| `senior-dev` | Senior Developer（高级开发工程师） | 检测算法 / 评测基建 / 文档 | 默认 main；大功能拉 `feat/<topic>` | `data/output/senior-dev/` | active |
+| `eval-agent` | 并行测评 Agent | 红绿灯 / 事件级评测 | 默认 main；大功能拉 `feat/<topic>` | `data/output/eval-agent/` | active（确切名待用户确认） |
+| `plate-agent` | Plate Recognition Agent（车牌识别 Agent） | 车牌识别优化 / 评测集 / 标注画廊 | 默认 main；大功能拉 `feat/<topic>` | `data/output/plate-agent/` | active |
+| _（新 agent 在此追加）_ | | | 默认 main；大功能拉 `feat/<topic>` | `data/output/<id>/` | |
 
 **署名邮箱约定**：`<agent-id>@crosswalk-guard.agents`（虚拟域，仅用于 commit trailer 标识，不收发邮件）。
 
@@ -34,10 +34,11 @@
 
 ## 2. 分支与输出隔离（防互踩）
 
-- **分支**：每个 agent 在自己的分支开发，前缀 `agent/<agent-id>/<topic>`；**禁止直接在 `main` 上做未协调的提交 / 重置 / 强制推送**。
+- **分支（默认主干开发）**：**日常开发直接在 `main` 上进行**，提交小而聚焦、配套单测一并提交即可，无需每人拉独立分支。**仅当遇到较大的、需要上下联调、持续较久的功能**时，才从 `main` 拉独立分支 `feat/<topic>` 开发，联调稳定后再合回 `main`。
+  - 无论是否拉分支，都**禁止对共享树执行 `git reset --hard` / `git checkout .` / `git clean -fd`**（见 §3 红线）与 `git push --force origin main`。
+  - 已合并回 main 的临时分支（如早期 `feat/light-eval-v2`）可保留历史，不再作为活跃开发分支。
 - **输出目录**：评测 / 运行产物写到 `data/output/<agent-id>/`，**绝不写共享的 `data/output/light_eval/` 等其它 agent 的目录**。
   - 例：并行测评 agent 跑 `eval_light_fast.py` 时，把输出重定向到 `data/output/eval-agent/`，不要覆盖 `data/output/light_eval/`。
-- 已合并到 main 的临时分支（如早期 `feat/light-eval-v2`）可保留历史，不再作为活跃开发分支。
 
 ---
 
@@ -93,7 +94,7 @@ GT（`events.csv` / `videos.csv` / `light_state/` / `violation_events/`）是**�
 
 ## 8. 冲突自查清单（每次提交前）
 
-- [ ] 我在自己的分支（非直接 main）？
+- [ ] 我在 main 上做日常提交，或（大功能）在自己的 `feat/<topic>` 分支？
 - [ ] 输出只写到 `data/output/<我的 id>/`？
 - [ ] 没动别人的目录 / 分支？
 - [ ] 没对共享树做 `reset` / `checkout .` / `clean`？
