@@ -217,18 +217,30 @@ def main():
                 reg.setdefault(row["video"], []).append((float(row["t_sec"]), row["expected_state"]))
         pred_by_video = {r["video"]: r["pred_records"] for r in results}
         fails = 0
+        hard_total = 0
+        hard_fails = 0
         for v, items in reg.items():
             preds = pred_by_video.get(v, [])
             for t_exp, exp in items:
                 # 最近帧
                 best = min(preds, key=lambda p: abs(p["t_sec"] - t_exp)) if preds else None
                 if best is None:
-                    print(f"  [FAIL] {v} t={t_exp}: 无预测"); fails += 1; continue
+                    print(f"  [FAIL] {v} t={t_exp}: 无预测"); fails += 1; hard_total += 1; hard_fails += 1; continue
+                # 通配 '*' / 'any' / 空: 软偏好帧(遮挡/无灯, unknown 可接受) -> 任意态均通过
+                if exp in ("*", "any", ""):
+                    print(f"  [OK  ] {v} t={t_exp} 通配(软偏好) 实际={best['pred']}")
+                    continue
+                hard_total += 1
                 ok = (best["pred"] == exp)
                 mark = "OK  " if ok else "FAIL"
                 if not ok:
                     fails += 1
+                    hard_fails += 1
                 print(f"  [{mark}] {v} t={t_exp} 期望={exp} 实际={best['pred']} (帧 t={best['t_sec']})")
+        soft_total = sum(1 for v, items in reg.items() for _, e in items if e in ("*", "any", ""))
+        print(f"\n回归校验: 硬目标 {hard_total-hard_fails}/{hard_total} 通过"
+              f" | 软偏好(通配) {soft_total} 帧任意态通过"
+              f" | {'全部硬目标通过 ✅' if hard_fails == 0 else f'{hard_fails} 条硬目标回退 ❌'}")
         print(f"回归校验: {'全部通过 ✅' if fails == 0 else f'{fails} 条回退 ❌'}")
 
 

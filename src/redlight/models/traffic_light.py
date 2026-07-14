@@ -22,6 +22,17 @@ import numpy as np
 from ..models.base_model import BaseModel, ModelInfo
 
 
+def _trailing_run(seq, color):
+    """返回 seq 末尾连续等于 color 的元素个数(遇 None/off 或异色即断)。"""
+    n = 0
+    for c in reversed(seq):
+        if c == color:
+            n += 1
+        else:
+            break
+    return n
+
+
 class TrafficLightDetector(BaseModel):
     def __init__(self, cfg, verbose=True):
         super().__init__()
@@ -65,6 +76,14 @@ class TrafficLightDetector(BaseModel):
         self.prior_search_radius = float(getattr(tl, "prior_search_radius", 0.13))
         self.prior_hold = int(getattr(tl, "prior_hold", 90))  # 先验模式下暗灯间歇丢失时保持旧色的最大帧数(~3s)
         self.prior_roi_px = int(getattr(tl, "prior_roi_px", 160))  # HSV直采ROI边长(px), 吸收手持漂移; 小灯视频可加大
+        # 先验 ROI 自适应扩展: 紧 ROI 暗(无点亮像素)时向四周扩展 prior_roi_expand_factor 倍再采一次,
+        # 吸收手持漂移导致信号灯移出紧 ROI(修复 02 t=76-85 等 g_px=0 漏检绿灯).
+        self.prior_roi_expand_factor = float(getattr(tl, "prior_roi_expand_factor", 2.0))
+        # 非对称连续帧翻转(先验模式专用, 见 _state_from_global prior 分支):
+        #   red->green(相位真正切换, 永久)只需连续 prior_flip_on 帧绿 -> 切换快、不滞后;
+        #   green->red(多为反射抖动, 瞬态)需连续 prior_flip_off 帧红才翻 -> 抗 02 绿灯相位内红反射(如 t=35.8 8帧红斑).
+        self.prior_flip_on = int(getattr(tl, "prior_flip_on", 5))
+        self.prior_flip_off = int(getattr(tl, "prior_flip_off", 10))
         # 闪烁判定
         self.flicker_toggle = int(getattr(tl, "flicker_toggle_count", 4))
         # 状态
@@ -525,11 +544,13 @@ class TrafficLightDetector(BaseModel):
             return "red"
         return None                          # 黄(35-40)/青等 -> 忽略
 
-    def _sample_prior_color(self):
+    def _sample_prior_color(self, roi_px=None):
         """Prior模式直采: 在先验位置附近取ROI做HSV颜色统计, 绕过候选生成的面积/饱和度过滤.
 
         解决: 行人信号灯(走路图标/站立人图标)面积<30px 或暗淡时被 _candidates 过滤掉.
         用法: prior模式下 near=[] 时作为降级方案, 直接统计先验ROI内绿/红像素比例.
+        自适应扩展: 紧 ROI 暗(无点亮像素)时, 自动向四周扩展 prior_roi_expand_factor 倍再采一次,
+        吸收手持漂移导致信号灯移出紧 ROI(修复 02 t=76-85 等 g_px=0 漏检绿灯).
 
         返回: 'green' | 'red' | None(无足够有色像素)
         """
@@ -537,19 +558,33 @@ class TrafficLightDetector(BaseModel):
             return None
         h, w = self._last_frame.shape[:2]
         px, py = self.signal_prior
-        # ROI覆盖整个行人信号单元: 走路图标(上) + 倒计时(中) + 站立人+等待(下)
-        # 用较大的ROI以吸收手持拍摄导致的画面内目标漂移(可调: 小灯视频加大)
-        roi_px = self.prior_roi_px
+        if roi_px is None:
+            roi_px = self.prior_roi_px
+        res, gn, rn = self._sample_roi(px, py, roi_px, w, h)
+        if res is not None:
+            self._last_sample = (gn, rn)
+            return res
+        # 紧 ROI 暗 -> 扩展重试(吸收漂移); 仅当本就用的紧 ROI 才扩展, 避免递归
+        if roi_px == self.prior_roi_px and self.prior_roi_expand_factor > 1.0:
+            big = int(self.prior_roi_px * self.prior_roi_expand_factor)
+            res, gn, rn = self._sample_roi(px, py, big, w, h)
+            if res is not None:
+                self._last_sample = (gn, rn)
+                return res
+        return None
+
+    def _sample_roi(self, px, py, roi_px, w, h):
+        """在 (px,py) 归一化中心取 roi_px 边长 ROI, 返回 (颜色, g_n, r_n) 或 (None,0,0)。"""
         cx_i, cy_i = int(px * w), int(py * h)
         x1 = max(0, cx_i - roi_px // 2)
         y1 = max(0, cy_i - roi_px // 2)
         x2 = min(w, cx_i + roi_px // 2)
         y2 = min(h, cy_i + roi_px // 2)
         if x2 <= x1 or y2 <= y1:
-            return None
+            return None, 0, 0
         roi = self._last_frame[y1:y2, x1:x2]
         if roi.size == 0:
-            return None
+            return None, 0, 0
         hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
         # 宽松阈值: 区域统计允许低饱和/低亮度(因为信号单元整体发光)
         g_mask = cv2.inRange(hsv_roi, np.array([35, 60, 40]), np.array([95, 255, 255]))
@@ -560,17 +595,16 @@ class TrafficLightDetector(BaseModel):
         r_n = int(cv2.countNonZero(r_mask))
         total = (x2 - x1) * (y2 - y1)
         if total == 0:
-            return None
+            return None, 0, 0
         g_frac, r_frac = g_n / total, r_n / total
-        self._last_sample = (g_n, r_n)
         min_frac = 0.002  # 至少0.2%有色像素
         if g_frac < min_frac and r_frac < min_frac:
-            return None
+            return None, 0, 0
         if g_frac > r_frac * 1.3:
-            return "green"
+            return "green", g_n, r_n
         if r_frac > g_frac * 1.3:
-            return "red"
-        return "green" if g_frac >= r_frac else "red"
+            return "red", g_n, r_n
+        return ("green" if g_frac >= r_frac else "red"), g_n, r_n
 
     # ---------- 信号单灯轨迹 (可视化/COT 定位, 颜色感知不合并) ----------
     def _update_tracks(self, spots):
@@ -635,21 +669,31 @@ class TrafficLightDetector(BaseModel):
         hyst = self.hysteresis
         # 先验模式: 信任锁定的行人信号, 用迟滞多数投票(抗邻居红灯污染/瞬态抖动),
         #          不判 flashing(逐帧直采噪声会误触发闪烁).
+        # 先验模式: 非对称连续帧翻转.
+        #   - 已建立 green, 需末尾连续 red 达 prior_flip_off 帧才翻回(反射抖动多为<off帧, 不误翻);
+        #   - 已建立 red,   需末尾连续 green 达 prior_flip_on 帧才翻(相位切换永久, 切换快不滞后);
+        #   - 初始(无状态): 反色占优即翻; 全空(seen==0)时保持 unknown 不臆测.
         if self.signal_prior is not None:
+            seq = list(self.global_recent)
+            g = sum(1 for c in seq if c == "green")
+            r = sum(1 for c in seq if c == "red")
+            seen = g + r
+            gr = g / seen if seen else 0.0
+            rr = r / seen if seen else 0.0
             last = self._last_state
             if last == "green":
-                if rr >= hyst:
+                if _trailing_run(seq, "red") >= self.prior_flip_off:
                     self._last_state = "red"
                     return "red", "prior_red", round(rr, 3)
-                self._last_state = "green"
                 return "green", "prior_green", round(gr, 3)
             if last == "red":
-                if gr >= hyst:
+                if _trailing_run(seq, "green") >= self.prior_flip_on:
                     self._last_state = "green"
                     return "green", "prior_green", round(gr, 3)
-                self._last_state = "red"
                 return "red", "prior_red", round(rr, 3)
-            # 初始: 纯多数投票定锚
+            # 初始: 反色占优即翻; 全空则 unknown(不臆测, 避免 02/03 启动误绿)
+            if seen == 0:
+                return "unknown", "prior_init", 0.0
             if gr >= rr:
                 self._last_state = "green"
                 return "green", "prior_green", round(gr, 3)

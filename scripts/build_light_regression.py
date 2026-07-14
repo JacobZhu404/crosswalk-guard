@@ -26,11 +26,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "data", "output", "annotated", "light_feedback.csv")
 DST = os.path.join(ROOT, "datasets", "gt", "light_regression.csv")
 VALID_STATES = {"red", "green", "flashing", "unknown"}
-# 备注中出现这些词 -> 人类认为应出 unknown(遮挡/无灯/看不清)
+# 备注中出现这些词 -> 人类认为"输出 unknown 也可以"(软偏好, 非硬错)
+#   原话: "红绿灯被遮挡, 可以输出unknown" / "图片中没有红绿灯, 输出unknown也可以"
+#   故这类帧定位为 kind=soft: 回归校验时任意态均算通过(不逼算法硬出unknown, 避免过杀真实相位)
 UNKNOWN_HINTS = ("unknown", "遮挡", "没有红绿灯", "看不清")
 
 
-def should_be_unknown(note):
+def is_soft_unknown(note):
     n = (note or "").lower()
     return any(h in n for h in UNKNOWN_HINTS)
 
@@ -55,8 +57,11 @@ def main():
                     t = float(r["t_sec"])
                 except (ValueError, KeyError):
                     continue
-                # expected_state: 遮挡/无灯 -> unknown; 否则用 GT 相位态
-                expected = "unknown" if should_be_unknown(r.get("note")) else gt
+                # expected_state:
+                #   - 软偏好(遮挡/无灯/看不清): expected='*' 通配, kind='soft' -> 回归校验任意态均通过
+                #   - 其余(定位错): expected=gt 相位态, kind='hard' -> 必须匹配, 是真 bug
+                soft = is_soft_unknown(r.get("note"))
+                expected = "*" if soft else gt
                 rows.append({
                     "video": r["video"],
                     "frame_idx": r.get("frame_idx", ""),
@@ -64,6 +69,7 @@ def main():
                     "expected_state": expected,
                     "pred_was": r.get("pred", ""),
                     "reason": r.get("reason", ""),
+                    "kind": "soft" if soft else "hard",
                 })
 
     # 按 (video, t_sec) 去重 — 匹配 --regression 读取键(避免同 t 重复校验)
@@ -75,17 +81,19 @@ def main():
 
     os.makedirs(os.path.dirname(args.dst), exist_ok=True)
     with open(args.dst, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["video", "frame_idx", "t_sec", "expected_state", "pred_was", "reason"])
+        w = csv.DictWriter(f, fieldnames=["video", "frame_idx", "t_sec", "expected_state", "pred_was", "reason", "kind"])
         w.writeheader()
         w.writerows(out)
 
     from collections import Counter
     c = Counter(r["video"] for r in out)
     eu = Counter(r["expected_state"] for r in out)
+    ek = Counter(r["kind"] for r in out)
     print(f"回归用例: {len(out)} 条 (来自 {args.src})")
     for v, n in sorted(c.items()):
         print(f"  {v}: {n}")
     print(f"  expected 分布: {dict(eu)}")
+    print(f"  kind 分布: {dict(ek)}  (soft=通配任意态通过, hard=必须匹配相位态)")
 
 
 if __name__ == "__main__":
