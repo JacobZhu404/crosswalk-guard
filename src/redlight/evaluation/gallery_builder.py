@@ -372,6 +372,15 @@ h1{color:#0f172a;margin:8px 0;}
 """
 
     _JS = """
+function showProtocolWarn(){
+  if(location.protocol!=='file:') return;
+  const w=document.createElement('div');
+  w.id='protocol-warn';
+  w.style.cssText='position:sticky;top:0;left:0;right:0;z-index:9999;background:#dc2626;color:#fff;padding:10px 16px;font-size:13px;font-weight:600;text-align:center;line-height:1.5;';
+  w.innerHTML='⚠️ 你正用 <b>file://</b> 直接打开本页，标注不会写入服务器 CSV（仅临时存浏览器，刷新即丢）。请改用 <a href="http://localhost:8765/" target="_blank" style="color:#fff;text-decoration:underline;">http://localhost:8765/</a> 打开。';
+  document.body.insertBefore(w, document.body.firstChild);
+}
+showProtocolWarn();
 async function postFeedback(p){
   try{
     const r = await fetch('/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
@@ -409,7 +418,7 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
       const iw = card.querySelector('.img-wrap');
       if(iw && !card.querySelector('.badge-done')) iw.insertAdjacentHTML('afterbegin','<span class="badge-done">已标注</span>');
       if(!card.querySelector('.done')) card.querySelector('.meta').insertAdjacentHTML('beforeend',' <span class="done">已标</span>'); }
-    else { st.textContent='已存本地(无服务)'; st.style.color='#d97706'; card.classList.add('saved'); }
+    else { st.textContent='⚠️ 未存服务器(仅浏览器临时,刷新丢)'; st.style.color='#dc2626'; card.classList.add('saved'); }
     updateCount();
   });
 });
