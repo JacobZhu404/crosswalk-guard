@@ -540,6 +540,7 @@ function updClip(){
   if(!clip || !clip.verdict){ el.textContent='空'; el.style.color='#94a3b8'; return; }
   el.textContent = `${clip.verdict} / ${clip.reason||'-'} / ${clip.note||'-'}`;
   el.style.color='#4ade80';
+  el.parentElement.title = el.textContent;
 }
 // 复制选中: 取第一个选中帧的 verdict/reason/note 存剪贴板
 document.getElementById('copy-sel').addEventListener('click', ()=>{
@@ -622,7 +623,6 @@ updSelCount();
   <input id="batch-note" placeholder="备注(可选)"/>
   <button id="batch-apply">应用到选中</button>
   <button id="batch-clear">清空选择</button>
-  <span style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;">剪贴板: <span id="clip" style="color:#94a3b8;">空</span></span>
   <button id="copy-sel">复制选中</button>
   <button id="paste-sel">粘贴到选中</button>
   <span style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;">筛选:
@@ -631,6 +631,7 @@ updSelCount();
     <button id="f-undone" class="fbtn">未标注</button>
     <span id="filter-count"></span>
   </span>
+  <span style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="">剪贴板: <span id="clip" style="color:#94a3b8;">空</span></span>
   <span id="batch-status"></span>
 </div>
 <h1>{self.title}</h1>
