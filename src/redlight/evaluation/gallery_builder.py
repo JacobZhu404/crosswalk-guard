@@ -381,6 +381,25 @@ function showProtocolWarn(){
   document.body.insertBefore(w, document.body.firstChild);
 }
 showProtocolWarn();
+function markSaved(){
+  fetch('/feedback').then(r=>r.json()).then(j=>{
+    if(!j || !j.ok) return;
+    const byKey={};
+    (j.rows||[]).forEach(r=>{ byKey[r.video+'|'+r.t_sec+'|'+r.frame_idx]=r; });
+    document.querySelectorAll('.crop-card').forEach(card=>{
+      const key=card.dataset.video+'|'+card.dataset.t+'|'+card.dataset.idx;
+      if(byKey[key]){
+        card.dataset.annotated='1'; card.classList.add('saved');
+        const iw=card.querySelector('.img-wrap');
+        if(iw && !card.querySelector('.badge-done')) iw.insertAdjacentHTML('afterbegin','<span class="badge-done">已标注</span>');
+        const m=card.querySelector('.meta'); if(m && !card.querySelector('.done')) m.insertAdjacentHTML('beforeend',' <span class="done">已标</span>');
+      }
+    });
+    if(typeof applyFilter==='function') applyFilter();
+    if(typeof updateCount==='function') updateCount();
+  }).catch(()=>{});
+}
+markSaved();
 async function postFeedback(p){
   try{
     const r = await fetch('/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});

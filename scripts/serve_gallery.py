@@ -48,6 +48,16 @@ class Handler(SimpleHTTPRequestHandler):
         super().__init__(*args, directory=EVAL_DIR, **kwargs)
 
     def do_GET(self):
+        if self.path.rstrip("/") == "/feedback":
+            try:
+                rows = []
+                if os.path.exists(FEEDBACK_CSV):
+                    with open(FEEDBACK_CSV, encoding="utf-8-sig", newline="") as f:
+                        rows = list(csv.DictReader(f))
+                self._json(200, {"ok": True, "rows": rows})
+            except Exception as e:
+                self._json(500, {"ok": False, "error": str(e)})
+            return
         if self.path in ("/", ""):
             self.path = "/gallery.html"
         return super().do_GET()
