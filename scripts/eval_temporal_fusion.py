@@ -96,10 +96,15 @@ def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None):
         pred_state, pred_conf = state_at(pred_segs_typed, ts)
         gt_state, gt_conf = state_at(gt_segs, ts)
         is_confirmed = (gt_conf == "confirmed")
+        # conf 数值化(供 make_light_gallery 画廊置信度色块; pred_conf 原始可能是段 meta 字符串)
+        try:
+            conf_num = float(pred_conf)
+        except (TypeError, ValueError):
+            conf_num = 0.0
         pred_records.append({
             "video": video, "t_sec": round(ts, 2), "frame_idx": idx,
             "pred": pred_state, "gt": gt_state, "gt_conf": gt_conf,
-            "pred_conf": pred_conf,
+            "pred_conf": pred_conf, "conf": conf_num,
         })
         pred_states.append(pred_state)
         gt_states.append(gt_state)
@@ -173,6 +178,8 @@ def main():
     ap.add_argument("--gt", default=os.path.join(ROOT, "datasets", "gt", "light_states.csv"))
     ap.add_argument("--priors", default=os.path.join(ROOT, "configs", "light_priors.json"))
     ap.add_argument("--out", default=os.path.join(ROOT, "data", "output", "temporal_fusion_eval"))
+    ap.add_argument("--gallery-out", default=None,
+                     help="同步写 pred_*.csv+mismatch_all.csv 到此目录(供 make_light_gallery 直接消费, 默认 light_eval)")
     # fuse_light 参数覆盖
     ap.add_argument("--window", type=int, default=None, help="覆盖 smoothing_window")
     ap.add_argument("--hysteresis", type=float, default=None, help="覆盖迟滞阈值")
@@ -273,12 +280,13 @@ def main():
             line += str(conf_mat[gs][ps]).rjust(10)
         print(line)
 
-    # 落盘: 逐帧预测 + mismatch
+    # 落盘: 逐帧预测 + mismatch (字段对齐 make_light_gallery 画廊: 含 conf 数值列)
+    _FIELDS = ["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "pred_conf", "conf"]
     all_mm = []
     for r in results:
         pred_csv = os.path.join(args.out, f"pred_{r['video']}.csv")
         with open(pred_csv, "w", encoding="utf-8", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "pred_conf"])
+            w = csv.DictWriter(f, fieldnames=_FIELDS)
             w.writeheader()
             w.writerows(r["pred_records"])
         for m in r["mismatches"]:
@@ -286,11 +294,25 @@ def main():
 
     mm_csv = os.path.join(args.out, "mismatch_all.csv")
     with open(mm_csv, "w", encoding="utf-8", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["video", "t_sec", "frame_idx", "pred", "gt", "gt_conf", "pred_conf"])
+        w = csv.DictWriter(f, fieldnames=_FIELDS)
         w.writeheader()
         w.writerows(all_mm)
     print(f"\n逐帧预测: {args.out}/pred_*.csv")
     print(f"mismatch 清单: {mm_csv} ({len(all_mm)} 条)")
+
+    # 可选: 同步写一份到 light_eval/ 供 make_light_gallery 直接消费(完整交互画廊)
+    if args.gallery_out:
+        os.makedirs(args.gallery_out, exist_ok=True)
+        for r in results:
+            with open(os.path.join(args.gallery_out, f"pred_{r['video']}.csv"), "w", encoding="utf-8", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=_FIELDS)
+                w.writeheader()
+                w.writerows(r["pred_records"])
+        with open(os.path.join(args.gallery_out, "mismatch_all.csv"), "w", encoding="utf-8", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=_FIELDS)
+            w.writeheader()
+            w.writerows(all_mm)
+        print(f"画廊数据(同步): {args.gallery_out}/pred_*.csv + mismatch_all.csv")
 
     # 落盘: fuse_light 产出的 segments (JSON)
     segments_json = os.path.join(args.out, "fused_segments.json")

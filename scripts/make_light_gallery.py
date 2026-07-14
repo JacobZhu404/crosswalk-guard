@@ -17,10 +17,13 @@ from redlight.evaluation.light_gallery import LightGalleryBuilder
 
 
 def load_preds(pred_csv):
+    # video 从文件名 pred_<video>.csv 取(确保 item 带 video, 画廊 annotate_crop 才能按视频查 prior)
+    video = os.path.splitext(os.path.basename(pred_csv))[0][len("pred_"):]
     rows = []
     with open(pred_csv, encoding="utf-8") as f:
         for r in csv.DictReader(f):
             rows.append({
+                "video": r.get("video", video) or video,
                 "frame_idx": int(r["frame_idx"]),
                 "t_sec": float(r["t_sec"]),
                 "pred": r["pred"],

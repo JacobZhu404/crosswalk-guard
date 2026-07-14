@@ -140,8 +140,12 @@ class BaseGalleryBuilder(ABC):
         with open(self.feedback_path, encoding="utf-8-sig") as f:
             for row in csv.DictReader(f):
                 video = row.get("video", "")
-                # 优先用 t_sec; 其次 frame_idx; 兜底空字符串
+                # t_sec 归一为一位小数, 与 feedback_key (f"{t:.1f}") 对齐, 避免 10.84≠10.8 匹配不上
                 ident = row.get("t_sec", row.get("frame_idx", ""))
+                try:
+                    ident = f"{float(ident):.1f}"
+                except (TypeError, ValueError):
+                    pass
                 # 保留 CSV 所有字段, 支持子类扩展(如 corrected_plate)
                 d[(video, ident)] = dict(row)
         return d
@@ -215,8 +219,11 @@ class BaseGalleryBuilder(ABC):
         return f"""
             <div class="crop-card" data-video="{video}" data-t="{item.get('t_sec', '')}"
                  data-idx="{item.get('frame_idx', '')}"{extra_attrs}>
-              <img class="zoom" src="{crop_rel}" data-full="{full_rel}"
-                   style="width:200px;display:block;cursor:zoom-in;"/>
+              <div class="img-wrap">
+                <span class="check" title="点击选中(Shift区间/Ctrl多选)">✅</span>
+                <img class="zoom" src="{crop_rel}" data-full="{full_rel}"
+                     style="width:200px;display:block;cursor:zoom-in;"/>
+              </div>
               <div class="meta">{self.item_meta_html(item, gt)}{done_badge}</div>
               <div class="fb">
                 <select class="verdict">{verdict_html}</select>
@@ -338,6 +345,19 @@ h1{color:#0f172a;margin:8px 0;}
 .fb .save{background:#0f172a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;align-self:flex-start;}
 .fb .status{font-size:10px;}
 .zoom{cursor:zoom-in;}
+.img-wrap{position:relative;}
+.check{position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:4px;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;z-index:5;user-select:none;border:2px solid #94a3b8;color:transparent;line-height:1;}
+.check:hover{border-color:#3b82f6;}
+.crop-card.selected .check{background:#3b82f6;color:#fff;border-color:#3b82f6;}
+.crop-card{cursor:pointer;}
+.crop-card.selected{box-shadow:0 0 0 3px #3b82f6 inset;}
+.crop-card.selected .meta{background:#eff6ff;}
+#batch-bar{position:sticky;top:54px;background:#1e293b;color:#fff;padding:8px 16px;display:flex;gap:8px;align-items:center;z-index:9;margin:0 0 12px;font-size:12px;flex-wrap:wrap;border-radius:6px;}
+#batch-bar b{font-size:13px;}
+#batch-bar select,#batch-bar input{font-size:12px;padding:3px;border:1px solid #475569;border-radius:4px;background:#0f172a;color:#fff;}
+#batch-bar button{background:#3b82f6;color:#fff;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px;}
+#batch-bar #batch-clear{background:#475569;}
+#batch-bar #batch-status{font-size:11px;color:#94a3b8;}
 .lightbox{position:fixed;inset:0;background:rgba(15,23,42,.9);display:none;align-items:center;justify-content:center;z-index:200;}
 .lightbox.show{display:flex;}
 .lightbox img{max-width:94vw;max-height:94vh;border:2px solid #fff;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.6);}
@@ -381,17 +401,6 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
     if(res==='ok'){ st.textContent='已保存'; st.style.color='#16a34a'; card.classList.add('saved');
       if(!card.querySelector('.done')) card.querySelector('.meta').insertAdjacentHTML('beforeend',' <span class="done">已标</span>'); }
     else { st.textContent='已存本地(无服务)'; st.style.color='#d97706'; card.classList.add('saved'); }
-    // 批量便利: 把刚保存的所有字段预填到"下一张"
-    const nxt = card.nextElementSibling;
-    if(nxt && nxt.classList.contains('crop-card')){
-      const nxtFb = nxt.querySelector('.fb');
-      if(nxtFb){
-        Object.keys(p).forEach(k=>{
-          const el = nxtFb.querySelector('.'+k);
-          if(el && (el.tagName==='INPUT' || el.tagName==='SELECT')) el.value = p[k];
-        });
-      }
-    }
     updateCount();
   });
 });
@@ -406,6 +415,133 @@ document.querySelectorAll('img.zoom').forEach(im=>{
   im.addEventListener('click',()=>{ lbImg.src=im.dataset.full; lb.classList.add('show'); });
 });
 lb.addEventListener('click',()=>lb.classList.remove('show'));
+// ESC 关闭大图灯箱, 返回画廊
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape' && lb.classList.contains('show')) lb.classList.remove('show');
+});
+
+// ---- 批量标注: Shift区间选 / Ctrl单选 / 应用到选中 ----
+let lastSelIdx = -1;
+const cards = () => Array.from(document.querySelectorAll('.crop-card'));
+function selIdx(card){ return cards().indexOf(card); }
+function updSelCount(){ document.getElementById('sel').textContent = document.querySelectorAll('.crop-card.selected').length; }
+function setSel(card, on){ card.classList.toggle('selected', on); }
+// 统一选中行为:
+//   普通点未选中=单选(取消其他); 普通点已选中=取消该张(toggle, 直觉式取消单个)
+//   Shift+点=区间选; Ctrl/Cmd+点=多选增减(不影响其他已选)
+function selectCard(card, e){
+  const idx = selIdx(card);
+  const wasSel = card.classList.contains('selected');
+  if(e.shiftKey && lastSelIdx >= 0){
+    const [a,b] = [Math.min(lastSelIdx,idx), Math.max(lastSelIdx,idx)];
+    cards().forEach((c,i)=> setSel(c, i>=a && i<=b));
+  } else if(e.ctrlKey || e.metaKey){
+    setSel(card, !wasSel);
+    lastSelIdx = idx;
+  } else {
+    // 普通点: 已选中则取消该张, 未选中则单选它(取消其他)
+    if(wasSel){
+      setSel(card, false);
+    } else {
+      cards().forEach(c=> setSel(c, false));
+      setSel(card, true);
+      lastSelIdx = idx;
+    }
+  }
+  updSelCount();
+}
+// 点卡片(非控件区)选中; 点 .check 勾选按钮也选中
+document.querySelectorAll('.crop-card').forEach(card=>{
+  card.addEventListener('click', e=>{
+    // 点图片放大、或点 .fb 内控件(保存/下拉/输入)时不触发选中
+    if(e.target.closest('.zoom') || e.target.closest('.fb')) return;
+    selectCard(card, e);
+  });
+  // 左上角 ✅ 勾选按钮: 点它切换选中(支持 Shift/Ctrl), 阻止冒泡避免二次触发
+  const chk = card.querySelector('.check');
+  if(chk){
+    chk.addEventListener('click', e=>{
+      e.stopPropagation();
+      selectCard(card, e);
+    });
+  }
+});
+document.getElementById('batch-clear').addEventListener('click', ()=>{
+  cards().forEach(c=> setSel(c,false)); lastSelIdx=-1; updSelCount();
+});
+// 批量应用: 把选定 verdict/reason/note 写入每张选中卡片的 .fb 控件, 然后逐张保存
+document.getElementById('batch-apply').addEventListener('click', async ()=>{
+  const sel = Array.from(document.querySelectorAll('.crop-card.selected'));
+  const st = document.getElementById('batch-status');
+  if(!sel.length){ st.textContent='未选中任何帧'; st.style.color='#f87171'; return; }
+  const bv = document.getElementById('batch-verdict').value;
+  if(!bv){ st.textContent='请先选判定'; st.style.color='#f87171'; return; }
+  const br = document.getElementById('batch-reason').value;
+  const bn = document.getElementById('batch-note').value;
+  st.textContent='批量保存中 0/'+sel.length; st.style.color='#94a3b8';
+  let done = 0;
+  for(const card of sel){
+    const fb = card.querySelector('.fb');
+    if(fb){
+      if(bv){ const v=fb.querySelector('.verdict'); if(v) v.value=bv; }
+      if(br){ const r=fb.querySelector('.reason'); if(r) r.value=br; }
+      if(bn){ const n=fb.querySelector('.note'); if(n) n.value=bn; }
+    }
+    // 复用单张保存逻辑: 触发该卡的 save 按钮点击
+    const saveBtn = card.querySelector('.save');
+    if(saveBtn){ saveBtn.click(); }
+    done++; st.textContent='批量保存中 '+done+'/'+sel.length;
+    await new Promise(r=>setTimeout(r,30)); // 给 postFeedback 一点喘息, 避免服务并发丢
+  }
+  st.textContent='已批量保存 '+done+' 帧 ✓'; st.style.color='#4ade80';
+  updSelCount();
+});
+// ---- 复制选中 / 粘贴到选中 (剪贴板式) ----
+let clip = null; // {verdict, reason, note}
+function updClip(){
+  const el = document.getElementById('clip');
+  if(!clip || !clip.verdict){ el.textContent='空'; el.style.color='#94a3b8'; return; }
+  el.textContent = `${clip.verdict} / ${clip.reason||'-'} / ${clip.note||'-'}`;
+  el.style.color='#4ade80';
+}
+// 复制选中: 取第一个选中帧的 verdict/reason/note 存剪贴板
+document.getElementById('copy-sel').addEventListener('click', ()=>{
+  const st = document.getElementById('batch-status');
+  const sel = Array.from(document.querySelectorAll('.crop-card.selected'));
+  if(!sel.length){ st.textContent='先选中一帧再复制'; st.style.color='#f87171'; return; }
+  const fb = sel[0].querySelector('.fb');
+  const v = fb.querySelector('.verdict').value;
+  if(!v){ st.textContent='选中的帧未标判定, 无法复制'; st.style.color='#f87171'; return; }
+  clip = {
+    verdict: v,
+    reason: fb.querySelector('.reason').value,
+    note: fb.querySelector('.note').value,
+  };
+  st.textContent='已复制选中帧的标注 ✓'; st.style.color='#4ade80';
+  updClip();
+});
+// 粘贴到选中: 把剪贴板内容填入每张选中帧并保存
+document.getElementById('paste-sel').addEventListener('click', async ()=>{
+  const st = document.getElementById('batch-status');
+  if(!clip || !clip.verdict){ st.textContent='剪贴板空, 先选中一帧点"复制选中"'; st.style.color='#f87171'; return; }
+  const sel = Array.from(document.querySelectorAll('.crop-card.selected'));
+  if(!sel.length){ st.textContent='先选中目标帧(可多选)再粘贴'; st.style.color='#f87171'; return; }
+  st.textContent='粘贴保存中 0/'+sel.length; st.style.color='#94a3b8';
+  let done = 0;
+  for(const card of sel){
+    const fb = card.querySelector('.fb');
+    fb.querySelector('.verdict').value = clip.verdict;
+    fb.querySelector('.reason').value = clip.reason || '';
+    fb.querySelector('.note').value = clip.note || '';
+    const saveBtn = card.querySelector('.save');
+    if(saveBtn) saveBtn.click();
+    done++; st.textContent='粘贴保存中 '+done+'/'+sel.length;
+    await new Promise(r=>setTimeout(r,30));
+  }
+  st.textContent='已粘贴到 '+done+' 帧 ✓'; st.style.color='#4ade80';
+});
+updClip();
+updSelCount();
 """
 
     def _render_page(self, cards_html: str) -> str:
@@ -415,8 +551,21 @@ lb.addEventListener('click',()=>lb.classList.remove('show'));
 <div id="toolbar">
   <b>{self.toolbar_label}</b>
   <span>已保存 <span id="saved">0</span> 帧</span>
-  <span class="hint">每张图下方点"保存"即可标注</span>
+  <span class="hint">单张点"保存"; 批量: 点☐选中(Shift区间/Ctrl多选/再点取消) → 选判定/原因 → "应用到选中"; 或"复制选中"→选目标→"粘贴到选中"</span>
   <button id="export">导出本地标注(JSON)</button>
+</div>
+<div id="batch-bar">
+  <b>批量标注</b>
+  <span>已选 <span id="sel">0</span> 帧</span>
+  <select id="batch-verdict">{self._build_option_html(self.verdict_options(), '', '--判定--')}</select>
+  <select id="batch-reason">{self._build_option_html(self.reason_options(), '', '--原因--')}</select>
+  <input id="batch-note" placeholder="备注(可选)"/>
+  <button id="batch-apply">应用到选中</button>
+  <button id="batch-clear">清空选择</button>
+  <span style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;">剪贴板: <span id="clip" style="color:#94a3b8;">空</span></span>
+  <button id="copy-sel">复制选中</button>
+  <button id="paste-sel">粘贴到选中</button>
+  <span id="batch-status"></span>
 </div>
 <h1>{self.title}</h1>
 <p class="intro">{self.intro_html()}</p>
