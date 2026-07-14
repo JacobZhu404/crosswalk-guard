@@ -395,7 +395,7 @@ function markSaved(){
         const m=card.querySelector('.meta'); if(m && !card.querySelector('.done')) m.insertAdjacentHTML('beforeend',' <span class="done">已标</span>');
       }
     });
-    if(typeof applyFilter==='function') applyFilter();
+    if(typeof applyFilter==='function') applyFilter('all');
     if(typeof updateCount==='function') updateCount();
   }).catch(()=>{});
 }
