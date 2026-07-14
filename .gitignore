@@ -13,9 +13,14 @@ data/processed/
 data/raw/
 runs/
 *.log
+# 例外: 人工标注结果(小, 需入库保存)
+!data/output/annotated/
+!data/output/annotated/light_feedback.csv
+!data/output/annotated/plate_feedback.csv
 
-# ---- 抽帧调参产物(可再生成, 1.7GB 不入库) ----
+# ---- 抽帧调参产物(可再生成, 不入库) ----
 datasets/frames/
+datasets/ped_signal/
 input_video/
 
 # ---- 大权重/视频/压缩包(外部存储, 勿入 git 历史) ----
