@@ -58,16 +58,40 @@ def _rows_to_dataset(rows):
     return _imgs_to_X(imgs), torch.tensor(ys, dtype=torch.long)
 
 
-def train_net(X, y, epochs=30, lr=1e-3):
+def train_net(X, y, epochs=30, lr=1e-3, balanced=False, seed=0):
+    """训练 tiny-CNN。balanced=True 时对少数类( walk/stand)过采样、off 下采样到均衡,
+    缓解弱标签下 off 占 91.7% 的严重失衡(否则模型会退化成'全判 off')。"""
     net = _build_net()
     opt = torch.optim.Adam(net.parameters(), lr=lr)
     lossf = nn.CrossEntropyLoss()
     net.train()
-    for _ in range(epochs):
-        opt.zero_grad()
-        loss = lossf(net(X), y)
-        loss.backward()
-        opt.step()
+    if balanced and X.shape[0] > 0:
+        import numpy as np
+        y_arr = y.numpy()
+        classes = sorted(set(y_arr.tolist()))
+        idxs = {c: np.where(y_arr == c)[0] for c in classes}
+        counts = {c: len(idxs[c]) for c in classes}
+        maj = max(counts.values())
+        rng = np.random.RandomState(seed)
+        for _ in range(epochs):
+            sel = []
+            for c in classes:
+                if counts[c] == 0:
+                    continue
+                sel.append(rng.choice(idxs[c], size=maj, replace=True))
+            sel = np.concatenate(sel)
+            rng.shuffle(sel)
+            st = torch.from_numpy(sel)
+            opt.zero_grad()
+            loss = lossf(net(X[st]), y[st])
+            loss.backward()
+            opt.step()
+    else:
+        for _ in range(epochs):
+            opt.zero_grad()
+            loss = lossf(net(X), y)
+            loss.backward()
+            opt.step()
     net.eval()
     return net
 
@@ -181,7 +205,13 @@ def main():
     ap.add_argument("--smoke", action="store_true", help="合成数据契约自检(不需真实数据)")
     ap.add_argument("--export-onnx", action="store_true",
                     help="额外导出 ONNX(供 cv2.dnn 加载, 需 onnx 包; 默认关, 运行时已支持 .pt)")
-    ap.add_argument("--verified-only", action="store_true", default=True)
+    ap.add_argument("--verified-only", dest="verified_only", action="store_true", default=True,
+                    help="只用人工校验(verified=1)的 crop(默认开, 保守)")
+    ap.add_argument("--no-verified-only", dest="verified_only", action="store_false",
+                    help="用弱标签 crop(verified=0)训练: 弱标签自举, 需配合 --balanced")
+    ap.add_argument("--balanced", dest="balanced", action="store_true", default=True,
+                    help="平衡采样(默认开): 缓解 off 占 91.7% 的失衡")
+    ap.add_argument("--no-balanced", dest="balanced", action="store_false")
     args = ap.parse_args()
 
     if not _HAS_TORCH:
@@ -198,13 +228,14 @@ def main():
 
     # LOVO 交叉验证
     folds = lovo_folds(rows, verified_only=args.verified_only)
+    print(f"\nLOVO 折数={len(folds)} (verified_only={args.verified_only}, balanced={args.balanced})")
     accs = []
     for tv, train, test in folds:
         Xtr, ytr = _rows_to_dataset(train)
         Xte, yte = _rows_to_dataset(test)
         if Xtr is None or Xte is None:
             print(f"[LOVO {tv}] 跳过(空)"); continue
-        net = train_net(Xtr, ytr, epochs=args.epochs)
+        net = train_net(Xtr, ytr, epochs=args.epochs, balanced=args.balanced)
         a = accuracy(net, Xte, yte)
         accs.append(a)
         print(f"[LOVO 留出 {tv}] test_acc={a:.3f} (train={len(train)} test={len(test)})")
@@ -213,7 +244,7 @@ def main():
 
     # 全量训练 + 导出
     X, y = _rows_to_dataset(rows)
-    net = train_net(X, y, epochs=args.epochs)
+    net = train_net(X, y, epochs=args.epochs, balanced=args.balanced)
     export_torch(net, args.out)
     print(f"\n导出 PyTorch 权重 -> {args.out}")
     if args.export_onnx:
