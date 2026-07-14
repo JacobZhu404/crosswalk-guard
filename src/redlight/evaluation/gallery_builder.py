@@ -107,6 +107,15 @@ class BaseGalleryBuilder(ABC):
         """返回额外 data-* 属性, 注入 crop-card 的 div 中。"""
         return {}
 
+    def _extra_feedback_inputs_html(
+        self, video: str, item: dict, gt: Any, fb: dict
+    ) -> str:
+        """返回 crop-card 反馈区中额外 input/select HTML; 默认空。
+
+        子类如需 corrected_plate 等额外字段, 覆写此方法。
+        """
+        return ""
+
     # ---------- 公共基础设施 ----------
 
     def __init__(
@@ -133,11 +142,8 @@ class BaseGalleryBuilder(ABC):
                 video = row.get("video", "")
                 # 优先用 t_sec; 其次 frame_idx; 兜底空字符串
                 ident = row.get("t_sec", row.get("frame_idx", ""))
-                d[(video, ident)] = {
-                    "verdict": row.get("verdict", ""),
-                    "reason": row.get("reason", ""),
-                    "note": row.get("note", ""),
-                }
+                # 保留 CSV 所有字段, 支持子类扩展(如 corrected_plate)
+                d[(video, ident)] = dict(row)
         return d
 
     def _lookup_feedback(self, key: Tuple[str, str]) -> dict:
@@ -189,7 +195,9 @@ class BaseGalleryBuilder(ABC):
         full_rel: str,
     ) -> str:
         fb = self._lookup_feedback(self.feedback_key(video, item))
-        vv, rr, nn = fb["verdict"], fb["reason"], fb["note"]
+        vv = fb.get("verdict", "")
+        rr = fb.get("reason", "")
+        nn = fb.get("note", "")
         done_badge = ' <span class="done">已标</span>' if vv else ""
 
         extra_attrs = ""
@@ -202,6 +210,7 @@ class BaseGalleryBuilder(ABC):
         reason_html = self._build_option_html(
             self.reason_options(), rr, "--原因--"
         )
+        extra_inputs = self._extra_feedback_inputs_html(video, item, gt, fb)
 
         return f"""
             <div class="crop-card" data-video="{video}" data-t="{item.get('t_sec', '')}"
@@ -212,6 +221,7 @@ class BaseGalleryBuilder(ABC):
               <div class="fb">
                 <select class="verdict">{verdict_html}</select>
                 <select class="reason">{reason_html}</select>
+                {extra_inputs}
                 <input class="note" value="{nn}" placeholder="备注(可选)"/>
                 <button class="save">保存</button>
                 <span class="status"></span>
@@ -226,8 +236,11 @@ class BaseGalleryBuilder(ABC):
 
         crop_html_parts: List[str] = []
         for it in reps:
-            frame_idx = int(it.get("frame_idx", 0))
-            frame = self._resolve_frame(video, frame_idx)
+            # 优先使用 item 内嵌 frame(实时检测模式), 其次从 frames_dir 加载
+            frame = it.get("frame")
+            if frame is None:
+                frame_idx = int(it.get("frame_idx", 0))
+                frame = self._resolve_frame(video, frame_idx)
             if frame is None:
                 continue
             tsec = f"{float(it.get('t_sec', 0)):.1f}"
@@ -345,10 +358,16 @@ function updateCount(){ document.getElementById('saved').textContent = document.
 document.querySelectorAll('.crop-card .save').forEach(btn=>{
   btn.addEventListener('click', async ()=>{
     const card = btn.closest('.crop-card');
-    const p = { video:card.dataset.video, t:card.dataset.t, idx:card.dataset.idx,
-                verdict:card.querySelector('.verdict').value,
-                reason:card.querySelector('.reason').value,
-                note:card.querySelector('.note').value };
+    const p = { video:card.dataset.video, t:card.dataset.t, idx:card.dataset.idx };
+    // 自动收集 .fb 区域内所有 input/select(按 class name 映射为字段名)
+    const fb = card.querySelector('.fb');
+    if(fb){
+      fb.querySelectorAll('input,select').forEach(el=>{
+        if(el.classList.contains('save') || el.classList.contains('status')) return;
+        const key = el.className || el.tagName.toLowerCase();
+        p[key] = el.value;
+      });
+    }
     // 把子类注入的 data-* 属性也带上,便于导出时区分类型
     for(const attr of card.attributes){
       if(attr.name.startsWith('data-') && !['data-video','data-t','data-idx'].includes(attr.name)){
@@ -362,11 +381,16 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
     if(res==='ok'){ st.textContent='已保存'; st.style.color='#16a34a'; card.classList.add('saved');
       if(!card.querySelector('.done')) card.querySelector('.meta').insertAdjacentHTML('beforeend',' <span class="done">已标</span>'); }
     else { st.textContent='已存本地(无服务)'; st.style.color='#d97706'; card.classList.add('saved'); }
+    // 批量便利: 把刚保存的所有字段预填到"下一张"
     const nxt = card.nextElementSibling;
     if(nxt && nxt.classList.contains('crop-card')){
-      nxt.querySelector('.verdict').value = p.verdict;
-      nxt.querySelector('.reason').value = p.reason;
-      nxt.querySelector('.note').value = p.note;
+      const nxtFb = nxt.querySelector('.fb');
+      if(nxtFb){
+        Object.keys(p).forEach(k=>{
+          const el = nxtFb.querySelector('.'+k);
+          if(el && (el.tagName==='INPUT' || el.tagName==='SELECT')) el.value = p[k];
+        });
+      }
     }
     updateCount();
   });

@@ -99,7 +99,7 @@ class TestFeedbackLoad:
                 w.writerow({"video": "v1", "t_sec": "1.5", "verdict": "algo_wrong", "reason": "color", "note": "n1"})
             b = _MockBuilder("/tmp/eval", feedback_path=fp)
             assert b._feedback == {
-                ("v1", "1.5"): {"verdict": "algo_wrong", "reason": "color", "note": "n1"}
+                ("v1", "1.5"): {"video": "v1", "t_sec": "1.5", "verdict": "algo_wrong", "reason": "color", "note": "n1"}
             }
 
     def test_lookup_fallback(self):

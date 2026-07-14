@@ -18,13 +18,18 @@ runs/
 datasets/frames/
 input_video/
 
-# ---- 大权重/视频(外部存储) ----
+# ---- 大权重/视频/压缩包(外部存储, 勿入 git 历史) ----
 *.pt
 *.onnx
 *.pt*
 *.mp4
 *.avi
 *.mov
+*.7z
+*.zip
+*.rar
+*.tar
+*.tar.gz
 
 # ---- 临时辅助脚本(下划线前缀) ----
 scripts/_*.py

@@ -121,6 +121,22 @@ class PlateGalleryBuilder(BaseGalleryBuilder):
             "gt": ",".join(gt) if gt else "",
         }
 
+    def _sample_representatives(self, mismatches: List[dict]) -> List[dict]:
+        """保留传入顺序取前 N(脚本层已按优先级排序: 不匹配>低置信>新车牌)。"""
+        if not mismatches:
+            return []
+        return mismatches[: self.max_crops]
+
+    def _extra_feedback_inputs_html(
+        self, video: str, item: dict, gt: Any, fb: dict
+    ) -> str:
+        """添加手动修正车牌输入框。"""
+        cp = fb.get("corrected_plate", "")
+        return (
+            f'<input class="corrected_plate" value="{cp}" '
+            f'placeholder="正确车牌(如: 京LNE560)" style="width:140px;font-weight:700;text-transform:uppercase;"/>'
+        )
+
 
 # ---------- 车牌专用标注函数 ----------
 

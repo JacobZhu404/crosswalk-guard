@@ -214,6 +214,12 @@ class LightGalleryBuilder(BaseGalleryBuilder):
             "gt": item.get("gt", ""),
         }
 
+    def _sample_representatives(self, mismatches: List[dict]) -> List[dict]:
+        """confirmed-first 采样: 优先 confirmed GT; 无 confirmed 则退回全部。"""
+        confirmed = [it for it in mismatches if it.get("gt_conf") == "confirmed"]
+        pool = confirmed if confirmed else mismatches
+        return super()._sample_representatives(pool)
+
     # ---- 内部 ----
 
     def _get_detector(self, video: str) -> Optional[TrafficLightDetector]:
