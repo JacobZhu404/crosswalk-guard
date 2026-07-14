@@ -202,7 +202,9 @@ class BaseGalleryBuilder(ABC):
         vv = fb.get("verdict", "")
         rr = fb.get("reason", "")
         nn = fb.get("note", "")
-        done_badge = ' <span class="done">已标</span>' if vv else ""
+        done_badge = '<span class="badge-done">已标注</span>' if vv else ""
+        saved_cls = ' saved' if vv else ''
+        annotated = '1' if vv else '0'
 
         extra_attrs = ""
         for k, v in self.extra_data_attrs(video, item, gt).items():
@@ -217,14 +219,15 @@ class BaseGalleryBuilder(ABC):
         extra_inputs = self._extra_feedback_inputs_html(video, item, gt, fb)
 
         return f"""
-            <div class="crop-card" data-video="{video}" data-t="{item.get('t_sec', '')}"
-                 data-idx="{item.get('frame_idx', '')}"{extra_attrs}>
+            <div class="crop-card{saved_cls}" data-video="{video}" data-t="{item.get('t_sec', '')}"
+                 data-idx="{item.get('frame_idx', '')}" data-annotated="{annotated}"{extra_attrs}>
               <div class="img-wrap">
+                {done_badge}
                 <span class="check" title="点击选中(Shift区间/Ctrl多选)">✅</span>
                 <img class="zoom" src="{crop_rel}" data-full="{full_rel}"
                      style="width:200px;display:block;cursor:zoom-in;"/>
               </div>
-              <div class="meta">{self.item_meta_html(item, gt)}{done_badge}</div>
+              <div class="meta">{self.item_meta_html(item, gt)}{'<span class="done">已标</span>' if vv else ''}</div>
               <div class="fb">
                 <select class="verdict">{verdict_html}</select>
                 <select class="reason">{reason_html}</select>
@@ -339,6 +342,10 @@ h1{color:#0f172a;margin:8px 0;}
 .crop-card.saved{box-shadow:0 0 0 2px #22c55e inset;}
 .meta{font-size:11px;padding:4px 6px;color:#334155;}
 .done{color:#16a34a;font-size:10px;margin-left:4px;}
+.badge-done{position:absolute;top:0;right:0;background:#22c55e;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-bottom-left-radius:8px;z-index:6;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.fbtn{background:#334155;color:#cbd5e1;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;margin-left:4px;}
+.fbtn.active{background:#3b82f6;color:#fff;}
+#filter-count{font-size:11px;color:#94a3b8;margin-left:8px;}
 .conf{display:inline-block;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;}
 .fb{padding:6px;display:flex;flex-direction:column;gap:4px;font-size:11px;background:#f8fafc;}
 .fb select,.fb input{font-size:11px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;}
@@ -398,7 +405,9 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
     if(!p.verdict){ st.textContent='请先选判定'; st.style.color='#dc2626'; return; }
     st.textContent='保存中...'; st.style.color='#64748b';
     const res = await postFeedback(p);
-    if(res==='ok'){ st.textContent='已保存'; st.style.color='#16a34a'; card.classList.add('saved');
+    if(res==='ok'){ st.textContent='已保存'; st.style.color='#16a34a'; card.classList.add('saved'); card.dataset.annotated='1';
+      const iw = card.querySelector('.img-wrap');
+      if(iw && !card.querySelector('.badge-done')) iw.insertAdjacentHTML('afterbegin','<span class="badge-done">已标注</span>');
       if(!card.querySelector('.done')) card.querySelector('.meta').insertAdjacentHTML('beforeend',' <span class="done">已标</span>'); }
     else { st.textContent='已存本地(无服务)'; st.style.color='#d97706'; card.classList.add('saved'); }
     updateCount();
@@ -540,6 +549,29 @@ document.getElementById('paste-sel').addEventListener('click', async ()=>{
   }
   st.textContent='已粘贴到 '+done+' 帧 ✓'; st.style.color='#4ade80';
 });
+// ---- 筛选: 全部 / 已标注 / 未标注 ----
+function applyFilter(mode){
+  let vis=0, done=0, undone=0;
+  cards().forEach(c=>{
+    const ann = c.dataset.annotated==='1';
+    if(ann) done++; else undone++;
+    const show = mode==='all' || (mode==='done'&&ann) || (mode==='undone'&&!ann);
+    c.style.display = show ? '' : 'none';
+    if(show) vis++;
+  });
+  document.querySelectorAll('.video-card').forEach(vc=>{
+    const anyVisible = Array.from(vc.querySelectorAll('.crop-card')).some(c=>c.style.display!=='none');
+    vc.style.display = anyVisible ? '' : 'none';
+  });
+  const fc = document.getElementById('filter-count');
+  if(fc) fc.textContent = `显示 ${vis} (已标注 ${done} / 未标注 ${undone})`;
+}
+document.querySelectorAll('.fbtn').forEach(b=> b.addEventListener('click', ()=>{
+  document.querySelectorAll('.fbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  applyFilter(b.id.replace('f-',''));
+}));
+applyFilter('all');
 updClip();
 updSelCount();
 """
@@ -565,6 +597,12 @@ updSelCount();
   <span style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;">剪贴板: <span id="clip" style="color:#94a3b8;">空</span></span>
   <button id="copy-sel">复制选中</button>
   <button id="paste-sel">粘贴到选中</button>
+  <span style="margin-left:12px;border-left:1px solid #475569;padding-left:12px;">筛选:
+    <button id="f-all" class="fbtn active">全部</button>
+    <button id="f-done" class="fbtn">已标注</button>
+    <button id="f-undone" class="fbtn">未标注</button>
+    <span id="filter-count"></span>
+  </span>
   <span id="batch-status"></span>
 </div>
 <h1>{self.title}</h1>

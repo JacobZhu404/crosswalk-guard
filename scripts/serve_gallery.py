@@ -20,6 +20,29 @@ FEEDBACK_CSV = os.path.join(ROOT, "data", "output", "annotated", "light_feedback
 HEADER = ["video", "t_sec", "frame_idx", "pred", "gt", "verdict", "reason", "note", "ts"]
 
 
+def _append_feedback(row):
+    """追加一条标注到 light_feedback.csv; 同 (video, t_sec, frame_idx) 已存在则原地更新, 避免重复行。"""
+    os.makedirs(os.path.dirname(FEEDBACK_CSV), exist_ok=True)
+    rows = []
+    if os.path.exists(FEEDBACK_CSV):
+        with open(FEEDBACK_CSV, encoding="utf-8-sig", newline="") as f:
+            rows = list(csv.DictReader(f))
+    key = (row[0], str(row[1]), str(row[2]))  # video, t_sec, frame_idx
+    replaced = False
+    for i, r in enumerate(rows):
+        if (r.get("video", ""), str(r.get("t_sec", "")), str(r.get("frame_idx", ""))) == key:
+            rows[i] = dict(zip(HEADER, row))
+            replaced = True
+            break
+    if not replaced:
+        rows.append(dict(zip(HEADER, row)))
+    with open(FEEDBACK_CSV, "w", encoding="utf-8-sig", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=HEADER)
+        w.writeheader()
+        w.writerows(rows)
+    return replaced
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=EVAL_DIR, **kwargs)
@@ -45,14 +68,8 @@ class Handler(SimpleHTTPRequestHandler):
                 datetime.datetime.now().isoformat(timespec="seconds"),
             ]
             try:
-                os.makedirs(os.path.dirname(FEEDBACK_CSV), exist_ok=True)
-                write_header = not os.path.exists(FEEDBACK_CSV)
-                with open(FEEDBACK_CSV, "a", encoding="utf-8-sig", newline="") as f:
-                    w = csv.writer(f)
-                    if write_header:
-                        w.writerow(HEADER)
-                    w.writerow(row)
-                self._json(200, {"ok": True})
+                replaced = _append_feedback(row)
+                self._json(200, {"ok": True, "replaced": bool(replaced)})
             except Exception as e:
                 self._json(500, {"ok": False, "error": str(e)})
         else:
