@@ -1,6 +1,7 @@
 """生成车牌识别误差确认画廊 (HTML): 每视频并排 识别/GT 车牌对比 + 代表性误差帧车牌特写。
 
-用途: 用户滚动逐张判定 mismatch 帧是 "算法错 / 标注错 / 难度太大 / 其他"。
+用途: 用户滚动逐张判定关键帧，填写正确车牌文本，建立GT数据集。
+标注结果可直接用于算法迭代和回归测试，形成 标注→评测→迭代 的闭环。
 
 风格与灯态画廊保持一致，便于统一标注体验。
 
@@ -52,7 +53,7 @@ def load_feedback(path):
         for r in csv.DictReader(f):
             k = (r.get("video", ""), r.get("frame_idx", ""))
             d[k] = {"verdict": r.get("verdict", ""), "reason": r.get("reason", ""),
-                    "note": r.get("note", "")}
+                    "note": r.get("note", ""), "corrected_plate": r.get("corrected_plate", "")}
     return d
 
 
@@ -131,13 +132,6 @@ def annotate_full(fr, plate_info, label_txt, conf=0.0):
 
 
 def analyze_video(video_name, gt_plates, frames_dir, eval_dir, max_crops=10):
-    pred_csv = os.path.join(eval_dir, f"pred_{video_name}.csv")
-    preds = []
-    if os.path.exists(pred_csv):
-        with open(pred_csv, encoding="utf-8") as f:
-            for r in csv.DictReader(f):
-                preds.append(r)
-    
     video_path = os.path.join(ROOT, "input_video", f"{video_name}.mp4")
     if not os.path.exists(video_path):
         return [], []
@@ -152,7 +146,8 @@ def analyze_video(video_name, gt_plates, frames_dir, eval_dir, max_crops=10):
     cfg = load_config(os.path.join(ROOT, "configs", "config.yaml"))
     plate = PlateRecognizer(cfg, verbose=False)
     
-    mismatches = []
+    candidates = []
+    seen_plates = set()
     frame_idx = 0
     
     while True:
@@ -175,26 +170,36 @@ def analyze_video(video_name, gt_plates, frames_dir, eval_dir, max_crops=10):
                 
                 text = p["text"]
                 conf = p.get("conf", 0.0)
-                
                 matched = any(text == gt for gt in gt_plates)
                 
+                priority = 0
                 if not matched:
-                    mismatches.append({
-                        "frame_idx": frame_idx,
-                        "t_sec": ts,
-                        "detected": text,
-                        "conf": conf,
-                        "plate_info": p,
-                        "all_plates": plates,
-                        "frame": frame.copy()
-                    })
+                    priority += 3
+                if conf < 0.6:
+                    priority += 2
+                if text not in seen_plates:
+                    priority += 1
+                    seen_plates.add(text)
+                
+                candidates.append({
+                    "frame_idx": frame_idx,
+                    "t_sec": ts,
+                    "detected": text,
+                    "conf": conf,
+                    "plate_info": p,
+                    "all_plates": plates,
+                    "frame": frame.copy(),
+                    "priority": priority,
+                    "matched": matched,
+                })
         
         frame_idx += 1
     
     cap.release()
     
-    step = max(1, len(mismatches) // max_crops)
-    reps = mismatches[::step][:max_crops]
+    candidates.sort(key=lambda x: (-x["priority"], x["t_sec"]))
+    reps = candidates[:max_crops]
+    reps.sort(key=lambda x: x["t_sec"])
     
     return reps, total_dur
 
@@ -225,8 +230,6 @@ def main():
     
     for v in videos:
         gt_plates = gt.get(v, [])
-        if not gt_plates:
-            continue
         
         reps, total_dur = analyze_video(v, gt_plates, args.frames_dir, args.eval_dir, args.max_crops)
         
@@ -259,7 +262,7 @@ def main():
             rel_full = os.path.relpath(out_full, args.eval_dir).replace("\\", "/")
             
             fb = feedback.get((v, str(idx)), {})
-            vv, rr, nn = fb.get("verdict", ""), fb.get("reason", ""), fb.get("note", "")
+            vv, rr, nn, cp = fb.get("verdict", ""), fb.get("reason", ""), fb.get("note", ""), fb.get("corrected_plate", "")
             done_badge = ' <span class="done">✓已标</span>' if vv else ""
             conf_color = "#16a34a" if conf >= 0.85 else ("#d97706" if conf >= 0.6 else "#dc2626")
             
@@ -286,6 +289,7 @@ def main():
                   <option value="gt_error"{' selected' if rr=='gt_error' else ''}>GT标注错误</option>
                   <option value="other"{' selected' if rr=='other' else ''}>其他</option>
                 </select>
+                <input class="corrected_plate" value="{cp}" placeholder="正确车牌(如: 京LNE560)"/>
                 <input class="note" value="{nn}" placeholder="备注(可选)"/>
                 <button class="save">保存</button>
                 <span class="status"></span>
@@ -293,13 +297,13 @@ def main():
             </div>"""
         
         gt_count = len(gt_plates)
-        mismatch_count = len([r for r in reps])
+        mismatch_count = len([r for r in reps if not r.get("matched", True)])
         
         cards.append(f"""
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:14px 0;box-shadow:0 1px 3px rgba(0,0,0,.06);">
           <h2 style="margin:0 0 8px;font-size:18px;color:#0f172a;">{v}</h2>
           <div style="font-size:12px;margin:2px 0;color:#475569;">GT车牌: {', '.join(gt_plates)} · 时长: {total_dur:.0f}s · 待确认: {mismatch_count}帧</div>
-          <div style="font-size:12px;margin:10px 0 4px;color:#475569;">识别误差帧 (识别≠GT):</div>
+          <div style="font-size:12px;margin:10px 0 4px;color:#475569;">关键帧 (优先: 识别错误 &gt; 低置信度 &gt; 新车牌):</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;">{crop_html or '<span style="color:#94a3b8;">无 (全对)</span>'}</div>
         </div>""")
     
@@ -321,6 +325,7 @@ h1{color:#0f172a;margin:8px 0;}
 .conf{display:inline-block;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;}
 .fb{padding:6px;display:flex;flex-direction:column;gap:4px;font-size:11px;background:#f8fafc;}
 .fb select,.fb input{font-size:11px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;}
+.fb .corrected_plate{width:140px;font-weight:700;text-transform:uppercase;}
 .fb .save{background:#0f172a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;align-self:flex-start;}
 .fb .status{font-size:10px;}
 .zoom{cursor:zoom-in;}
@@ -332,14 +337,15 @@ h1{color:#0f172a;margin:8px 0;}
 <div id="toolbar">
   <b>车牌识别误差确认画廊</b>
   <span>已保存 <span id="saved">0</span> 帧</span>
-  <span class="hint">每张图下方点"保存"即可标注 · 判定=算法错/标注错/难度太大/其他 · 原因=遮挡/角度问题/光线问题/模糊/部分遮挡/GT标注错误</span>
+  <span class="hint">每张图下方点"保存"即可标注 · 判定=算法错/标注错/难度太大/其他 · 请填写正确车牌用于算法迭代</span>
   <button id="export">导出本地标注(JSON)</button>
 </div>
 <h1>车牌识别误差确认画廊</h1>
 <p class="intro">左=车牌区域特写(<span style="color:#dc2626;font-weight:700;">红框=检测框</span>: 算法识别的车牌位置)。<b>点小图看原始整帧</b>(红框=所有检测到的车牌)。
 请判定: <b>算法错</b>(识别结果与真实不符) / <b>标注错</b>(GT标注有误) / <b>难度太大</b>(遮挡/角度/光线等无法识别) / <b>其他</b>;
 原因按判定树选: <b>遮挡</b>(被其他车辆/物体挡住) → <b>角度问题</b>(侧拍/俯拍太偏) → <b>光线问题</b>(反光/过曝/过暗) → <b>模糊</b>(运动模糊/失焦) → <b>部分遮挡</b>(只看到部分车牌) / GT标注错误 / 其他。
-<b>置信度</b>=算法对识别结果的置信度: <span style="color:#16a34a;font-weight:700;">绿≥0.85</span>高 / <span style="color:#d97706;font-weight:700;">黄0.6–0.85</span>中 / <span style="color:#dc2626;font-weight:700;">红&lt;0.6</span>低(难帧)。</p>
+<b>置信度</b>=算法对识别结果的置信度: <span style="color:#16a34a;font-weight:700;">绿≥0.85</span>高 / <span style="color:#d97706;font-weight:700;">黄0.6–0.85</span>中 / <span style="color:#dc2626;font-weight:700;">红&lt;0.6</span>低(难帧)。
+<br/><b>关键帧采样优先级:</b> 识别错误帧(优先) &gt; 低置信度帧(conf&lt;0.6) &gt; 首次识别到的新车牌。</p>
 {CARDS}
 <div id="lb" class="lightbox"><img alt="zoom"/><div class="hint">点击任意处关闭</div></div>
 <script>
@@ -359,6 +365,7 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
                 detected:card.dataset.detected, gt:card.dataset.gt,
                 verdict:card.querySelector('.verdict').value,
                 reason:card.querySelector('.reason').value,
+                corrected_plate:card.querySelector('.corrected_plate').value.toUpperCase(),
                 note:card.querySelector('.note').value };
     const st = card.querySelector('.status');
     if(!p.verdict){ st.textContent='请先选判定'; st.style.color='#dc2626'; return; }
@@ -371,7 +378,6 @@ document.querySelectorAll('.crop-card .save').forEach(btn=>{
     if(nxt && nxt.classList.contains('crop-card')){
       nxt.querySelector('.verdict').value = p.verdict;
       nxt.querySelector('.reason').value = p.reason;
-      nxt.querySelector('.note').value = p.note;
     }
     updateCount();
   });

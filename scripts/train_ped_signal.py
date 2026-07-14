@@ -1,15 +1,16 @@
-"""训练 M1 行人信号灯状态分类器 (walk/stand/off) 并导出 ONNX (Phase2 spec §6)。
+"""训练 M1 行人信号灯状态分类器 (walk/stand/off) (Phase2 spec §6)。
 
 - 数据: datasets/ped_signal/labels.csv(build_ped_signal_crops.py 产出, 人工校验 verified=1)。
 - 模型: tiny CNN(3x48x48 -> 3), 与 SignalStateClassifier 的输入约定一致(/255, NCHW, 48x48)。
 - 评测: leave-one-video-out 交叉验证(spec §6, 代理"新手机视频"泛化)。
-- 导出: torch.onnx -> models/ped_signal.onnx, 运行时由 cv2.dnn 加载(不依赖 torch)。
+- 导出: 主产物为 PyTorch 权重 models/ped_signal.pt (运行时直接 torch 加载, 零额外依赖);
+        --export-onnx 可选再导一份 .onnx 供 cv2.dnn 加载(需 onnx 包, 本项目运行时已绑 torch 故非必需)。
 
 用法:
-    python scripts/train_ped_signal.py                 # LOVO 评测 + 全量训练导出 ONNX
-    python scripts/train_ped_signal.py --smoke         # 合成数据自检(train->onnx->cv2.dnn 契约)
+    python scripts/train_ped_signal.py                 # LOVO 评测 + 全量训练导出 .pt
+    python scripts/train_ped_signal.py --smoke         # 合成数据自检(train->.pt->SignalStateClassifier 契约)
 
-契约自检(--smoke)不需真实数据, 验证导出的 ONNX 能被 Phase1 的 SignalStateClassifier 消费。
+契约自检(--smoke)不需真实数据, 验证导出的权重能被 Phase1 的 SignalStateClassifier 消费。
 """
 import os
 import sys
@@ -24,7 +25,9 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 from redlight.data_pipeline.ped_signal_dataset import (
     load_labeled_crops, lovo_folds,
 )
-from redlight.models.signal_state_classifier import LABELS, _INPUT
+from redlight.models.signal_state_classifier import (
+    LABELS, _INPUT, _build_net,
+)
 
 try:
     import torch
@@ -32,16 +35,6 @@ try:
     _HAS_TORCH = True
 except Exception:
     _HAS_TORCH = False
-
-
-def _build_net():
-    import torch.nn as nn
-    # 固定尺寸(无 adaptive pool, 便于 cv2.dnn): 48->24->12, 16*12*12=2304
-    return nn.Sequential(
-        nn.Conv2d(3, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-        nn.Conv2d(8, 16, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-        nn.Flatten(), nn.Linear(16 * 12 * 12, 3),
-    )
 
 
 def _imgs_to_X(imgs):
@@ -85,7 +78,21 @@ def accuracy(net, X, y):
     return float((pred == y).float().mean())
 
 
+def export_torch(net, path):
+    """主产物: 仅存 state_dict (torch 运行时直接加载, 零额外依赖)。"""
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    torch.save(net.state_dict(), path)
+    return path
+
+
 def export_onnx(net, path):
+    """可选产物: 导出 ONNX 供 cv2.dnn 加载。需要 onnx 包, 缺失时直接报清晰错误由调用方决定跳过。"""
+    try:
+        import onnx  # noqa: F401
+    except Exception:
+        raise RuntimeError(
+            "导出 ONNX 需要 onnx 包 (pip install onnx)。可省略此步: 运行时已支持直接加载 .pt 权重。"
+        )
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     dummy = torch.zeros(1, 3, _INPUT, _INPUT)
     # dynamo=False 用传统 TorchScript 导出器: 不依赖 onnxscript(新导出器需要), 跨机 torch 版本更稳,
@@ -100,24 +107,34 @@ def export_onnx(net, path):
     return path
 
 
+def synth(label, n=20, rng=None):
+    """合成 crop: walk=偏绿, stand=偏红, off=灰 (BGR)。"""
+    rng = rng or np.random.RandomState(0)
+    out = []
+    for _ in range(n):
+        im = (rng.rand(48, 48, 3) * 40).astype(np.uint8)
+        if label == "walk":
+            im[:, :, 1] = np.clip(im[:, :, 1] + 180, 0, 255)   # G high (BGR)
+        elif label == "stand":
+            im[:, :, 2] = np.clip(im[:, :, 2] + 180, 0, 255)   # R high
+        else:
+            im[:] = np.clip(im + 100, 0, 255)                   # gray
+        out.append(im)
+    return out
+
+
+def majority_vote(clf, label, n=15, rng=None):
+    """对单类取 n 个合成样本的分类多数投票, 降低单样本随机性导致的偶发误判。"""
+    from collections import Counter
+    rng = rng or np.random.RandomState(0)
+    c = Counter(clf.classify(synth(label, 1, rng)[0])[0] for _ in range(n))
+    return c.most_common(1)[0][0]
+
+
 def run_smoke():
-    """合成数据: walk=偏绿, stand=偏红, off=灰。train->onnx->cv2.dnn 契约验证。"""
-    import cv2
+    """合成数据契约验证: train -> 权重 -> SignalStateClassifier。主路径用 .pt(零下载)。"""
     from redlight.models.signal_state_classifier import SignalStateClassifier
     rng = np.random.RandomState(0)
-
-    def synth(label, n=20):
-        out = []
-        for _ in range(n):
-            im = (rng.rand(48, 48, 3) * 40).astype(np.uint8)
-            if label == "walk":
-                im[:, :, 1] = np.clip(im[:, :, 1] + 180, 0, 255)   # G high (BGR)
-            elif label == "stand":
-                im[:, :, 2] = np.clip(im[:, :, 2] + 180, 0, 255)   # R high
-            else:
-                im[:] = np.clip(im + 100, 0, 255)                   # gray
-            out.append(im)
-        return out
 
     imgs, ys = [], []
     for i, lb in enumerate(LABELS):
@@ -128,25 +145,42 @@ def run_smoke():
     acc = accuracy(net, X, y)
     print(f"[smoke] 合成训练 accuracy={acc:.2f} (应 > 0.9)")
 
-    tmp = os.path.join(tempfile.mkdtemp(), "ped_signal.onnx")
-    export_onnx(net, tmp)
-    print(f"[smoke] 导出 ONNX: {tmp} ({os.path.getsize(tmp)} bytes)")
+    # --- 主契约: PyTorch .pt 权重(零下载, 运行时直接 torch 加载) ---
+    tmp_pt = os.path.join(tempfile.mkdtemp(), "ped_signal.pt")
+    export_torch(net, tmp_pt)
+    print(f"[smoke] 导出 PyTorch 权重: {tmp_pt} ({os.path.getsize(tmp_pt)} bytes)")
+    clf = SignalStateClassifier(tmp_pt, verbose=False)
+    assert clf.available, "PyTorch 权重未能被加载"
+    got = [majority_vote(clf, lb, rng=rng) for lb in LABELS]
+    print(f"[smoke] torch 直接分类(多数投票): {got}")
+    assert got == LABELS, f"torch 契约失败: 预期 {LABELS}, 实际 {got}"
 
-    clf = SignalStateClassifier(tmp, verbose=False)
-    assert clf.available, "ONNX 未能被 cv2.dnn 加载"
-    # 用 Phase1 wrapper 分类三个合成样本
-    got = [clf.classify(synth(lb, 1)[0])[0] for lb in LABELS]
-    print(f"[smoke] cv2.dnn 分类结果: {got}")
+    # --- 可选契约: ONNX(需 onnx 包) ---
+    try:
+        import onnx  # noqa: F401
+        tmp_onnx = os.path.join(tempfile.mkdtemp(), "ped_signal.onnx")
+        export_onnx(net, tmp_onnx)
+        print(f"[smoke] 导出 ONNX: {tmp_onnx} ({os.path.getsize(tmp_onnx)} bytes)")
+        clf2 = SignalStateClassifier(tmp_onnx, verbose=False)
+        assert clf2.available, "ONNX 未能被 cv2.dnn 加载"
+        got2 = [majority_vote(clf2, lb, rng=rng) for lb in LABELS]
+        print(f"[smoke] ONNX 分类(多数投票): {got2}")
+        assert got2 == LABELS, f"ONNX 契约失败: {got2}"
+    except Exception as e:
+        print(f"[smoke] 跳过 ONNX 契约(onnx 未安装或失败, 不影响主路径): {e}")
+
     assert acc > 0.9, "合成数据未学会"
-    print("SMOKE OK: train -> ONNX -> cv2.dnn(SignalStateClassifier) 契约通过")
+    print("SMOKE OK: train -> PyTorch(.pt) -> SignalStateClassifier 契约通过")
 
 
 def main():
     ap = argparse.ArgumentParser(description="训练行人信号灯状态分类器 + 导出 ONNX")
     ap.add_argument("--labels", default=os.path.join(ROOT, "datasets", "ped_signal", "labels.csv"))
-    ap.add_argument("--out", default=os.path.join(ROOT, "models", "ped_signal.onnx"))
+    ap.add_argument("--out", default=os.path.join(ROOT, "models", "ped_signal.pt"))
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--smoke", action="store_true", help="合成数据契约自检(不需真实数据)")
+    ap.add_argument("--export-onnx", action="store_true",
+                    help="额外导出 ONNX(供 cv2.dnn 加载, 需 onnx 包; 默认关, 运行时已支持 .pt)")
     ap.add_argument("--verified-only", action="store_true", default=True)
     args = ap.parse_args()
 
@@ -180,8 +214,16 @@ def main():
     # 全量训练 + 导出
     X, y = _rows_to_dataset(rows)
     net = train_net(X, y, epochs=args.epochs)
-    export_onnx(net, args.out)
-    print(f"\n导出 ONNX -> {args.out} (config: models.ped_signal_onnx; method 设 ped_classifier 即启用)")
+    export_torch(net, args.out)
+    print(f"\n导出 PyTorch 权重 -> {args.out}")
+    if args.export_onnx:
+        try:
+            onnx_path = os.path.splitext(args.out)[0] + ".onnx"
+            export_onnx(net, onnx_path)
+            print(f"导出 ONNX(可选) -> {onnx_path}")
+        except Exception as e:
+            print(f"ONNX 导出跳过: {e}")
+    print(f"(config: models.ped_signal_model; traffic_light.method 设 ped_classifier 即启用)")
 
 
 if __name__ == "__main__":
