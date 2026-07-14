@@ -79,6 +79,9 @@ def extract_crops(frame_iter, video, state_at_fn, candidates_fn, out_dir,
     candidates_fn(frame) -> [{box,cx,cy,source}]: 通常包装 build_candidates + HSV/YOLO。
     prior: (px,py) 归一化, 或 None。
     返回: list of dict(LABELS_HEADER); 同时把 crop 写到 out_dir/<video>/。
+
+    crop_path 存**相对 out_dir 的路径**(如 `违章02/xxx.jpg`), 跨机可移植;
+    load_labeled_crops 读取时按 labels.csv 所在目录解析回绝对路径。
     """
     from ..infrastructure.image_utils import save_jpg
     vid_dir = os.path.join(out_dir, video)
@@ -111,7 +114,7 @@ def extract_crops(frame_iter, video, state_at_fn, candidates_fn, out_dir,
             if not save_jpg(sub, fpath):
                 continue
             rows.append({
-                "crop_path": fpath, "video": video, "frame_ts": round(ts, 2),
+                "crop_path": os.path.join(video, fname), "video": video, "frame_ts": round(ts, 2),
                 "x1": x1, "y1": y1, "x2": x2, "y2": y2,
                 "source": c.get("source", ""), "label": c["label"], "verified": 0,
             })
@@ -142,14 +145,22 @@ def lovo_folds(rows, verified_only=False):
 
 
 def load_labeled_crops(csv_path, verified_only=False):
-    """读 labels.csv 为 rows(dict list); verified_only 时过滤未校验/无标签。"""
+    """读 labels.csv 为 rows(dict list); verified_only 时过滤未校验/无标签。
+
+    crop_path 若为相对路径(如 `违章02/xxx.jpg`), 按 labels.csv 所在目录解析回绝对路径,
+    保证跨机(Mac/Windows)可移植; 若已是绝对路径则原样保留。
+    """
     rows = []
     if not os.path.isfile(csv_path):
         return rows
+    base_dir = os.path.dirname(os.path.abspath(csv_path))
     with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
         for r in csv.DictReader(f):
             if verified_only and (r.get("label") in (None, "") or int(r.get("verified", 0) or 0) != 1):
                 continue
+            p = r.get("crop_path", "")
+            if p and not os.path.isabs(p):
+                r["crop_path"] = os.path.join(base_dir, p)
             rows.append(r)
     return rows
 
