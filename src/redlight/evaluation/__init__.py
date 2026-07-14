@@ -15,6 +15,10 @@ from .video_sampler import VideoSampler
 
 # cv2 依赖的 gallery builder 不 eager import，避免无 cv2 环境报错
 # 使用时直接 from redlight.evaluation.light_gallery import LightGalleryBuilder
+try:
+    from .light_gallery import LightGalleryBuilder  # noqa: F401
+except Exception:
+    pass
 
 __all__ = [
     "Evaluator",

@@ -5,6 +5,7 @@
 """
 
 import csv
+import cv2
 import os
 from typing import Any, Dict, List, Optional, Tuple
 

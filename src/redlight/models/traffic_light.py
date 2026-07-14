@@ -15,6 +15,7 @@
 信号类型假设: 斑马线行人信号灯 (见设计文档 §5.3.1 / Q5).
 """
 import collections
+import os
 import cv2
 import numpy as np
 
@@ -85,14 +86,70 @@ class TrafficLightDetector(BaseModel):
     def load(self, weights_path=None):
         self._loaded = True
 
+    def set_video_prior(self, video_name, priors_path=None):
+        """按视频名从 light_priors.json 加载 per-video 行人信号位置先验。
+
+        light_priors.json: {video: [cx, cy, roi_px]} (cx/cy 归一化, roi_px HSV直采边长)。
+        命中则设 signal_prior + prior_roi_px (observe()/detect() 的 prior 直采路径生效);
+        未命中则清空 signal_prior (回退全局亮斑路径)。无该视频先验返回 False。
+        生产路径 (cli/run_video) 跑每个视频前调用, 让 per-video prior 自动接入 observe。
+        """
+        import json
+        if priors_path is None:
+            from ..infrastructure.config import project_root
+            priors_path = os.path.join(project_root(), "configs", "light_priors.json")
+        try:
+            with open(priors_path, encoding="utf-8") as f:
+                priors = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.signal_prior = None
+            return False
+        p = priors.get(video_name)
+        if not (isinstance(p, (list, tuple)) and len(p) >= 2):
+            self.signal_prior = None
+            return False
+        self.signal_prior = (float(p[0]), float(p[1]))
+        self.prior_roi_px = int(p[2]) if len(p) > 2 else self.prior_roi_px
+        return True
+
     def observe(self, frame):
         """单帧灯态观测(供 TemporalFusion 消费): 只出这帧看到什么, 不做跨帧时序。
 
         obs ∈ 'green'|'red'|'off'|None。用单帧候选主色, 不 append global_recent、
         不跑 _state_from_global(那是②的活)。无内部状态改变 -> 同帧多次调用一致。
-        本期最简实现(候选主色); 空间锚/分类器出 obs 是后续 Task(spec §6)。
+
+        若配置了 signal_prior, 使用先验 ROI 直采(_sample_prior_color)排除全局环境干扰;
+        直采失败则回退到先验搜索半径内 candidates 面积加总。
         """
+        self._last_frame = frame
         spots = self._candidates(frame)
+
+        # 先验模式: 直采 ROI 颜色, 排除全局环境绿/树叶干扰
+        if self.signal_prior is not None and frame is not None:
+            sampled = self._sample_prior_color()
+            if sampled is not None:
+                g_n, r_n = self._last_sample
+                total_colored = g_n + r_n
+                conf = round(max(g_n, r_n) / total_colored, 3) if total_colored > 0 else 0.0
+                return {"obs": sampled, "conf": conf, "candidates": spots}
+            # 直采失败: 回退到先验半径内 candidates 面积加总
+            px, py = self.signal_prior
+            r = self.prior_search_radius
+            near = [s for s in spots
+                    if ((s["cx"] - px) ** 2 + (s["cy"] - py) ** 2) ** 0.5 <= r
+                    and s["color"] in ("green", "red")]
+            if near:
+                greens = sum(s["area"] for s in near if s["color"] == "green")
+                reds = sum(s["area"] for s in near if s["color"] == "red")
+                if greens == 0 and reds == 0:
+                    obs, conf = "off", 0.0
+                elif greens >= reds:
+                    obs, conf = "green", round(greens / (greens + reds), 3)
+                else:
+                    obs, conf = "red", round(reds / (greens + reds), 3)
+                return {"obs": obs, "conf": conf, "candidates": spots}
+
+        # 无先验: 保持原行为(全局亮斑面积加总)
         greens = sum(s["area"] for s in spots if s.get("color") == "green")
         reds = sum(s["area"] for s in spots if s.get("color") == "red")
         if greens == 0 and reds == 0:

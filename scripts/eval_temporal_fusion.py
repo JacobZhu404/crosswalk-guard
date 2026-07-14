@@ -24,6 +24,7 @@ from redlight.infrastructure.config import load_config
 from redlight.models.traffic_light import TrafficLightDetector
 from redlight.evaluation.gt_lookup import load_light_state_csv, state_at
 from redlight.evaluation.frame_dataset import FrameDataset
+from redlight.evaluation.video_sampler import VideoSampler
 from redlight.evaluation.metrics import light_state_metrics
 from redlight.pipeline.temporal_fusion import fuse_light
 
@@ -43,7 +44,7 @@ def load_priors(path):
     return out
 
 
-def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs):
+def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None):
     """对单个视频运行 eval-b: observe -> fuse_light -> 逐帧对比 GT."""
     frames = list(dataset.iter_video(video))
     if not frames:
@@ -51,6 +52,9 @@ def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs):
 
     # ①层: 逐帧观测(无状态, 单帧主色)
     det = TrafficLightDetector(cfg, verbose=False)
+    if prior is not None:
+        det.signal_prior = (float(prior[0]), float(prior[1]))
+        det.prior_roi_px = int(prior[2]) if len(prior) > 2 else 160
     observations = []   # [(ts, obs, conf), ...]
     timestamps = []     # [ts, ...]
     frame_indices = []  # [frame_idx, ...]
@@ -190,6 +194,8 @@ def main():
         "unknown_hold": args.unknown_hold,
     }
 
+    priors = load_priors(args.priors)
+
     videos = args.videos or list(gt.keys())
     videos = [v for v in videos if v in gt]
 
@@ -197,7 +203,7 @@ def main():
     print(f"视频: {videos}")
     results = []
     for v in videos:
-        r = eval_video(v, dataset, gt[v], cfg, fuse_kwargs)
+        r = eval_video(v, dataset, gt[v], cfg, fuse_kwargs, prior=priors.get(v))
         if r:
             results.append(r)
             acc = r["acc"]

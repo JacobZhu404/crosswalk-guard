@@ -74,13 +74,17 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
         "viz": Visualizer(cfg, preset=preset),
         "plate_consensus": PlateConsensus(keep_history=180),
     }
+    # 按 video 名加载 per-video 行人信号位置先验 (light_priors.json), 接入 observe() prior 直采。
+    # 命中 -> observe 用先验 ROI 直采排除环境绿/树叶干扰; 未命中 -> 回退全局亮斑 (保持原行为)。
+    video_name = os.path.splitext(os.path.basename(video_path))[0]
+    if comp["light"].set_video_prior(video_name):
+        print(f"[红绿灯] 已加载视频先验 {video_name}: prior={comp['light'].signal_prior} roi={comp['light'].prior_roi_px}px")
     dag = build_default_dag(cfg, comp)
 
     # COT 可解释分析累积器 (设计需求 v2 §4): 增量累积中间态, 循环结束后渲染小作文+截图
     acc = None
     if cot:
-        name = os.path.splitext(os.path.basename(video_path))[0]
-        acc = AnalysisAccumulator(name, fps, (total / fps) if total else 0.0)
+        acc = AnalysisAccumulator(video_name, fps, (total / fps) if total else 0.0)
 
         def n_record(ctx):
             light = ctx.get("light")
