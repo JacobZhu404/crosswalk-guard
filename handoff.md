@@ -26,6 +26,14 @@
     - 首次识别帧（+1分）：首次出现的车牌
   - 标注反馈增加 `corrected_plate` 字段存储
 
+- [src/redlight/evaluation/plate_gallery.py](file:///d:/redlight-crosswalk-violation/src/redlight/evaluation/plate_gallery.py)
+  - 新增三个错误原因选项：
+    - `not_plate`：圈中的并非车牌(检测框错)
+    - `human_unclear`：人眼也看不清楚
+    - `algo_failure`：人眼能看清但算法识别不了
+  - 更新介绍文本，增加批量操作说明（Shift区间选/Ctrl多选/复制粘贴）
+  - 继承灯态画廊的批量操作功能：批量选中、应用到选中、复制选中、粘贴到选中、ESC关闭灯箱
+
 ### 新增文件
 - [scripts/feedback_to_eval_set.py](file:///d:/redlight-crosswalk-violation/scripts/feedback_to_eval_set.py)
   - 将用户标注反馈（plate_feedback.csv）自动转换为评测集格式
@@ -41,15 +49,14 @@
 - 生成画廊：`python scripts/make_plate_gallery.py --videos 违章01 违章02`
 - Git提交：`a41b0a0 feat(plate): 优化车牌标注评测工具，增加手动修正输入框和智能关键帧采样`
 - Git pull：已完成，当前分支与远程同步
+- ONNX安装：成功安装 ONNX 1.22.0（`pip install onnx -i https://pypi.tuna.tsinghua.edu.cn/simple`）
 
 ## 3. 当前Git环境状态
 
 - 分支：main
-- 本地领先远程：3 commits（包含本次提交）
-- 未提交改动（其他agent的工作）：
-  - modified: scripts/train_ped_signal.py
-  - untracked: datasets/ped_signal/
-- Stash：已恢复（ddb66b20ae60a1559c854b4f27de77ce1c4a3ff2）
+- 本地状态：工作区干净（clean）
+- 远程状态：与 origin/main 同步
+- 最近提交：`9e94d5c data(annot): 固化灯态标注为合并回归集 + 诊断报告`
 
 ## 4. 中间产物
 
