@@ -116,3 +116,7 @@
 违章03,6.36,189,flashing,red,algo_wrong,reading_point,真实的交通灯在黄圈的左边，是个红灯,2026-07-14T19:38:36
 违章03,6.6,196,flashing,red,algo_wrong,reading_point,真实的交通灯在黄圈的左边，是个红灯,2026-07-14T19:38:36
 违章03,6.84,203,flashing,red,algo_wrong,reading_point,真实的交通灯在黄圈的左边，是个红灯,2026-07-14T19:38:36
+违章02,0.0,0,unknown,red,algo_wrong,reading_point,红绿灯在黄圈的左边，是个红灯,2026-07-14T23:25:02
+违章02,0.71,21,unknown,red,algo_wrong,reading_point,红绿灯在黄圈的左边，是个红灯,2026-07-14T23:29:17
+违章02,0.24,7,unknown,red,algo_wrong,reading_point,红绿灯在黄圈的左边，是个红灯,2026-07-14T23:29:15
+违章02,0.47,14,unknown,red,algo_wrong,reading_point,红绿灯在黄圈的左边，是个红灯,2026-07-14T23:29:16
