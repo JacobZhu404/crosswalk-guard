@@ -71,22 +71,51 @@ LABELS_HEADER = ["crop_path", "video", "frame_ts", "x1", "y1", "x2", "y2",
 
 
 def extract_crops(frame_iter, video, state_at_fn, candidates_fn, out_dir,
-                  prior=None, pad_ratio=0.15, min_crop_px=8):
+                  prior=None, pad_ratio=0.15, min_crop_px=8,
+                  prior_roi_mode=False, prior_roi_px=160, off_margin=0.25):
     """遍历一个视频的帧, 抽信号 crop 并弱标签, 写盘 + 返回 labels 行。
 
     frame_iter: 可迭代 (frame_idx, ts, frame_bgr)。
     state_at_fn(ts) -> (state, evidence): 通常 = functools.partial(gt_lookup.state_at, segments)。
     candidates_fn(frame) -> [{box,cx,cy,source}]: 通常包装 build_candidates + HSV/YOLO。
     prior: (px,py) 归一化, 或 None。
+    prior_roi_mode: True 时走"先验 ROI 直抽"路径(推荐有 prior 的视频):
+      每帧抽 2 个等尺寸 crop —
+        (a) prior ROI 中心一块(信号灯位置) -> 标 walk/green段|stand/red段
+        (b) prior 外随机位置一块(背景)    -> 标 off
+      正负 ~1:1, 不再用全图 HSV 候选(避免一帧10+噪声 off 稀释训练集)。
+      prior=None 时此模式回退到旧路径(全图候选)。
+    prior_roi_px: prior_roi_mode 下 ROI 边长(px, 与 light_priors.json 第3项一致)。
+    off_margin: prior 外随机 crop 中心距 prior 的最小归一化距离(确保是"非信号区域")。
     返回: list of dict(LABELS_HEADER); 同时把 crop 写到 out_dir/<video>/。
 
     crop_path 存**相对 out_dir 的路径**(如 `违章02/xxx.jpg`), 跨机可移植;
     load_labeled_crops 读取时按 labels.csv 所在目录解析回绝对路径。
     """
     from ..infrastructure.image_utils import save_jpg
+    import random as _random
     vid_dir = os.path.join(out_dir, video)
     os.makedirs(vid_dir, exist_ok=True)
     rows = []
+    use_prior_roi = prior_roi_mode and prior is not None
+
+    def _save_crop(sub, box, label, source, ts, idx):
+        x1, y1, x2, y2 = box
+        if (x2 - x1) < min_crop_px or (y2 - y1) < min_crop_px:
+            return None
+        sub = crop_box(frame, box, pad_ratio)
+        if sub.size == 0:
+            return None
+        fname = "%s_t%.1f_%d_%s.jpg" % (video, ts, idx, label)
+        fpath = os.path.join(vid_dir, fname)
+        if not save_jpg(sub, fpath):
+            return None
+        return {
+            "crop_path": os.path.join(video, fname), "video": video, "frame_ts": round(ts, 2),
+            "x1": int(x1), "y1": int(y1), "x2": int(x2), "y2": int(y2),
+            "source": source, "label": label, "verified": 0,
+        }
+
     for frame_idx, ts, frame in frame_iter:
         if frame is None:
             continue
@@ -98,26 +127,39 @@ def extract_crops(frame_iter, video, state_at_fn, candidates_fn, out_dir,
         seg_label = light_state_to_label(state)
         if seg_label is None:
             continue
+
+        if use_prior_roi:
+            # (a) prior ROI 中心 crop = 信号灯位置(标 walk/stand)
+            h, w = frame.shape[:2]
+            px, py = prior
+            cx_i, cy_i = int(px * w), int(py * h)
+            half = prior_roi_px // 2
+            box = (cx_i - half, cy_i - half, cx_i + half, cy_i + half)
+            r = _save_crop(None, box, seg_label, "prior_roi", ts, 0)
+            if r:
+                rows.append(r)
+            # (b) prior 外随机 crop = 背景(标 off); 中心距 prior >= off_margin
+            for _try in range(8):
+                rx = _random.random()
+                ry = _random.random()
+                if ((rx - px) ** 2 + (ry - py) ** 2) ** 0.5 >= off_margin:
+                    break
+            bx_i, by_i = int(rx * w), int(ry * h)
+            off_box = (bx_i - half, by_i - half, bx_i + half, by_i + half)
+            r = _save_crop(None, off_box, "off", "prior_off", ts, 1)
+            if r:
+                rows.append(r)
+            continue
+
+        # 旧路径(无 prior 或未开 prior_roi_mode): 全图 HSV 候选, prior 选最近=信号其余=off
         cands = candidates_fn(frame)
         labeled = assign_crop_labels(cands, prior, seg_label)
         for j, c in enumerate(labeled):
             if c["label"] is None:
                 continue
-            x1, y1, x2, y2 = c["box"]
-            if (x2 - x1) < min_crop_px or (y2 - y1) < min_crop_px:
-                continue
-            sub = crop_box(frame, c["box"], pad_ratio)
-            if sub.size == 0:
-                continue
-            fname = "%s_t%.1f_%d_%s.jpg" % (video, ts, j, c["label"])
-            fpath = os.path.join(vid_dir, fname)
-            if not save_jpg(sub, fpath):
-                continue
-            rows.append({
-                "crop_path": os.path.join(video, fname), "video": video, "frame_ts": round(ts, 2),
-                "x1": x1, "y1": y1, "x2": x2, "y2": y2,
-                "source": c.get("source", ""), "label": c["label"], "verified": 0,
-            })
+            r = _save_crop(None, c["box"], c["label"], c.get("source", ""), ts, j)
+            if r:
+                rows.append(r)
     return rows
 
 

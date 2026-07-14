@@ -113,11 +113,16 @@ def main():
             frame_iter = _video_frames(os.path.join(args.video_dir, f"{video}.mp4"), args.fps)
         tl.__init__(cfg, verbose=False)  # 重置检测器逐视频状态
         cand_fn = _hsv_candidates_fn(tl)
-        rows = extract_crops(frame_iter, video, state_at_fn, cand_fn, args.out, prior=prior)
+        # 有 prior 的视频走"先验 ROI 直抽": 每帧 prior 位置1个(walk/stand) + prior 外随机1个(off),
+        # 正负~1:1, 避免旧路径一帧10+ HSV噪声 off 稀释训练集。无 prior 回退旧路径(全图候选)。
+        prior_roi_px = int(prior[2]) if prior and len(prior) > 2 else 160
+        rows = extract_crops(frame_iter, video, state_at_fn, cand_fn, args.out,
+                             prior=(prior[0], prior[1]) if prior else None,
+                             prior_roi_mode=True, prior_roi_px=prior_roi_px)
         write_labels_csv(rows, labels_path)
         auto = sum(1 for r in rows if r["label"] in ("walk", "stand"))
         off = sum(1 for r in rows if r["label"] == "off")
-        print(f"[{video}] crops={len(rows)} (walk/stand={auto} off={off}) prior={'有' if prior else '无(需人工标)'}")
+        print(f"[{video}] crops={len(rows)} (walk/stand={auto} off={off}) prior={'有(ROI直抽)' if prior else '无(全图候选, 需人工标)'}")
         total += len(rows)
 
     print(f"\n完成: {total} crops -> {args.out}  索引: {labels_path}")
