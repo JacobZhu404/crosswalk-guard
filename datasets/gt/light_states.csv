@@ -1,5 +1,7 @@
 ﻿video,start_s,end_s,state,confidence,note
-违章01,0,999,red,confirmed,从label_result_01.csv解析
+违章01,0,48,red,confirmed,从label_result_01.csv解析
+违章01,48,62.5,red,occluded,人工画廊标注:48-62.5s信号灯被遮挡(60帧other),系统判unknown正确
+违章01,62.5,999,red,confirmed,从label_result_01.csv解析
 违章02,0,20.9,red,confirmed,旧GT肉眼确认
 违章02,20.9,85,green,confirmed,旧GT肉眼确认
 违章02,85,999,red,confirmed,旧GT肉眼确认
