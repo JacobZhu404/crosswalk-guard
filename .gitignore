@@ -20,7 +20,8 @@ runs/
 
 # ---- 抽帧调参产物(可再生成, 不入库) ----
 datasets/frames/
-datasets/ped_signal/
+datasets/ped_signal/*.jpg
+datasets/ped_signal/*/*.jpg
 input_video/
 
 # ---- 大权重/视频/压缩包(外部存储, 勿入 git 历史) ----
