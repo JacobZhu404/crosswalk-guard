@@ -44,7 +44,7 @@ def load_priors(path):
     return out
 
 
-def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None):
+def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None, yolo=None):
     """对单个视频运行 eval-b: observe -> fuse_light -> 逐帧对比 GT."""
     frames = list(dataset.iter_video(video))
     if not frames:
@@ -62,7 +62,15 @@ def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None):
     for i, (idx, ts, frame) in enumerate(frames):
         if frame is None:
             continue
-        res = det.observe(frame)
+        # B方案: YOLO 检测 traffic_light 框传给 observe(靠外形排除衣服/植物)
+        yolo_boxes = None
+        if yolo is not None:
+            try:
+                r = yolo(frame, verbose=False, conf=0.1, classes=[9])  # COCO class 9 = traffic_light
+                yolo_boxes = [tuple(b.xyxy[0].tolist()) for b in r[0].boxes] if r[0].boxes else None
+            except Exception:
+                yolo_boxes = None
+        res = det.observe(frame, yolo_light_boxes=yolo_boxes)
         obs = res.get("obs", "off")  # green|red|off|None
         conf = res.get("conf", 0.0)
         observations.append((ts, obs, conf))
@@ -185,12 +193,29 @@ def main():
     ap.add_argument("--hysteresis", type=float, default=None, help="覆盖迟滞阈值")
     ap.add_argument("--flicker-toggle", type=int, default=None, help="覆盖闪烁跳变阈值")
     ap.add_argument("--unknown-hold", type=int, default=8, help="unknown 保持阈值(默认8)")
+    ap.add_argument("--yolo", action="store_true", default=True,
+                     help="用 YOLO 检测 traffic_light 框传给 observe(B方案, 靠外形排除衣服/植物). 默认开")
+    ap.add_argument("--no-yolo", dest="yolo", action="store_false", help="关 YOLO, 回退纯 prior 路径")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
     cfg = load_config(os.path.join(ROOT, "configs", "config.yaml"))
     dataset = FrameDataset(args.frames_dir)
     gt = load_light_state_csv(args.gt)
+
+    # B方案: 加载 YOLO 检测 traffic_light 框(靠外形定位, 排除绿色衣服/植物颜色干扰)
+    yolo = None
+    if args.yolo:
+        try:
+            from ultralytics import YOLO
+            yolo_path = os.path.join(ROOT, "models", "yolov8n.pt")
+            if os.path.isfile(yolo_path):
+                yolo = YOLO(yolo_path)
+                print(f"[YOLO] 已加载 {yolo_path}, observe 用 traffic_light 框判色(B方案)")
+            else:
+                print(f"[YOLO] 权重不存在 {yolo_path}, 回退纯 prior 路径")
+        except Exception as e:
+            print(f"[YOLO] 加载失败({e}), 回退纯 prior 路径")
 
     # fuse_light 参数: 优先命令行, 其次 config
     tl = getattr(cfg, "traffic_light", None)
@@ -210,7 +235,7 @@ def main():
     print(f"视频: {videos}")
     results = []
     for v in videos:
-        r = eval_video(v, dataset, gt[v], cfg, fuse_kwargs, prior=priors.get(v))
+        r = eval_video(v, dataset, gt[v], cfg, fuse_kwargs, prior=priors.get(v), yolo=yolo)
         if r:
             results.append(r)
             acc = r["acc"]

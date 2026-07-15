@@ -79,6 +79,9 @@ class TrafficLightDetector(BaseModel):
         # 先验 ROI 自适应扩展: 紧 ROI 暗(无点亮像素)时向四周扩展 prior_roi_expand_factor 倍再采一次,
         # 吸收手持漂移导致信号灯移出紧 ROI(修复 02 t=76-85 等 g_px=0 漏检绿灯).
         self.prior_roi_expand_factor = float(getattr(tl, "prior_roi_expand_factor", 2.0))
+        # B方案: YOLO 信号灯框顶部假框过滤下限(归一cy)。02实证YOLO在画面顶部(cy<0.05)
+        # 误检车尾灯/远处灯为traffic_light, 过滤掉避坑。
+        self.yolo_cy_min = float(getattr(tl, "yolo_cy_min", 0.06))
         # 非对称连续帧翻转(先验模式专用, 见 _state_from_global prior 分支):
         #   red->green(相位真正切换, 永久)只需连续 prior_flip_on 帧绿 -> 切换快、不滞后;
         #   green->red(多为反射抖动, 瞬态)需连续 prior_flip_off 帧红才翻 -> 抗 02 绿灯相位内红反射(如 t=35.8 8帧红斑).
@@ -131,17 +134,50 @@ class TrafficLightDetector(BaseModel):
         self.prior_roi_px = int(p[2]) if len(p) > 2 else self.prior_roi_px
         return True
 
-    def observe(self, frame):
+    def observe(self, frame, yolo_light_boxes=None):
         """单帧灯态观测(供 TemporalFusion 消费): 只出这帧看到什么, 不做跨帧时序。
 
         obs ∈ 'green'|'red'|'off'|None。用单帧候选主色, 不 append global_recent、
         不跑 _state_from_global(那是②的活)。无内部状态改变 -> 同帧多次调用一致。
 
-        若配置了 signal_prior, 使用先验 ROI 直采(_sample_prior_color)排除全局环境干扰;
-        直采失败则回退到先验搜索半径内 candidates 面积加总。
+        优先级(B方案v2, 靠外形排除衣服/植物干扰):
+          1) yolo_light_boxes: YOLO 靠外形框出信号灯, 框内判色(_sample_box)。
+             过滤画面顶部假框(cy<yolo_cy_min, 02实证车尾灯/远处灯误检在cy<0.05);
+             有prior时选离prior最近的框(位置+外形双重过滤), 无prior选最亮的。
+          2) signal_prior: 先验 ROI 直采(_sample_prior_color)。
+          3) 回退: 全局亮斑面积加总。
         """
         self._last_frame = frame
         spots = self._candidates(frame)
+
+        # B方案v2: YOLO 信号灯框(靠外形, 排除衣服/植物; 顶部假框过滤)
+        if yolo_light_boxes and frame is not None:
+            h, w = frame.shape[:2]
+            best = None
+            for box in yolo_light_boxes:
+                x1, y1, x2, y2 = [int(v) for v in box]
+                bcx = ((x1 + x2) / 2) / w
+                bcy = ((y1 + y2) / 2) / h
+                # 顶部假框过滤: 02 实证 YOLO 在画面顶部(cy<0.05)误检车尾灯/远处灯
+                if bcy < self.yolo_cy_min:
+                    continue
+                col, gn, rn = self._sample_box(box, w, h)
+                if col is None:
+                    continue
+                # 选框: 有prior选离prior最近(位置+外形双重过滤), 无prior选最亮
+                if self.signal_prior is not None:
+                    px, py = self.signal_prior
+                    score = -((bcx - px) ** 2 + (bcy - py) ** 2) ** 0.5
+                else:
+                    score = max(gn, rn)
+                if best is None or score > best[1]:
+                    best = (col, score, gn, rn)
+            if best is not None:
+                col, _, gn, rn = best
+                self._last_sample = (gn, rn)
+                total = gn + rn
+                conf = round(max(gn, rn) / total, 3) if total > 0 else 0.0
+                return {"obs": col, "conf": conf, "candidates": spots}
 
         # 先验模式: 直采 ROI 颜色, 排除全局环境绿/树叶干扰
         if self.signal_prior is not None and frame is not None:
@@ -600,6 +636,42 @@ class TrafficLightDetector(BaseModel):
         min_frac = 0.002  # 至少0.2%有色像素
         if g_frac < min_frac and r_frac < min_frac:
             return None, 0, 0
+        if g_frac > r_frac * 1.3:
+            return "green", g_n, r_n
+        if r_frac > g_frac * 1.3:
+            return "red", g_n, r_n
+        return ("green" if g_frac >= r_frac else "red"), g_n, r_n
+
+    def _sample_box(self, box, w, h):
+        """在 YOLO traffic_light 框内做 HSV 颜色统计, 返回 (颜色, g_n, r_n) 或 (None,0,0)。
+
+        B方案: YOLO 靠外形框出信号灯(不会被绿色衣服/植物骗), 框内再判色。
+        解决 06 等场景 prior ROI 含绿色衣服/植物被当绿灯的问题。
+        box=(x1,y1,x2,y2) 像素坐标。
+        """
+        if self._last_frame is None or box is None:
+            return None, 0, 0
+        x1, y1, x2, y2 = [int(v) for v in box]
+        x1, y1 = max(0, x1), max(0, y1)
+        x2, y2 = min(w, x2), min(h, y2)
+        if x2 <= x1 or y2 <= y1:
+            return None, 0, 0
+        roi = self._last_frame[y1:y2, x1:x2]
+        if roi.size == 0:
+            return None, 0, 0
+        hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+        g_mask = cv2.inRange(hsv_roi, np.array([35, 60, 40]), np.array([95, 255, 255]))
+        r1 = cv2.inRange(hsv_roi, np.array([0, 60, 40]), np.array([12, 255, 255]))
+        r2 = cv2.inRange(hsv_roi, np.array([158, 60, 40]), np.array([180, 255, 255]))
+        r_mask = r1 | r2
+        g_n = int(cv2.countNonZero(g_mask))
+        r_n = int(cv2.countNonZero(r_mask))
+        total = (x2 - x1) * (y2 - y1)
+        if total == 0:
+            return None, 0, 0
+        g_frac, r_frac = g_n / total, r_n / total
+        if g_frac < 0.002 and r_frac < 0.002:
+            return None, 0, 0  # 框内无点亮像素(灯灭/暗)
         if g_frac > r_frac * 1.3:
             return "green", g_n, r_n
         if r_frac > g_frac * 1.3:

@@ -91,7 +91,7 @@ def build_default_dag(cfg, comp):
             ctx["light"] = res
             ctx["light_state"] = res.get("state", "unknown") if isinstance(res, dict) else res
             # ②③ 接线: 同时收集单帧观测供批处理决策
-            ctx["light_observation"] = tl.observe(ctx["frame"])
+            ctx["light_observation"] = tl.observe(ctx["frame"], yolo_light_boxes=boxes)
 
     def n_plate(ctx):
         if ctx["proc"] % plate_int == 0:

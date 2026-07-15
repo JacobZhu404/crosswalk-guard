@@ -30,7 +30,7 @@ class _Mock:
     def detect(self, frame, *a, **k):
         self.calls += 1
         return self.ret
-    def observe(self, frame):
+    def observe(self, frame, yolo_light_boxes=None):
         # ②③ 接线: DAG light 节点现在同时调用 observe()
         obs = "off"
         if isinstance(self.ret, dict):
@@ -140,7 +140,8 @@ def test_dag_passes_yolo_light_boxes():
         def detect(self, frame, crosswalk_mask=None, yolo_light_boxes=None):
             captured["boxes"] = yolo_light_boxes
             return {"state": "green"}
-        def observe(self, frame):
+        def observe(self, frame, yolo_light_boxes=None):
+            captured["observe_boxes"] = yolo_light_boxes
             return {"obs": "green", "conf": 0.9, "candidates": []}
 
     class _VehMock:
@@ -161,6 +162,8 @@ def test_dag_passes_yolo_light_boxes():
            "evidence_dir": "/tmp", "cfg": cfg, "disp": None}
     dag.run(ctx)
     assert captured["boxes"] == [(1, 2, 3, 4)]
+    # B方案: observe 也应收到 YOLO 信号灯框(靠外形排除衣服/植物干扰)
+    assert captured.get("observe_boxes") == [(1, 2, 3, 4)]
 
 
 if __name__ == "__main__":
