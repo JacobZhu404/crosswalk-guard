@@ -1,9 +1,23 @@
-video,start_s,end_s,state,confidence,note
-违章02,0,20.9,red,confirmed,用户口述 21s 红变绿; 你已肉眼确认
-违章02,20.9,85,green,confirmed,用户口述 + 标注视频肉眼确认
-违章02,85,999,red,confirmed,85s+ 红(标注视频尾段确认)
-违章03,0,73,red,confirmed,用户 GT: 0-73 红(含遮挡/公交车反光推断)
-违章03,74,134,green,confirmed,用户 GT: 74-134 绿(仅反光可见, 难例)
-违章03,135,999,red,confirmed,尾段红(检测器尾段确认)
-违章04,0,41.7,red,confirmed,用户10帧标注确认红灯(站立小人+等待, 在黄圈左上); 时间线由标注反推
-违章04,42.4,999,green,confirmed,用户标注确认红绿时间线; 42.4s+ 绿
+﻿video,start_s,end_s,state,confidence,note
+违章01,0,999,red,confirmed,从label_result_01.csv解析
+违章02,0,20.9,red,confirmed,旧GT肉眼确认
+违章02,20.9,85,green,confirmed,旧GT肉眼确认
+违章02,85,999,red,confirmed,旧GT肉眼确认
+违章03,0,73,red,confirmed,旧GT肉眼确认
+违章03,74,134,green,confirmed,旧GT肉眼确认
+违章03,135,999,red,confirmed,旧GT肉眼确认
+违章04,0,41.7,red,confirmed,旧GT肉眼确认
+违章04,42.4,999,green,confirmed,旧GT肉眼确认
+违章05,0,30,green,confirmed,从label_result_01.csv解析
+违章06,0,29,green,confirmed,从label_result_01.csv解析
+违章06,29,999,red,confirmed,从label_result_01.csv解析
+违章07,0,43,green,confirmed,从label_result_01.csv解析
+违章07,44,999,red,confirmed,从label_result_01.csv解析
+违章08,0,999,green,confirmed,从label_result_01.csv解析
+违章09,0,7,red,confirmed,从label_result_01.csv解析
+违章09,7,11,unknown,tentative,从label_result_01.csv解析
+违章09,11,72,green,confirmed,从label_result_01.csv解析
+违章09,72,999,unknown,tentative,从label_result_01.csv解析
+违章10,0,999,red,confirmed,从label_result_01.csv解析
+违章11,0,15,red,confirmed,从label_result_01.csv解析
+违章11,15,999,green,confirmed,从label_result_01.csv解析
