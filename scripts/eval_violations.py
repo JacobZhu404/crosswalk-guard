@@ -22,6 +22,7 @@ from redlight.infrastructure.config import load_config
 from redlight.app import cli
 from redlight.evaluation.violation_eval import (
     load_violation_gt, match_violation_events, aggregate,
+    load_video_metadata, classify_false_positives,
 )
 
 
@@ -39,6 +40,7 @@ def _read_violations_csv(path):
                     "end_ts": float(row["end_ts"]),
                     "plate": (row.get("plate") or "").strip(),
                     "track_id": row.get("track_id", ""),
+                    "light_state": (row.get("light_state") or "").strip(),
                 })
             except (KeyError, ValueError):
                 continue
@@ -69,6 +71,8 @@ def main():
     ap.add_argument("--videos", nargs="*", default=None, help="默认: events.csv 里所有含违章的视频")
     ap.add_argument("--preset", default="balanced")
     ap.add_argument("--events", default=os.path.join(ROOT, "datasets", "gt", "events.csv"))
+    ap.add_argument("--videos-csv", default=os.path.join(ROOT, "datasets", "gt", "videos.csv"),
+                    help="视频元数据(含 has_violation), 用于纳入负例与判定负例")
     ap.add_argument("--config", default=os.path.join(ROOT, "configs", "config.yaml"))
     ap.add_argument("--min-overlap", type=float, default=0.5, help="判为TP的最小时间重叠(秒)")
     ap.add_argument("--reuse", action="store_true",
@@ -79,14 +83,16 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     cfg = load_config(args.config)
     gt = load_violation_gt(args.events)
+    meta = load_video_metadata(args.videos_csv)
 
-    videos = args.videos or sorted(gt.keys())
+    videos = args.videos or sorted(meta.keys())
     print(f"=== 端到端违章评测 (eval-e2e): preset={args.preset} min_overlap={args.min_overlap}s ===")
-    print(f"视频(含GT违章段): {videos}\n")
+    print(f"视频(全 {len(meta)} 个, 含负例 {sum(1 for v in meta if not meta[v])} 个): {videos}\n")
 
     results, rows = [], []
     for v in videos:
         gt_v = gt.get(v, [])
+        is_neg = not meta.get(v, True)  # 未列于 videos.csv 默认当正例
         # 取事件
         if args.reuse:
             csv_path = os.path.join(ROOT, "data", "output", f"run_{v}_{args.preset}", "violations.csv")
@@ -101,8 +107,13 @@ def main():
 
         conf = _confirmed(events)
         r = match_violation_events(conf, gt_v, min_overlap_s=args.min_overlap)
+        cls = classify_false_positives(r, conf, gt_v, is_negative=is_neg, min_overlap_s=args.min_overlap)
+        r["neg_count"] = cls["neg_count"]
+        r["oow_count"] = cls["oow_count"]
+        r["fragment_count"] = cls["fragment_count"]
+        r["_cls"] = cls
         results.append(r)
-        rows.append((v, r))
+        rows.append((v, r, cls, is_neg))
 
         # 逐视频时间线
         pred_line = " ".join(f"{_fmt_span(e)}{'✓' if any(m['pred_idx']==i for m in r['matches']) else '✗FP'}"
@@ -110,21 +121,32 @@ def main():
         gt_line = " ".join(f"[{g['start_s']:.0f}-{g['end_s']:.0f}]cov={r['gt_coverage'][i]:.2f}"
                            + ("" if i not in r["fn_gts"] else "✗漏")
                            for i, g in enumerate(gt_v)) or "(无GT违章)"
-        print(f"[{v}] P={r['precision']:.2f} R={r['recall']:.2f} F1={r['f1']:.2f} "
+        tag = " [负例]" if is_neg else ""
+        print(f"[{v}]{tag} P={r['precision']:.2f} R={r['recall']:.2f} F1={r['f1']:.2f} "
               f"(tp={r['tp']} fp={r['fp']} fn={r['fn']}) 覆盖={r['mean_coverage']:.2f} "
-              f"车牌={r['plate_hits']}/{r['plate_total']}")
+              f"车牌={r['plate_hits']}/{r['plate_total']} | 真误报={cls['neg_count']+cls['oow_count']} 碎片={cls['fragment_count']}")
         print(f"    预测confirmed: {pred_line}")
         print(f"    GT违章段:     {gt_line}")
+        # FP 拆解明细
+        for d in cls["detail"]:
+            if d["category"] == "neg_true_fp":
+                print(f"      [真误报·负例] {d['span']} 灯态={d['light_state'] or '?'}")
+            elif d["category"] == "oow_true_fp":
+                print(f"      [真误报·窗外] {d['span']} 灯态={d['light_state'] or '?'}")
+            else:
+                print(f"      [碎片] {d['span']} 重叠GT窗={d['gt_window']} 灯态={d['light_state'] or '?'}")
 
     if not results:
         print("无评测结果")
         return
 
     agg = aggregate(results)
-    print(f"\n=== 总体事件级: P={agg['precision']:.3f} R={agg['recall']:.3f} F1={agg['f1']:.3f} "
+    print(f"\n=== 总体事件级(头条 1:1): P={agg['precision']:.3f} R={agg['recall']:.3f} F1={agg['f1']:.3f} "
           f"(tp={agg['tp']} fp={agg['fp']} fn={agg['fn']}) ===")
     print(f"=== 命中违章段平均覆盖率={agg['mean_coverage']:.3f} "
           f"车牌命中={agg['plate_hits']}/{agg['plate_total']} ===")
+    print(f"=== 拆解: 真误报={agg['true_fp_total']} (负例+窗外) | 碎片={agg['fragment_total']} "
+          f"| 诊断 P(仅真误报)={agg['p_only_true_fp']:.3f} ===")
 
 
 if __name__ == "__main__":

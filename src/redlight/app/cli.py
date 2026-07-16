@@ -27,7 +27,7 @@ from ..pipeline.plate_consensus import PlateConsensus
 from ..pipeline.analysis import AnalysisAccumulator, CotReporter
 
 
-def run(cfg, video_path, output_dir, preset="balanced", cot=False):
+def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_samples=False):
     ensure_dir(output_dir)
     evidence_dir = os.path.join(output_dir, "evidence")
     ensure_dir(evidence_dir)
@@ -166,6 +166,10 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
     print(f"[输出] {os.path.abspath(output_dir)}")
     if cot_path:
         print(f"[COT] 可解释报告: {os.path.abspath(cot_path)}")
+    if return_track_samples:
+        # 纯加法: 仅返回引擎已逐帧累积的 track 样本(tid -> [{ts,stationary,box,...}]),
+        # 不触发任何额外计算、不改变判定/输出行为。默认 False 时返回值与旧版完全一致。
+        return events, comp["engine"]._track_samples
     return events
 
 

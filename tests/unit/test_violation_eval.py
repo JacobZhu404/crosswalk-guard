@@ -1,91 +1,96 @@
-import os
+"""端到端违章评测: 负例纳入 + FP 分类(真误报/碎片) 单元测试。
+
+对应 docs/plans/2026-07-16-wb-plan-v4-fix-eval-measurement.md Part A。
+TDD 先行: 4 个用例覆盖 cc 裁定的判据。纯函数, 不依赖 cv2/视频。
+
+运行:
+    cd <project> && .venv/bin/python -m pytest tests/unit/test_violation_eval.py -q
+"""
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+import os
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.join(ROOT, "src"))
+
 from redlight.evaluation.violation_eval import (
-    overlap_seconds, plate_match, match_violation_events, aggregate, _union_length,
+    match_violation_events, aggregate,
+    classify_false_positives,
 )
 
 
-def _ev(start, end, plate=""):
-    return {"start_ts": start, "end_ts": end, "plate": plate}
+def _ev(s, e, light="green"):
+    return {"start_ts": s, "end_ts": e, "plate": "", "light_state": light}
 
 
-def _gt(start, end, plates=None):
-    return {"start_s": start, "end_s": end, "plates": plates or []}
+def _gt(s, e):
+    return {"start_s": s, "end_s": e, "plates": []}
 
 
-# ---- 基础工具 ----
-
-def test_overlap_seconds():
-    assert overlap_seconds((0, 10), (5, 20)) == 5
-    assert overlap_seconds((0, 5), (5, 10)) == 0     # 相切=0
-    assert overlap_seconds((0, 5), (10, 20)) == 0    # 无交
-
-
-def test_union_length_merges_overlaps():
-    assert _union_length([[0, 5], [3, 8], [10, 12]]) == 10.0  # (0-8)=8 + (10-12)=2
-
-
-def test_plate_match():
-    assert plate_match("京LNE560", ["京LNE560", "京N541E6"]) is True
-    assert plate_match("京JL1300", ["京LNE560"]) is False
-    assert plate_match("", ["京LNE560"]) is False
-    assert plate_match("京LNE560", []) is False
-
-
-# ---- 事件级匹配 ----
-
-def test_perfect_match_one_tp():
-    r = match_violation_events([_ev(21, 68)], [_gt(21, 68)])
-    assert (r["tp"], r["fp"], r["fn"]) == (1, 0, 0)
-    assert r["precision"] == r["recall"] == r["f1"] == 1.0
-
-
-def test_missed_violation_is_fn():
-    # 违章04 场景: GT 有违章, 无预测 -> FN, recall=0
-    r = match_violation_events([], [_gt(42, 43.2)])
-    assert (r["tp"], r["fp"], r["fn"]) == (0, 0, 1)
-    assert r["recall"] == 0.0
-
-
-def test_event_in_nonviolation_is_fp():
-    # 预测事件落在无 GT 违章处(如红灯段误报) -> FP
-    r = match_violation_events([_ev(3, 10)], [_gt(21, 68)])
-    assert (r["tp"], r["fp"], r["fn"]) == (0, 1, 1)
+def test_negative_video_confirmed_is_true_fp():
+    """用例1: 负例视频, 1 个 confirmed -> fp=1, neg_true_fp, 头条 P=0.0 (A1+A2)。"""
+    gt_v = []  # 负例无 GT 违章段
+    conf = [_ev(48.0, 60.0, light="green")]
+    r = match_violation_events(conf, gt_v, min_overlap_s=0.5)
+    assert r["tp"] == 0 and r["fp"] == 1 and r["fn"] == 0
     assert r["precision"] == 0.0
+    cls = classify_false_positives(r, conf, gt_v, is_negative=True, min_overlap_s=0.5)
+    assert cls["neg_true_fp"] == [0]
+    assert cls["neg_count"] == 1 and cls["oow_count"] == 0 and cls["fragment_count"] == 0
+    assert cls["detail"][0]["category"] == "neg_true_fp"
 
 
-def test_partial_overlap_counts_tp_but_low_coverage():
-    # 违章09 场景: GT 61s, 预测只 1.75s 且落在段内 -> 仍算检出(TP), 但覆盖率极低
-    r = match_violation_events([_ev(16.43, 18.18)], [_gt(11, 72)])
-    assert (r["tp"], r["fp"], r["fn"]) == (1, 0, 0)
-    assert r["recall"] == 1.0
-    assert r["mean_coverage"] < 0.05    # 1.75/61 ≈ 0.029
+def test_fragment_within_gt_window():
+    """用例2: 正例, GT[21,68]; confirmed [21,68](TP) + [30,34](重叠>=0.5 未配对) -> fragment。"""
+    gt_v = [_gt(21.0, 68.0)]
+    conf = [_ev(21.0, 68.0), _ev(30.0, 34.0)]
+    r = match_violation_events(conf, gt_v, min_overlap_s=0.5)
+    assert r["tp"] == 1 and r["fp"] == 1
+    cls = classify_false_positives(r, conf, gt_v, is_negative=False, min_overlap_s=0.5)
+    assert cls["fragment"] == [1]
+    assert cls["fragment_count"] == 1 and cls["oow_count"] == 0 and cls["neg_count"] == 0
+    d1 = next(d for d in cls["detail"] if d["idx"] == 1)
+    assert d1["category"] == "fragment"
+    assert d1["gt_window"] == "[21-68]"
 
 
-def test_min_overlap_threshold_filters_touch():
-    # 重叠 0.3s < 默认 0.5s -> 不算匹配
-    r = match_violation_events([_ev(67.7, 68.3)], [_gt(21, 68)], min_overlap_s=0.5)
-    assert r["tp"] == 0 and r["fp"] == 1 and r["fn"] == 1
+def test_out_of_window_true_fp_zero_overlap():
+    """用例3: 正例, GT[11,72]; confirmed 含合法 TP[11,72] +  spurious[94,96] 零重叠 -> oow_true_fp。"""
+    gt_v = [_gt(11.0, 72.0)]
+    conf = [_ev(11.0, 72.0), _ev(94.0, 96.0)]
+    r = match_violation_events(conf, gt_v, min_overlap_s=0.5)
+    assert r["tp"] == 1 and r["fp"] == 1
+    cls = classify_false_positives(r, conf, gt_v, is_negative=False, min_overlap_s=0.5)
+    assert cls["oow_true_fp"] == [1]
+    assert cls["oow_count"] == 1 and cls["fragment_count"] == 0
+    d1 = next(d for d in cls["detail"] if d["idx"] == 1)
+    assert d1["category"] == "oow_true_fp"
+    assert d1["overlap_gt_window_s"] == 0.0
 
 
-def test_greedy_one_to_one_no_double_count():
-    # 两个预测事件都压在同一个 GT 上 -> 只配 1 对, 另一个算 FP
-    r = match_violation_events([_ev(21, 40), _ev(41, 60)], [_gt(21, 68)])
-    assert r["tp"] == 1 and r["fp"] == 1 and r["fn"] == 0
+def test_aggregate_breakdown_across_videos():
+    """用例4: 聚合上述三类 -> 头条 + true_fp_total + fragment_total + P(仅真误报)。"""
+    # 负例
+    c1 = [_ev(48.0, 60.0, light="green")]
+    r1 = match_violation_events(c1, [], min_overlap_s=0.5)
+    k1 = classify_false_positives(r1, c1, [], is_negative=True, min_overlap_s=0.5)
+    r1.update({"neg_count": k1["neg_count"], "oow_count": k1["oow_count"], "fragment_count": k1["fragment_count"]})
+    # 碎片
+    c2 = [_ev(21.0, 68.0), _ev(30.0, 34.0)]
+    g2 = [_gt(21.0, 68.0)]
+    r2 = match_violation_events(c2, g2, min_overlap_s=0.5)
+    k2 = classify_false_positives(r2, c2, g2, is_negative=False, min_overlap_s=0.5)
+    r2.update({"neg_count": k2["neg_count"], "oow_count": k2["oow_count"], "fragment_count": k2["fragment_count"]})
+    # 窗外真误报(同时含合法 TP)
+    c3 = [_ev(11.0, 72.0), _ev(94.0, 96.0)]
+    g3 = [_gt(11.0, 72.0)]
+    r3 = match_violation_events(c3, g3, min_overlap_s=0.5)
+    k3 = classify_false_positives(r3, c3, g3, is_negative=False, min_overlap_s=0.5)
+    r3.update({"neg_count": k3["neg_count"], "oow_count": k3["oow_count"], "fragment_count": k3["fragment_count"]})
 
-
-def test_plate_secondary_metric():
-    r = match_violation_events([_ev(21, 68, plate="京LNE560")], [_gt(21, 68, ["京LNE560"])])
-    assert r["plate_total"] == 1 and r["plate_hits"] == 1
-    r2 = match_violation_events([_ev(21, 68, plate="京JL1300")], [_gt(21, 68, ["京LNE560"])])
-    assert r2["plate_total"] == 1 and r2["plate_hits"] == 0
-
-
-def test_aggregate_sums_across_videos():
-    r1 = match_violation_events([_ev(21, 68)], [_gt(21, 68)])          # tp1
-    r2 = match_violation_events([], [_gt(42, 43.2)])                    # fn1
-    r3 = match_violation_events([_ev(3, 10)], [_gt(21, 68)])            # fp1 fn1
     agg = aggregate([r1, r2, r3])
-    assert agg["tp"] == 1 and agg["fp"] == 1 and agg["fn"] == 2
-    assert agg["recall"] == round(1 / 3, 3)
+    assert agg["tp"] == 2 and agg["fp"] == 3 and agg["fn"] == 0
+    assert agg["true_fp_total"] == 2   # neg 1 + oow 1
+    assert agg["fragment_total"] == 1
+    assert abs(agg["p_only_true_fp"] - 2 / (2 + 2)) < 1e-6  # TP/(TP+真误报)
+    # 头条口径未被 classify 改变
+    assert abs(agg["precision"] - 2 / (2 + 3)) < 1e-6

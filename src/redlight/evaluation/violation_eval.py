@@ -54,6 +54,77 @@ def overlap_seconds(a, b):
     return max(0.0, e - s)
 
 
+def load_video_metadata(videos_csv):
+    """读 datasets/gt/videos.csv -> {video: has_violation(bool)}。
+
+    负例判定以 `has_violation==0` 为准, 调用方据此决定是否把该视频的 confirmed 全计真误报。
+    不硬编码视频名。
+    """
+    meta = {}
+    if not os.path.exists(videos_csv):
+        return meta
+    with open(videos_csv, "r", encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            v = (row.get("video") or "").strip()
+            if not v:
+                continue
+            hv = (row.get("has_violation") or "").strip()
+            meta[v] = (hv == "1")
+    return meta
+
+
+def classify_false_positives(match_result, pred_events, gt_violations, is_negative, min_overlap_s=0.5):
+    """把 match_violation_events 的 FP 事件(未 1:1 匹配)分类为 真误报 / 碎片。
+
+    判据(已与 cc 裁定):
+      - is_negative=True                 -> neg_true_fp  (负例视频任何 confirmed = 真误报)
+      - 正例 & 与某 GT 窗重叠 >= min_overlap_s -> fragment (属同一 GT 窗但未被 1:1 认领, 同一窗被切片)
+      - 正例 & 否则(含零重叠)           -> oow_true_fp (窗外真误报, precision 真敌人)
+
+    返回 dict:
+      neg_true_fp / oow_true_fp / fragment : 未匹配 pred 事件索引列表
+      detail : 逐条 [{idx, category, span, overlap_gt_window_s, gt_window, light_state}]
+      neg_count / oow_count / fragment_count : 计数(供 aggregate 汇总)
+    """
+    fp_idx = list(match_result.get("fp_events", []))
+    neg, oow, frag = [], [], []
+    detail = []
+    for i in fp_idx:
+        pe = pred_events[i]
+        pspan = (pe["start_ts"], pe["end_ts"])
+        best_ov, best_ge = 0.0, None
+        for ge in gt_violations:
+            ov = overlap_seconds(pspan, (ge["start_s"], ge["end_s"]))
+            if ov > best_ov:
+                best_ov, best_ge = ov, ge
+        if is_negative:
+            cat = "neg_true_fp"
+        elif best_ov >= min_overlap_s:
+            cat = "fragment"
+        else:
+            cat = "oow_true_fp"
+        if cat == "neg_true_fp":
+            neg.append(i)
+        elif cat == "oow_true_fp":
+            oow.append(i)
+        else:
+            frag.append(i)
+        gw = None
+        if best_ge is not None:
+            gw = f"[{best_ge['start_s']:.0f}-{best_ge['end_s']:.0f}]"
+        detail.append({
+            "idx": i, "category": cat,
+            "span": f"[{pe['start_ts']:.1f}-{pe['end_ts']:.1f}]",
+            "overlap_gt_window_s": round(best_ov, 2),
+            "gt_window": gw,
+            "light_state": pe.get("light_state", ""),
+        })
+    return {
+        "neg_true_fp": neg, "oow_true_fp": oow, "fragment": frag, "detail": detail,
+        "neg_count": len(neg), "oow_count": len(oow), "fragment_count": len(frag),
+    }
+
+
 def _union_length(intervals):
     """一组 [start,end] 区间的并集总长度。"""
     if not intervals:
@@ -166,9 +237,16 @@ def aggregate(per_video_results):
     mean_coverage = round(sum(covered) / len(covered), 3) if covered else 0.0
     plate_hits = sum(r["plate_hits"] for r in per_video_results)
     plate_total = sum(r["plate_total"] for r in per_video_results)
+    # 拆解汇总(可选键: 由调用方在逐视频结果上挂 neg_count/oow_count/fragment_count)
+    true_fp = sum(r.get("neg_count", 0) + r.get("oow_count", 0) for r in per_video_results)
+    fragment = sum(r.get("fragment_count", 0) for r in per_video_results)
+    # 诊断: 仅看真误报的精度(不含碎片) —— "多少次冤枉好人"
+    p_only_true_fp = round(tp / (tp + true_fp), 3) if (tp + true_fp) > 0 else 0.0
     return {
         "tp": tp, "fp": fp, "fn": fn,
         "precision": round(precision, 3), "recall": round(recall, 3), "f1": round(f1, 3),
         "mean_coverage": mean_coverage,
         "plate_hits": plate_hits, "plate_total": plate_total,
+        "true_fp_total": true_fp, "fragment_total": fragment,
+        "p_only_true_fp": p_only_true_fp,
     }
