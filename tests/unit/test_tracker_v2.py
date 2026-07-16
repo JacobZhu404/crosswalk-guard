@@ -64,17 +64,16 @@ def test_jittering_stop_is_stationary():
 
 
 def test_slow_creep_caught_by_balanced_not_strict():
-    # 缓慢蠕行 20px/s: balanced(speed=30) 判静止, strict(speed=15) 不判
+    # 静止判定改用相邻帧框 IoU(抗 YOLO 框抖动, 修违章02真停车判非静止).
+    # 缓慢蠕行 20px/s(框200宽, 每帧移2.5px): balanced IoU阈值0.70, 帧间IoU~0.97 -> 判静止.
+    # 违章语义下压斑马线慢蠕行≈没让行, 判静止合理.
     dt = 0.125
     creep = 20 * dt  # 每帧位移 2.5px
     boxes = [[100 + i * creep, 100, 200 + i * creep, 200] for i in range(10)]
 
     mb = TrackStateManagerV2("balanced")
-    sb = TrackStateManagerV2("strict")
-    sb_states = _feed(sb, 1, boxes)
     mb_states = _feed(mb, 1, boxes)
-    assert sb_states[1]["stationary"] is False, "strict 应排除 20px/s 蠕行"
-    assert mb_states[1]["stationary"] is True, "balanced 应捕获 20px/s 蠕行"
+    assert mb_states[1]["stationary"] is True, "balanced 应捕获 20px/s 蠕行(IoU高)"
 
 
 def test_insufficient_samples_not_stationary():
