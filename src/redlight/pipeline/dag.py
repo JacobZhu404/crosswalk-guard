@@ -143,8 +143,11 @@ def build_default_dag(cfg, comp):
         )
 
     def n_visualize(ctx):
+        # light_boxes: YOLO 信号灯框(供可视化画红框+识别结果)
+        lb = getattr(det, "last_light_boxes", None) or []
         ctx["disp"] = viz.draw(ctx["frame"], ctx["dets"], ctx["states"],
-                               ctx["mask"], ctx["light_state"], ctx["plates"])
+                               ctx["mask"], ctx["light_state"], ctx["plates"],
+                               light_boxes=lb)
 
     dag.add_node("detect", n_detect)
     dag.add_node("track", n_track)

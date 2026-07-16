@@ -110,6 +110,17 @@ class LightGalleryBuilder(BaseGalleryBuilder):
         self.priors = _load_priors(priors_path) if priors_path else {}
         self.config_path = config_path
         self._det_cache: Dict[str, Optional[TrafficLightDetector]] = {}
+        # B方案: 加载每帧 YOLO traffic_light 框(eval_temporal_fusion --gallery-out 产出)
+        # 供 annotate_full 画红框, 让标注者看 YOLO 框位置是否准
+        self.yolo_boxes = {}
+        yolo_json = os.path.join(eval_dir, "yolo_boxes.json")
+        if os.path.isfile(yolo_json):
+            try:
+                import json
+                with open(yolo_json, encoding="utf-8") as f:
+                    self.yolo_boxes = json.load(f)
+            except Exception:
+                self.yolo_boxes = {}
 
     # ---- 子类必须实现 ----
 
@@ -178,7 +189,10 @@ class LightGalleryBuilder(BaseGalleryBuilder):
             f"预{item.get('pred', '')}/GT{item.get('gt', '')}"
         )
         conf = float(item.get("conf", 0.0))
-        return _annotate_full_light(frame, prior, det, label_txt, conf)
+        # B方案: 取该帧 YOLO 框(供画红框标注)
+        t_key = f"{float(item.get('t_sec', 0)):.1f}"
+        yolo_boxes = self.yolo_boxes.get(video, {}).get(t_key)
+        return _annotate_full_light(frame, prior, det, label_txt, conf, yolo_boxes=yolo_boxes)
 
     def item_meta_html(self, item: dict, gt: Any) -> str:
         conf = float(item.get("conf", 0.0))
@@ -300,10 +314,26 @@ def _annotate_full_light(
     det: Optional[TrafficLightDetector],
     label_txt: str,
     conf: float = 0.0,
+    yolo_boxes: Optional[list] = None,
 ) -> np.ndarray:
-    """原始整帧(放大图): 蓝框=搜索区ROI, 黄圈=读取点。"""
+    """原始整帧(放大图): 蓝框=搜索区ROI, 黄圈=读取点, 红框=YOLO检测, 黄网格=坐标。
+
+    B方案: yolo_boxes 画 YOLO 检测的 traffic_light 框(红), 让标注者看 YOLO 框位置是否准,
+    反馈该往哪挪/怎么改。同时画坐标网格(0.0-1.0)供读位置。
+    """
     H, W = fr.shape[:2]
     out = fr.copy()
+    # 坐标网格(黄色, 0.1间隔, 标刻度)
+    for i in range(11):
+        x = int(i * W / 10)
+        cv2.line(out, (x, 0), (x, H), (0, 255, 255), 1)
+        cv2.rectangle(out, (x - 28, H - 38), (x + 28, H), (0, 0, 0), -1)
+        cv2.putText(out, f"{i/10:.1f}", (x - 22, H - 12), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    for i in range(11):
+        yy = int(i * H / 10)
+        cv2.line(out, (0, yy), (W, yy), (0, 255, 255), 1)
+        cv2.rectangle(out, (0, yy - 16), (68, yy + 16), (0, 0, 0), -1)
+        cv2.putText(out, f"{i/10:.1f}", (4, yy + 6), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
     cx = cy = None
     if prior is not None:
         cx, cy, roi = prior
@@ -318,10 +348,20 @@ def _annotate_full_light(
     ccy = max(0, min(H - 1, int(c[1] * H)))
     cv2.circle(out, (ccx, ccy), 18, (0, 255, 255), 3)
     cv2.drawMarker(out, (ccx, ccy), (0, 255, 255), cv2.MARKER_CROSS, 18, 1)
+    # B方案: YOLO 检测框(红, 标位置)
+    if yolo_boxes:
+        for b in yolo_boxes:
+            x1, y1, x2, y2 = [int(v) for v in b]
+            cv2.rectangle(out, (x1, y1), (x2, y2), (0, 0, 255), 4)
+            bcx = (x1 + x2) / 2 / W
+            bcy = (y1 + y2) / 2 / H
+            cv2.rectangle(out, (x2 - 5, min(H - 32, y2 + 4)), (min(W, x2 + 300), min(H, y2 + 28)), (0, 0, 0), -1)
+            cv2.putText(out, f"YOLO({bcx:.2f},{bcy:.2f})", (x2, min(H - 12, y2 + 24)),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
     cv2.rectangle(out, (0, 0), (W - 1, 30), (0, 0, 0), -1)
     cv2.putText(
         out,
-        label_txt + "   蓝框=搜索区ROI   黄圈=读取点",
+        label_txt + "   蓝框=prior 黄圈=读取点 红框=YOLO 黄=网格",
         (8, 20),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.6,

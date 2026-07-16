@@ -59,6 +59,7 @@ def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None, yolo=None)
     timestamps = []     # [ts, ...]
     frame_indices = []  # [frame_idx, ...]
 
+    yolo_boxes_per_frame = {}  # t_sec -> [box, ...] 供画廊画 YOLO 框
     for i, (idx, ts, frame) in enumerate(frames):
         if frame is None:
             continue
@@ -70,6 +71,8 @@ def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None, yolo=None)
                 yolo_boxes = [tuple(b.xyxy[0].tolist()) for b in r[0].boxes] if r[0].boxes else None
             except Exception:
                 yolo_boxes = None
+        if yolo_boxes:
+            yolo_boxes_per_frame[round(ts, 1)] = yolo_boxes
         res = det.observe(frame, yolo_light_boxes=yolo_boxes)
         obs = res.get("obs", "off")  # green|red|off|None
         conf = res.get("conf", 0.0)
@@ -142,6 +145,7 @@ def eval_video(video, dataset, gt_segs, cfg, fuse_kwargs, prior=None, yolo=None)
         "full_metrics": full_metrics,
         "confirmed_metrics": confirmed_metrics,
         "pred_segments": pred_segs,
+        "yolo_boxes": yolo_boxes_per_frame,
     }
 
 
@@ -337,7 +341,11 @@ def main():
             w = csv.DictWriter(f, fieldnames=_FIELDS)
             w.writeheader()
             w.writerows(all_mm)
-        print(f"画廊数据(同步): {args.gallery_out}/pred_*.csv + mismatch_all.csv")
+        # 落盘每帧 YOLO 框(供画廊画红框标注)
+        yolo_json = os.path.join(args.gallery_out, "yolo_boxes.json")
+        with open(yolo_json, "w", encoding="utf-8") as f:
+            json.dump({r["video"]: r["yolo_boxes"] for r in results}, f, ensure_ascii=False)
+        print(f"画廊数据(同步): {args.gallery_out}/pred_*.csv + mismatch_all.csv + yolo_boxes.json")
 
     # 落盘: fuse_light 产出的 segments (JSON)
     segments_json = os.path.join(args.out, "fused_segments.json")

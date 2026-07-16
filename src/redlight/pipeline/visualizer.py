@@ -17,12 +17,22 @@ class Visualizer:
         p = SENSITIVITY_PRESETS.get(preset, SENSITIVITY_PRESETS["balanced"])
         self.overlap = p["overlap"]
 
-    def draw(self, frame, dets, track_states, mask, light_state, plates=None):
+    def draw(self, frame, dets, track_states, mask, light_state, plates=None, light_boxes=None):
         if isinstance(light_state, dict):
             light_state = light_state.get("state", "unknown")
         disp = frame.copy()
         if plates is None:
             plates = []
+        if light_boxes is None:
+            light_boxes = []
+
+        # YOLO 信号灯框(红框) + 识别结果文字
+        for b in light_boxes:
+            x1, y1, x2, y2 = [int(v) for v in b[:4]]
+            cv2.rectangle(disp, (x1, y1), (x2, y2), (0, 0, 255), 3)
+            cv2.putText(disp, f"TL:{str(light_state).upper()}",
+                        (x1, max(y1 - 8, 12)), cv2.FONT_HERSHEY_SIMPLEX,
+                        0.6, (0, 0, 255), 2, cv2.LINE_AA)
 
         if mask is not None:
             contour = mask_to_contour(mask)
