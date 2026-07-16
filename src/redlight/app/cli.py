@@ -169,10 +169,27 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False):
     return events
 
 
+def _episode_plate(consensus_plates, ev):
+    """从 episode 的所有 member_tracks(含代表 track)里选 weight 最高的车牌。
+
+    修复(2026-07-16): 事件跨 track 合并后代表 track 未必是读到车牌的那个 track;
+    只按代表 track_id 回填会漏牌(实测端到端车牌命中仅 1/7)。遍历成员 track 兜底。
+    """
+    tids = list(dict.fromkeys([ev["track_id"]] + list(ev.get("member_tracks", []))))
+    best_text, best_w = "", -1.0
+    for t in tids:
+        p = consensus_plates.get(t)
+        if p and p.get("text") and p.get("weight", 0.0) > best_w:
+            best_text, best_w = p["text"], p.get("weight", 0.0)
+    return best_text
+
+
 def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus):
     """批处理后生成 CSV 与证据截图。"""
-    # 收集车牌
+    # 收集车牌: 按 episode 的 member_tracks 回填(不依赖 evidence 开关)
     consensus_plates = consensus.get_all() if consensus else {}
+    for ev in events:
+        ev["plate"] = _episode_plate(consensus_plates, ev)
 
     # 证据截图: 重新打开视频 seek 到事件 start_ts
     if cfg.output.evidence_images and events:
@@ -183,18 +200,14 @@ def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus)
             ret, frame = cap2.read()
             if not ret:
                 continue
-            plate_text = ""
             tid = ev["track_id"]
-            if tid in consensus_plates:
-                plate_text = consensus_plates[tid]["text"]
             fname = f"ev{ev['event_id']:04d}_tid{tid}"
-            if plate_text:
-                fname += f"_{plate_text}"
+            if ev["plate"]:
+                fname += f"_{ev['plate']}"
             fname += ".jpg"
             fpath = os.path.join(evidence_dir, fname)
             cv2.imwrite(fpath, frame)
             ev["evidence_image"] = fpath
-            ev["plate"] = plate_text
         cap2.release()
 
     if cfg.output.csv_report:

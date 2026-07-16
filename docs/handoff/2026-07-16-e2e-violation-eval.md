@@ -54,8 +54,9 @@
    满足(track 碎片化 / IoU静止阈值 / duration 门槛)。04 违章仅 42-43.2s(1.2s), 可能 <min_duration。
 2. **修残余 6 个 FP**: 02/05/07/09 各 1-2 个, 落在违章窗**外**(红灯/未知段)的误触发 —
    静止+压线在非违章区成事件。查这些事件的 light_state 与 GT 段。
-3. **修车牌关联(1/7)**: episode 现带 member_tracks, 但 `_write_outputs` 仍只按代表 track_id 回填 plate。
-   改为遍历 member_tracks 从 PlateConsensus 取车牌(任一命中即填), 应显著改善。
+3. ~~修车牌关联~~ **已完成(2026-07-16)**: `cli._episode_plate` 遍历 member_tracks 选 weight 最高车牌,
+   plate 回填不再依赖 evidence 开关。车牌命中 1/7→2/7(07命中)。**剩余漏牌是 OCR 识别错误**
+   (如 02 京JL1300 vs GT 京LNE560), 属车牌 OCR 准确率短板(P1), 非关联问题。
 4. 覆盖率(0.43): 仍偏低(命中违章只覆盖 ~43% 时长), 与漏检同源(静止判定断续)。
 
 ## 约束
