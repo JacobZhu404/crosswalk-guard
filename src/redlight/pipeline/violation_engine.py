@@ -244,34 +244,52 @@ class BatchViolationEngine:
                 "evidence_image": "",
                 "plate": "",
                 "max_overlap": ev.get("max_overlap", 0.0),
+                "member_tracks": ev.get("member_tracks", [tid]),
             })
         return self.events
 
     def _dedup(self, events):
-        """按 track_id 分组, 同 track 事件间隔 < gap 的合并。"""
-        by_track = {}
-        for ev in events:
-            by_track.setdefault(ev["track_id"], []).append(ev)
-        out = []
-        for tid, evs in by_track.items():
-            evs.sort(key=lambda e: e["start_s"])
-            merged = []
-            for e in evs:
-                if not merged:
-                    merged.append(dict(e))
-                    continue
-                last = merged[-1]
-                if e["start_s"] - last["end_s"] < self.gap:
-                    last["end_s"] = max(last["end_s"], e["end_s"])
-                    last["max_overlap"] = max(
-                        last.get("max_overlap", 0.0), e.get("max_overlap", 0.0)
-                    )
-                    # review 优先级高于 confirmed
-                    if e["status"] == "review" or last["status"] == "review":
-                        last["status"] = "review"
-                else:
-                    merged.append(dict(e))
-            out.extend(merged)
-        # 按 start_s 全局排序
-        out.sort(key=lambda e: e["start_s"])
-        return out
+        """全局时序合并: 把**时间重叠或间隔<gap 的事件跨 track 合并**为单个违章 episode
+        (输出粒度 = 违章时间窗, 对齐 datasets/gt/events.csv 的 per-窗 GT)。
+
+        修复(2026-07-16): 旧版仅按 track_id 分组合并 -> 碎片化的多 track(YOLO框抖动/遮挡把
+        物理同车切成多 ID)在同一违章窗内各自成事件, 跨 track 永不合并 -> 端到端 Precision
+        灾难(实测 26 FP vs 7 TP)。改为全局按时序合并。
+
+        合并语义:
+          - start=min, end=max(union 时间跨度)。
+          - member_tracks = 并入的所有 track_id; 代表 track_id/light_state 取 max_overlap
+            最大者(最显著违规车, 供车牌/证据回填)。
+          - max_overlap 取最大; 任一成员为 review -> episode 记 review(安全侧优先)。
+        """
+        if not events:
+            return []
+        episodes = []
+        cur = None
+        for e in sorted(events, key=lambda x: x["start_s"]):
+            if cur is not None and e["start_s"] - cur["end_s"] < self.gap:
+                self._absorb(cur, e)
+            else:
+                cur = self._new_episode(e)
+                episodes.append(cur)
+        return episodes
+
+    @staticmethod
+    def _new_episode(e):
+        ep = dict(e)
+        ep["member_tracks"] = [e["track_id"]]
+        return ep
+
+    @staticmethod
+    def _absorb(cur, e):
+        cur["end_s"] = max(cur["end_s"], e["end_s"])
+        if e["track_id"] not in cur["member_tracks"]:
+            cur["member_tracks"].append(e["track_id"])
+        # 代表 track/灯态 = 压线比例最大者(最显著违规车)
+        if e.get("max_overlap", 0.0) > cur.get("max_overlap", 0.0):
+            cur["track_id"] = e["track_id"]
+            cur["light_state"] = e["light_state"]
+        cur["max_overlap"] = max(cur.get("max_overlap", 0.0), e.get("max_overlap", 0.0))
+        # review 优先级高于 confirmed(安全侧交人复核)
+        if e["status"] == "review" or cur["status"] == "review":
+            cur["status"] = "review"

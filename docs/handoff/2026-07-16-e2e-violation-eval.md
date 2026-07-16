@@ -43,12 +43,20 @@
 - **覆盖率仅 34%**: 即便命中, 事件时长远短于真实违章(如 08 仅 5%、09 仅 24%)。
 - **车牌关联几乎全废(1/7)**: 事件 plate 靠 `_write_outputs` 按 track_id 从 PlateConsensus 回填, track 碎片化 -> track_id 对不上 -> plate 空。
 
+## 已完成: 降 FP (2026-07-16, 最高杠杆)
+`violation_engine._dedup` 从"按 track_id 分组合并"改为**全局时序合并**(跨 track, 重叠或间隔<gap
+折叠为单 episode; 代表 track=max_overlap; 带 member_tracks)。事件粒度对齐 GT 违章窗。
+**实测(重跑全量): P 0.212→0.538, F1 0.333→0.636, FP 26→6, 覆盖 0.338→0.426, Recall 0.778 不变。**
+03/06/08 达 P=1.0。单元+集成全绿。commit: (见 git log)。
+
 ## 下一步动作(建议优先级)
-1. **降 FP(最高杠杆)**: 在 `violation_engine` 出事件前, 对**时间重叠**的 confirmed 事件做跨 track 合并/NMS
-   (现只按 track_id 去重)。预计能把 26 FP 大幅砍掉, Precision 从 0.21 显著上升。跑 `eval_violations.py` 验证。
-2. **修漏检 04/11**: 排查静止判定为何在短违章段不持续满足(track 碎片化/IoU静止阈值)。
-3. **修车牌关联**: track 合并后 track_id 稳定, plate 回填应自然改善; 或改为按事件时空范围聚合车牌而非纯 track_id。
-4. 覆盖率: 事件合并后应一并改善。
+1. **修漏检 04/11 (R=0)**: 短时违章, 无任何 confirmed 事件产出。排查静止判定为何在短违章段不持续
+   满足(track 碎片化 / IoU静止阈值 / duration 门槛)。04 违章仅 42-43.2s(1.2s), 可能 <min_duration。
+2. **修残余 6 个 FP**: 02/05/07/09 各 1-2 个, 落在违章窗**外**(红灯/未知段)的误触发 —
+   静止+压线在非违章区成事件。查这些事件的 light_state 与 GT 段。
+3. **修车牌关联(1/7)**: episode 现带 member_tracks, 但 `_write_outputs` 仍只按代表 track_id 回填 plate。
+   改为遍历 member_tracks 从 PlateConsensus 取车牌(任一命中即填), 应显著改善。
+4. 覆盖率(0.43): 仍偏低(命中违章只覆盖 ~43% 时长), 与漏检同源(静止判定断续)。
 
 ## 约束
 - eval 跑全量约 6-9 分钟(11.8~8 推理帧/秒, 9视频)。stdout 被缓冲, 跑完才出结果。写 `data/output/eval_violations/`(gitignore)。
