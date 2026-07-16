@@ -82,6 +82,9 @@ class TrafficLightDetector(BaseModel):
         # B方案: YOLO 信号灯框顶部假框过滤下限(归一cy)。02实证YOLO在画面顶部(cy<0.05)
         # 误检车尾灯/远处灯为traffic_light, 过滤掉避坑。
         self.yolo_cy_min = float(getattr(tl, "yolo_cy_min", 0.06))
+        # B方案v3: YOLO框离prior的距离阈值。近(<此值)说明prior位置可信→用prior直采(更稳,02);
+        # 远(>此值)说明prior可能标错→用YOLO框(06 prior采到衣服/植物时靠YOLO救)。
+        self.yolo_prior_near = float(getattr(tl, "yolo_prior_near", 0.12))
         # 非对称连续帧翻转(先验模式专用, 见 _state_from_global prior 分支):
         #   red->green(相位真正切换, 永久)只需连续 prior_flip_on 帧绿 -> 切换快、不滞后;
         #   green->red(多为反射抖动, 瞬态)需连续 prior_flip_off 帧红才翻 -> 抗 02 绿灯相位内红反射(如 t=35.8 8帧红斑).
@@ -150,10 +153,13 @@ class TrafficLightDetector(BaseModel):
         self._last_frame = frame
         spots = self._candidates(frame)
 
-        # B方案v2: YOLO 信号灯框(靠外形, 排除衣服/植物; 顶部假框过滤)
+        # B方案v3: YOLO 信号灯框(靠外形, 排除衣服/植物; 顶部假框过滤)
+        # 自动选择 prior vs YOLO(避免 02 退步): YOLO框离prior近→prior位置可信,用prior直采(更稳,
+        #   02情况); YOLO框离prior远→prior可能标错,用YOLO框(06情况,prior采到衣服/植物)。
         if yolo_light_boxes and frame is not None:
             h, w = frame.shape[:2]
             best = None
+            best_dist = None
             for box in yolo_light_boxes:
                 x1, y1, x2, y2 = [int(v) for v in box]
                 bcx = ((x1 + x2) / 2) / w
@@ -167,12 +173,20 @@ class TrafficLightDetector(BaseModel):
                 # 选框: 有prior选离prior最近(位置+外形双重过滤), 无prior选最亮
                 if self.signal_prior is not None:
                     px, py = self.signal_prior
-                    score = -((bcx - px) ** 2 + (bcy - py) ** 2) ** 0.5
+                    dist = ((bcx - px) ** 2 + (bcy - py) ** 2) ** 0.5
+                    score = -dist
                 else:
+                    dist = None
                     score = max(gn, rn)
                 if best is None or score > best[1]:
                     best = (col, score, gn, rn)
-            if best is not None:
+                    best_dist = dist
+            # YOLO框离prior近(<yolo_prior_near): prior位置可信, 让下面prior直采主导(02更稳)
+            # YOLO框离prior远 或 无prior: 用YOLO框(06 prior标错时靠YOLO救)
+            use_yolo = best is not None and (
+                self.signal_prior is None or best_dist is None or best_dist > self.yolo_prior_near
+            )
+            if use_yolo:
                 col, _, gn, rn = best
                 self._last_sample = (gn, rn)
                 total = gn + rn
