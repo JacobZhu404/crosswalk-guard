@@ -26,6 +26,80 @@ def merge_adjacent_segments(segments):
     return out
 
 
+def enforce_transition_limit(segments, max_transitions=2, min_seg_dur=3.0,
+                             conf_floor=0.85):
+    """全局约束灯态段转换次数(强先验: ~2min视频最多2次红绿转换)。
+
+    用高置信段兜底低置信/短碎段, 消除单帧识别抖动产生的 flashing/unknown 碎段。
+    规则(迭代):
+      1) unknown 段: 前后同色高置信 -> 填成该色(高置信兜底); 否则保留(真遮挡=review)。
+      2) 短低置信段(时长<min_seg_dur 且 conf<conf_floor): 并入相邻更强段(时长×conf大者)。
+      3) 若转换数仍 > max_transitions: 反复吸收"最弱段"(时长×conf最小)进邻段, 直到达标。
+    高置信长段(如 red/green conf=1.0)是锚, 不会被吸收; 真实的长 flashing/长遮挡(时长
+    ≥min_seg_dur)也因此保留, 仅短碎段(抖动)被折叠。
+
+    输入/输出: light_segments(按时间有序)。纯函数。
+    """
+    if not segments:
+        return segments
+    segs = [dict(s) for s in segments]
+
+    def _seg_strength(s):
+        return (s["end_s"] - s["start_s"]) * max(s.get("conf", 0.0), 0.01)
+
+    def _absorb(idx):
+        """把 segs[idx] 吸收进相邻更强段(状态改为邻段状态), 然后合并同色。"""
+        left = segs[idx - 1] if idx > 0 else None
+        right = segs[idx + 1] if idx + 1 < len(segs) else None
+        if left is None and right is None:
+            return
+        # 选更强的邻段的状态
+        if left is None:
+            tgt = right["state"]
+        elif right is None:
+            tgt = left["state"]
+        else:
+            tgt = left["state"] if _seg_strength(left) >= _seg_strength(right) else right["state"]
+        segs[idx]["state"] = tgt
+
+    # 步骤1: unknown 被前后同色高置信兜底
+    for i, s in enumerate(segs):
+        if s["state"] != "unknown":
+            continue
+        left = segs[i - 1] if i > 0 else None
+        right = segs[i + 1] if i + 1 < len(segs) else None
+        lc = left["state"] if left and left.get("conf", 0) >= conf_floor else None
+        rc = right["state"] if right and right.get("conf", 0) >= conf_floor else None
+        if lc and lc == rc and lc in ("green", "red", "flashing"):
+            s["state"] = lc  # 前后同色高置信 -> 填充(如 red-unknown-red -> red)
+
+    def _rebuild():
+        return merge_adjacent_segments(segs)
+
+    segs = _rebuild()
+
+    # 步骤2: 吸收短低置信段
+    changed = True
+    while changed:
+        changed = False
+        for i, s in enumerate(segs):
+            dur = s["end_s"] - s["start_s"]
+            if dur < min_seg_dur and s.get("conf", 0) < conf_floor and len(segs) > 1:
+                _absorb(i)
+                segs = merge_adjacent_segments(segs)
+                changed = True
+                break
+
+    # 步骤3: 转换数仍超限 -> 反复吸收最弱段
+    while len(segs) - 1 > max_transitions and len(segs) > 1:
+        # 找最弱段(端点段只能被单邻吸收, 中间段选最弱)
+        weakest = min(range(len(segs)), key=lambda i: _seg_strength(segs[i]))
+        _absorb(weakest)
+        segs = merge_adjacent_segments(segs)
+
+    return segs
+
+
 def make_occupancy_interval(start_s, end_s, max_overlap, avg_overlap):
     """一段连续压线区间(overlap>0)。阈值由判定层③按 preset 施加, 本层不预筛(A-D3)。"""
     return {"start_s": start_s, "end_s": end_s,

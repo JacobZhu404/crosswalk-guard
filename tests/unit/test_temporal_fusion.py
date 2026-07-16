@@ -3,7 +3,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 from redlight.pipeline.temporal_fusion import (
     fuse_light, intervals_from_flags, fuse_occupancy, interval_intersect, tag_evidence,
 )
-from redlight.pipeline.intermediate_state import make_light_segment
+from redlight.pipeline.intermediate_state import (
+    make_light_segment, enforce_transition_limit,
+)
 
 
 def _obs(states, dt=0.125):
@@ -30,7 +32,8 @@ def test_green_then_red_two_segments():
 
 
 def test_flashing_detected():
-    segs = fuse_light(_obs(["green", "red"] * 8), window=8, hysteresis=0.68, flicker_toggle=4)
+    # 真实的持续 flashing(>min_seg_dur=3.0s)必须存活于全局转换约束: *16=4.0s
+    segs = fuse_light(_obs(["green", "red"] * 16), window=8, hysteresis=0.68, flicker_toggle=4)
     assert "flashing" in _states(segs)
 
 
@@ -41,7 +44,8 @@ def test_single_unknown_does_not_break_segment():
 
 
 def test_sustained_unknown_opens_new_segment():
-    segs = fuse_light(_obs(["green"] * 6 + [None] * 14), window=6, hysteresis=0.68,
+    # 持续遮挡(unknown 段>min_seg_dur=3.0s)必须保留为独立 unknown 段供 review, 不被约束吞掉
+    segs = fuse_light(_obs(["green"] * 6 + [None] * 40), window=6, hysteresis=0.68,
                       flicker_toggle=4, unknown_hold=4)
     assert _states(segs) == ["green", "unknown"]
 
@@ -51,6 +55,48 @@ def test_intermittent_green_not_flashing():
                       window=8, hysteresis=0.68, flicker_toggle=4)
     assert "flashing" not in _states(segs)
     assert "green" in _states(segs)
+
+
+# ---- enforce_transition_limit(全局转换约束 + 抖动兜底) ----
+
+def _seg(start, end, state, conf):
+    return make_light_segment(start, end, state, conf)
+
+
+def test_enforce_collapses_short_low_conf_jitter():
+    # 长红锚点中的短低置信 green 抖动碎段 -> 被红吸收, 合并为单段红
+    segs = [_seg(0, 30, "red", 1.0), _seg(30, 31, "green", 0.3), _seg(31, 60, "red", 1.0)]
+    out = enforce_transition_limit(segs)
+    assert _states(out) == ["red"]
+
+
+def test_enforce_keeps_long_flashing_anchor():
+    # 真实的长 flashing 段(时长≥min_seg_dur)是锚点, 不被溶解
+    segs = [_seg(0, 20, "green", 1.0), _seg(20, 40, "flashing", 0.9)]
+    out = enforce_transition_limit(segs)
+    assert "flashing" in _states(out)
+
+
+def test_enforce_backfills_unknown_between_same_color():
+    # red-unknown-red 高置信 -> unknown 被兜底成 red(灯色未变, 仅短暂遮挡)
+    segs = [_seg(0, 20, "red", 1.0), _seg(20, 22, "unknown", 0.0), _seg(22, 40, "red", 1.0)]
+    out = enforce_transition_limit(segs)
+    assert _states(out) == ["red"]
+
+
+def test_enforce_limits_transitions_to_max():
+    # 4 次转换的抖动序列 -> 压到 <=max_transitions(默认2)
+    segs = [_seg(0, 30, "red", 1.0), _seg(30, 31, "green", 0.3),
+            _seg(31, 32, "red", 0.3), _seg(32, 33, "green", 0.3), _seg(33, 60, "red", 1.0)]
+    out = enforce_transition_limit(segs, max_transitions=2)
+    assert len(out) - 1 <= 2
+
+
+def test_enforce_noop_on_clean_two_segments():
+    # 干净的两段高置信(green->red)在约束内, 原样保留
+    segs = [_seg(0, 40, "green", 1.0), _seg(40, 80, "red", 1.0)]
+    out = enforce_transition_limit(segs)
+    assert _states(out) == ["green", "red"]
 
 
 # ---- 时变区间聚合(② tracks/occupancy, 供③区间代数) ----

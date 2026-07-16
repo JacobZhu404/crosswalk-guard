@@ -7,6 +7,7 @@ TrafficLightDetector._state_from_global + hysteresis 的语义, 但操作完整�
 from collections import deque
 from .intermediate_state import (
     make_light_segment, merge_adjacent_segments, make_occupancy_interval,
+    enforce_transition_limit,
 )
 
 
@@ -29,8 +30,13 @@ def _window_state(win, flicker_toggle):
     return "unknown", round(max(gr, rr), 3)
 
 
-def fuse_light(observations, window=24, hysteresis=0.68, flicker_toggle=4, unknown_hold=8):
-    """observations: 有序 [(ts, obs, conf)], obs ∈ green|red|off|None。返回 light_segments。"""
+def fuse_light(observations, window=24, hysteresis=0.68, flicker_toggle=4, unknown_hold=8,
+               max_transitions=2, transition_min_dur=3.0):
+    """observations: 有序 [(ts, obs, conf)], obs ∈ green|red|off|None。返回 light_segments。
+
+    max_transitions: 全局约束灯态转换次数(强先验: ~2min视频最多2次转换)。用高置信段兜底
+      低置信/unknown碎段, 消除单帧抖动产生的 flashing/unknown 碎段。<=0 时不约束(旧行为)。
+    """
     win = deque(maxlen=window)
     raw = []                       # 每帧 (ts, committed_state, conf)
     committed = None
@@ -57,7 +63,12 @@ def fuse_light(observations, window=24, hysteresis=0.68, flicker_toggle=4, unkno
     for i, (ts, state, conf) in enumerate(raw):
         end = raw[i + 1][0] if i + 1 < len(raw) else ts
         segs.append(make_light_segment(ts, end, state, conf))
-    return merge_adjacent_segments(segs)
+    segs = merge_adjacent_segments(segs)
+    # 全局后处理: 转换次数约束 + 高置信兜底(消除单帧抖动碎段)
+    if max_transitions is not None and max_transitions > 0:
+        segs = enforce_transition_limit(segs, max_transitions=max_transitions,
+                                        min_seg_dur=transition_min_dur)
+    return segs
 
 
 # ---- 时变区间聚合(② tracks/occupancy, 供③区间代数) ----
