@@ -135,12 +135,14 @@ class BatchViolationEngine:
     """
 
     def __init__(self, preset="balanced", sample_fps=8.0, unknown_to_review=True,
-                 min_event_gap_sec=5.0, fuse_kwargs=None):
+                 min_event_gap_sec=5.0, fuse_kwargs=None, occ_denom="mask"):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset
         p = SENSITIVITY_PRESETS[preset]
         self.overlap_thr = p["overlap"]
+        # 占道分母: "mask"=占斑马线比例(D2 现状) | "box"=车足迹占多少压线(诊断/未来)
+        self.occ_denom = occ_denom if occ_denom in ("mask", "box") else "mask"
         # duration 在 preset 中是"采样帧数", 转换为秒供 decide_violations
         self.min_duration_s = p["duration"] / max(sample_fps, 1e-3)
         self.gap = min_event_gap_sec
@@ -174,7 +176,7 @@ class BatchViolationEngine:
                 continue
             ratio = 0.0
             if mask is not None:
-                ratio = compute_overlap_ratio(st["box"], mask, footprint=0.5, denom="mask")
+                ratio = compute_overlap_ratio(st["box"], mask, footprint=0.5, denom=self.occ_denom)
             self._track_samples.setdefault(tid, []).append({
                 "ts": timestamp,
                 "stationary": st.get("stationary", False),

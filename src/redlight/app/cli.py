@@ -27,7 +27,8 @@ from ..pipeline.plate_consensus import PlateConsensus
 from ..pipeline.analysis import AnalysisAccumulator, CotReporter
 
 
-def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_samples=False):
+def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_samples=False,
+        crosswalk_detector=None, occ_denom=None):
     ensure_dir(output_dir)
     evidence_dir = os.path.join(output_dir, "evidence")
     ensure_dir(evidence_dir)
@@ -59,18 +60,23 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
         "flicker_toggle": int(getattr(tl_cfg, "flicker_toggle_count", 4)),
         "unknown_hold": int(getattr(tl_cfg, "anchor_hold", 30)),
     }
+    # 诊断注入(加法, 默认不变): crosswalk_detector 可替换斑马线检测器(如 GT 掩膜天花板);
+    # occ_denom 可切占道分母("mask"/"box"), None 时用引擎默认("mask")。
+    _engine_kwargs = dict(
+        preset=preset,
+        sample_fps=cfg.inference.fps,
+        unknown_to_review=cfg.output.unknown_light_to_review,
+        fuse_kwargs=fuse_kwargs,
+    )
+    if occ_denom is not None:
+        _engine_kwargs["occ_denom"] = occ_denom
     comp = {
         "vehicle": VehicleDetector(cfg),
-        "crosswalk": CrosswalkDetector(cfg),
+        "crosswalk": crosswalk_detector if crosswalk_detector is not None else CrosswalkDetector(cfg),
         "light": TrafficLightDetector(cfg),
         "plate": PlateRecognizer(cfg),
         "trackstate": TrackStateManagerV2(preset),
-        "engine": BatchViolationEngine(
-            preset=preset,
-            sample_fps=cfg.inference.fps,
-            unknown_to_review=cfg.output.unknown_light_to_review,
-            fuse_kwargs=fuse_kwargs,
-        ),
+        "engine": BatchViolationEngine(**_engine_kwargs),
         "viz": Visualizer(cfg, preset=preset),
         "plate_consensus": PlateConsensus(keep_history=180),
     }
