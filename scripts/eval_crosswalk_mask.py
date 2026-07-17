@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from redlight.infrastructure.config import load_config
 from redlight.models.crosswalk import CrosswalkDetector
-from redlight.evaluation.module_metrics import band_iou, mask_band
+from redlight.evaluation.module_metrics import poly_to_mask, mask_iou, mask_band
 
 
 def eval_video(video, gt_frames, cfg, preset):
@@ -35,19 +35,20 @@ def eval_video(video, gt_frames, cfg, preset):
     per_frame = []
     for fr in gt_frames:
         ts = fr["ts"]
-        y0, y1 = fr.get("y0"), fr.get("y1")
-        if y0 is None or y1 is None:
-            print(f"    [跳过 {video}@{ts}] y0/y1 未标注")
+        poly = fr.get("poly")
+        if not poly or len(poly) < 3:
+            print(f"    [跳过 {video}@{ts}] poly 未标注")
             continue
         cap.set(cv2.CAP_PROP_POS_MSEC, int(ts * 1000))
         ret, frame = cap.read()
         if not ret:
             print(f"    [跳过 {video}@{ts}] 取帧失败")
             continue
-        mask = det.detect(frame)  # 不带 vehicle_boxes
-        pred_band = mask_band(mask)
-        iou = band_iou(pred_band, (y0, y1))
-        per_frame.append({"ts": ts, "pred_band": pred_band, "gt": [y0, y1], "iou": round(iou, 3)})
+        mask = det.detect(frame)  # 不带 vehicle_boxes(本征掩膜质量)
+        H, W = mask.shape[:2]
+        gt_mask = poly_to_mask(poly, H, W)
+        iou = mask_iou(mask, gt_mask)
+        per_frame.append({"ts": ts, "pred_band": mask_band(mask), "gt_poly": poly, "iou": round(iou, 3)})
     cap.release()
     if not per_frame:
         return None
@@ -86,12 +87,12 @@ def main():
         if r is None:
             continue
         results.append(r)
-        print(f"[{video}] 平均 band-IoU={r['mean_iou']:.3f} (n={len(r['frames'])})")
+        print(f"[{video}] 平均 mask-IoU={r['mean_iou']:.3f} (n={len(r['frames'])})")
         for fr in r["frames"]:
-            print(f"    @{fr['ts']:.1f}s  pred={fr['pred_band']} gt={fr['gt']} IoU={fr['iou']:.3f}")
+            print(f"    @{fr['ts']:.1f}s  pred_band={fr['pred_band']} gt_poly={fr['gt_poly']} maskIoU={fr['iou']:.3f}")
     if results:
         overall = sum(r["mean_iou"] for r in results) / len(results)
-        print(f"\n=== 总体平均 band-IoU={overall:.3f} (视频数={len(results)}) ===")
+        print(f"\n=== 总体平均 mask-IoU={overall:.3f} (视频数={len(results)}) ===")
         # 暴露失准: 任何视频均值 < 0.5 即为掩膜失准重点
         low = [r["video"] for r in results if r["mean_iou"] < 0.5]
         if low:

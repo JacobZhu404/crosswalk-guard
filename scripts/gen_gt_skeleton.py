@@ -3,7 +3,7 @@
 
 B1 斑马线掩膜: datasets/gt/crosswalk/{video}.json
     frames: 每个 is_violation==1 窗取 3 帧(窗 10/50/90% 时刻) + 1 帧窗外中性帧;
-            y0/y1=None 待 Jacob 标(每帧独立标, 兼容相机漂移)。
+            poly=None 待 Jacob 标四点多边形(每帧独立标, 兼容相机漂移/斜视角)。
 B2 跟踪:     datasets/gt/tracking/{video}.json
     anchors: 每个 is_violation==1 窗取 2 锚帧(窗 20/70% 时刻);
             box=None 待 Jacob 标(违章车在该帧的框)。
@@ -42,12 +42,12 @@ def gen(video, segs, out_crosswalk, out_tracking):
         for frac in (0.1, 0.5, 0.9):
             ts = round(s["start_s"] + dur * frac, 1)
             b1["frames"].append({
-                "ts": ts, "y0": None, "y1": None,
+                "ts": ts, "poly": None,
                 "note": f"违章窗[{s['start_s']:.0f}-{s['end_s']:.0f}]@{frac*100:.0f}%",
             })
     nts = _neutral_ts(segs)
     if nts is not None:
-        b1["frames"].append({"ts": nts, "y0": None, "y1": None, "note": "中性帧(窗外, 查无假带)"})
+        b1["frames"].append({"ts": nts, "poly": None, "note": "中性帧(窗外, 查无假带)"})
     b1["frames"].sort(key=lambda f: f["ts"])
     path1 = os.path.join(out_crosswalk, f"{video}.json")
     with open(path1, "w", encoding="utf-8") as f:

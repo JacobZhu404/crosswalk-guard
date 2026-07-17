@@ -31,6 +31,34 @@ def mask_band(mask):
     return (int(rows[0]), int(rows[-1]))
 
 
+def poly_to_mask(poly, h, w):
+    """把多边形顶点 [[x,y],...] 光栅化成 (h,w) 二值掩膜(255 前景)。
+
+    支持任意四边形/多边形(≥3 点), 用于斜视角斑马线 GT。空/不足 3 点 -> 全零。
+    """
+    import cv2
+    m = np.zeros((h, w), dtype=np.uint8)
+    if not poly or len(poly) < 3:
+        return m
+    pts = np.array([[int(round(x)), int(round(y))] for x, y in poly], dtype=np.int32)
+    cv2.fillPoly(m, [pts], 255)
+    return m
+
+
+def mask_iou(pred_mask, gt_mask):
+    """两二值掩膜的 2D IoU(交/并); 任一全空且另一非空 -> 0.0, 皆空 -> 0.0。
+
+    通用于任意形状 GT(多边形/框/带), 取代仅竖直的 band_iou 用于斜马线。
+    """
+    if pred_mask is None or gt_mask is None:
+        return 0.0
+    p = pred_mask > 0
+    g = gt_mask > 0
+    inter = int(np.logical_and(p, g).sum())
+    union = int(np.logical_or(p, g).sum())
+    return inter / union if union > 0 else 0.0
+
+
 def iou_box(a, b):
     """两框 [x1, y1, x2, y2] 的 IoU; 任一无效 -> 0.0。"""
     if not a or not b:

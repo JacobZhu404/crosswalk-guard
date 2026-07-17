@@ -116,6 +116,14 @@ class BaseGalleryBuilder(ABC):
         """
         return ""
 
+    def _extra_js(self) -> str:
+        """返回追加到页面末尾的额外 JS(在基类 _JS 之后注入); 默认空。
+
+        子类如需自定义交互(如画布拖拽标注几何坐标), 覆写此方法。
+        基类保证在所有基础 JS 初始化完成后再执行本段, 可安全访问 .crop-card / #lb 等。
+        """
+        return ""
+
     # ---------- 公共基础设施 ----------
 
     def __init__(
@@ -638,5 +646,6 @@ updSelCount();
 <p class="intro">{self.intro_html()}</p>
 {cards_html}
 <div id="lb" class="lightbox"><img alt="zoom"/><div class="hint">点击任意处关闭</div></div>
-<script>{self._JS}</script>
+<script>{self._JS}
+{self._extra_js()}</script>
 </body></html>"""
