@@ -140,7 +140,8 @@ class BatchViolationEngine:
             preset = "balanced"
         self.preset_name = preset
         p = SENSITIVITY_PRESETS[preset]
-        self.overlap_thr = p["overlap"]
+        # 占道分母解耦(改定): box 用独立阈值 box_overlap, mask 用 overlap(保留 D2 现状)
+        self.overlap_thr = p["box_overlap"] if occ_denom == "box" else p["overlap"]
         # 占道分母: "mask"=占斑马线比例(D2 现状) | "box"=车足迹占多少压线(诊断/未来)
         self.occ_denom = occ_denom if occ_denom in ("mask", "box") else "mask"
         # duration 在 preset 中是"采样帧数", 转换为秒供 decide_violations

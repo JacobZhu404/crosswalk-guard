@@ -21,17 +21,21 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from redlight.infrastructure.config import load_config
 from redlight.models.crosswalk import CrosswalkDetector
+from redlight.models.crosswalk_v2 import CrosswalkDetectorV2
 from redlight.evaluation.module_metrics import poly_to_mask, mask_iou, mask_band
 
 
-def eval_video(video, gt_frames, cfg, preset):
+def _make_detector(detector_name, cfg):
+    return CrosswalkDetectorV2(cfg) if detector_name == "v2" else CrosswalkDetector(cfg)
+
+
+def eval_video(video, gt_frames, cfg, preset, detector_name="v11"):
     video_path = os.path.join(ROOT, "input_video", f"{video}.mp4")
     if not os.path.isfile(video_path):
         print(f"  [跳过] 找不到视频 {video_path}")
         return None
     cap = cv2.VideoCapture(video_path)
     fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
-    det = CrosswalkDetector(cfg)
     per_frame = []
     for fr in gt_frames:
         ts = fr["ts"]
@@ -44,6 +48,8 @@ def eval_video(video, gt_frames, cfg, preset):
         if not ret:
             print(f"    [跳过 {video}@{ts}] 取帧失败")
             continue
+        # v2 有状态(时间聚合), 但 B1 关键帧彼此远离 -> 每帧独立实例, 量单帧掩膜质量
+        det = _make_detector(detector_name, cfg)
         mask = det.detect(frame)  # 不带 vehicle_boxes(本征掩膜质量)
         H, W = mask.shape[:2]
         gt_mask = poly_to_mask(poly, H, W)
@@ -61,6 +67,8 @@ def main():
     ap.add_argument("--videos", nargs="*", default=None)
     ap.add_argument("--config", default=os.path.join(ROOT, "configs", "config.yaml"))
     ap.add_argument("--preset", default="balanced")
+    ap.add_argument("--detector", default="v11", choices=["v11", "v2"],
+                    help="v11=全宽水平带(基线) | v2=透视梯形(Plan v6 Phase 1 探针)")
     ap.add_argument("--gt-crosswalk", default=os.path.join(ROOT, "datasets", "gt", "crosswalk"))
     args = ap.parse_args()
 
@@ -76,14 +84,14 @@ def main():
             if fn.endswith(".json"):
                 files.append((fn[:-5], os.path.join(args.gt_crosswalk, fn)))
 
-    print(f"=== B1 斑马线掩膜评测(preset={args.preset}, 主指标=无车框带) ===\n")
+    print(f"=== B1 斑马线掩膜评测(preset={args.preset}, 主指标=无车框带, detector={args.detector}) ===\n")
     results = []
     for video, path in files:
         if not os.path.exists(path):
             continue
         with open(path, encoding="utf-8") as f:
             gt = json.load(f)
-        r = eval_video(video, gt.get("frames", []), cfg, args.preset)
+        r = eval_video(video, gt.get("frames", []), cfg, args.preset, args.detector)
         if r is None:
             continue
         results.append(r)

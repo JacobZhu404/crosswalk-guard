@@ -20,6 +20,9 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from redlight.infrastructure.config import load_config
 from redlight.app import cli
+from redlight.models.crosswalk import CrosswalkDetector
+from redlight.models.crosswalk_v2 import CrosswalkDetectorV2
+from redlight.pipeline.tracker import SENSITIVITY_PRESETS
 from redlight.evaluation.violation_eval import (
     load_violation_gt, match_violation_events, aggregate,
     load_video_metadata, classify_false_positives,
@@ -47,15 +50,28 @@ def _read_violations_csv(path):
     return events
 
 
-def _run_pipeline(cfg, video, preset, out_root):
-    """跑一遍流水线, 返回事件 list。关标注视频加速(证据截图保留以回填车牌)。"""
+def _run_pipeline(cfg, video, preset, out_root, detector_name="v11", occ_denom="mask", box_overlap=None):
+    """跑一遍流水线, 返回事件 list。关标注视频加速(证据截图保留以回填车牌)。
+
+    detector_name: v11(默认) | v2(Plan v6 Phase 1 四边形探针)
+    occ_denom: mask(D2 默认) | box(车足迹压线, 推翻 D2)
+    box_overlap: 当 occ_denom=box 时覆盖 preset 的 box_overlap 阈值(用于扫描)
+    """
     video_path = os.path.join(ROOT, "input_video", f"{video}.mp4")
     if not os.path.isfile(video_path):
         print(f"  [跳过] 找不到视频 {video_path}")
         return None
     cfg.output.annotated_video = False   # eval 不需要 114MB 标注视频
     out_dir = os.path.join(out_root, f"run_{video}")
-    return cli.run(cfg, video_path, out_dir, preset=preset)
+    det = CrosswalkDetectorV2(cfg) if detector_name == "v2" else CrosswalkDetector(cfg)
+    engine_kwargs = {}
+    if occ_denom == "box":
+        engine_kwargs["occ_denom"] = "box"
+        if box_overlap is not None:
+            # 覆盖 preset 阈值(扫描用); 不影响 mask 路径
+            SENSITIVITY_PRESETS[preset]["box_overlap"] = float(box_overlap)
+    return cli.run(cfg, video_path, out_dir, preset=preset,
+                   crosswalk_detector=det, **engine_kwargs)
 
 
 def _confirmed(events):
@@ -75,6 +91,12 @@ def main():
                     help="视频元数据(含 has_violation), 用于纳入负例与判定负例")
     ap.add_argument("--config", default=os.path.join(ROOT, "configs", "config.yaml"))
     ap.add_argument("--min-overlap", type=float, default=0.5, help="判为TP的最小时间重叠(秒)")
+    ap.add_argument("--detector", default="v11", choices=["v11", "v2"],
+                    help="v11=全宽水平带(基线) | v2=透视梯形(Plan v6 Phase 1 探针)")
+    ap.add_argument("--occ-denom", default="mask", choices=["mask", "box"],
+                    help="mask=占斑马线比例(D2) | box=车足迹压线(推翻 D2)")
+    ap.add_argument("--box-overlap", type=float, default=None,
+                    help="occ-denom=box 时覆盖预设阈值(扫描用)")
     ap.add_argument("--reuse", action="store_true",
                     help="复用已有 data/output/run_<video>_<preset>/violations.csv, 不重跑流水线")
     ap.add_argument("--out", default=os.path.join(ROOT, "data", "output", "eval_violations"))
@@ -86,7 +108,9 @@ def main():
     meta = load_video_metadata(args.videos_csv)
 
     videos = args.videos or sorted(meta.keys())
-    print(f"=== 端到端违章评测 (eval-e2e): preset={args.preset} min_overlap={args.min_overlap}s ===")
+    print(f"=== 端到端违章评测 (eval-e2e): preset={args.preset} min_overlap={args.min_overlap}s "
+          f"detector={args.detector} occ_denom={args.occ_denom}"
+          f"{(' box_overlap='+str(args.box_overlap)) if args.occ_denom=='box' and args.box_overlap is not None else ''} ===")
     print(f"视频(全 {len(meta)} 个, 含负例 {sum(1 for v in meta if not meta[v])} 个): {videos}\n")
 
     results, rows = [], []
@@ -101,7 +125,9 @@ def main():
                 print(f"  [跳过 {v}] 无 {csv_path} (先不加 --reuse 跑一遍)")
                 continue
         else:
-            events = _run_pipeline(cfg, v, args.preset, args.out)
+            events = _run_pipeline(cfg, v, args.preset, args.out,
+                                   detector_name=args.detector, occ_denom=args.occ_denom,
+                                   box_overlap=args.box_overlap)
             if events is None:
                 continue
 

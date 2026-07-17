@@ -17,10 +17,10 @@ SENSITIVITY_PRESETS = {
     # duration: 三条件需持续帧数; overlap: 压线比例阈值
     # speed_window: 参与统计的近期采样帧数; stationary_ratio: 静止帧占比下限
     # stationary_iou: 相邻帧框 IoU 静止阈值(主判据, 抗YOLO框抖动; 越高越严)
-    "strict":   {"speed": 15, "sustain": 8, "duration": 8, "overlap": 0.30, "speed_window": 8, "stationary_ratio": 1.0, "stationary_iou": 0.80},
-    "balanced": {"speed": 30, "sustain": 5, "duration": 5, "overlap": 0.20, "speed_window": 6, "stationary_ratio": 0.7, "stationary_iou": 0.70},
-    "loose":    {"speed": 50, "sustain": 3, "duration": 3, "overlap": 0.15, "speed_window": 4, "stationary_ratio": 0.5, "stationary_iou": 0.60},
-    "very_loose": {"speed": 80, "sustain": 2, "duration": 2, "overlap": 0.10, "speed_window": 3, "stationary_ratio": 0.4, "stationary_iou": 0.50},
+    "strict":   {"speed": 15, "sustain": 8, "duration": 8, "overlap": 0.30, "box_overlap": 0.30, "speed_window": 8, "stationary_ratio": 1.0, "stationary_iou": 0.80},
+    "balanced": {"speed": 30, "sustain": 5, "duration": 5, "overlap": 0.20, "box_overlap": 0.20, "speed_window": 6, "stationary_ratio": 0.7, "stationary_iou": 0.70},
+    "loose":    {"speed": 50, "sustain": 3, "duration": 3, "overlap": 0.15, "box_overlap": 0.15, "speed_window": 4, "stationary_ratio": 0.5, "stationary_iou": 0.60},
+    "very_loose": {"speed": 80, "sustain": 2, "duration": 2, "overlap": 0.10, "box_overlap": 0.10, "speed_window": 3, "stationary_ratio": 0.4, "stationary_iou": 0.50},
 }
 
 
