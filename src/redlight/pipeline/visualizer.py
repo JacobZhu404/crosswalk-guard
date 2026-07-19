@@ -10,12 +10,15 @@ from .tracker import SENSITIVITY_PRESETS
 
 
 class Visualizer:
-    def __init__(self, cfg, preset="balanced"):
+    def __init__(self, cfg, preset="balanced", occ_denom="mask"):
         self.cfg = cfg
-        # 与违规引擎保持一致: 用所选 preset 的 overlap 阈值(而非 cfg.crosswalk.overlap_ratio),
-        # 否则标注视频里的红框/HUD 与 violations.csv 的判定对不上。
+        # 与违规引擎(BatchViolationEngine)保持一致: 占道分母 denom 与阈值都取自
+        # SENSITIVITY_PRESETS 的同一处, 否则标注视频里的红框/HUD 与 violations.csv 的
+        # 判定对不上(尤其 occ_denom="box" 时引擎用 box_overlap 阈值 + box 分母, 旧写死
+        # mask 会把不该标红的车标红, 报告视频与结论不符)。
         p = SENSITIVITY_PRESETS.get(preset, SENSITIVITY_PRESETS["balanced"])
-        self.overlap = p["overlap"]
+        self.denom = occ_denom if occ_denom in ("mask", "box") else "mask"
+        self.overlap = p["box_overlap"] if self.denom == "box" else p["overlap"]
 
     def draw(self, frame, dets, track_states, mask, light_state, plates=None, light_boxes=None):
         if isinstance(light_state, dict):
@@ -46,7 +49,7 @@ class Visualizer:
             x1, y1, x2, y2 = [int(v) for v in d["xyxy"]]
             st = track_states.get(tid, {})
             stationary = st.get("stationary", False)
-            ratio = compute_overlap_ratio(d["xyxy"], mask, footprint=0.5, denom="mask")
+            ratio = compute_overlap_ratio(d["xyxy"], mask, footprint=0.5, denom=self.denom)
             violating = (
                 stationary and ratio >= self.overlap
                 and light_state in ("green", "flashing")
@@ -86,7 +89,7 @@ class Visualizer:
         n_stop = sum(1 for d in dets if track_states.get(d["id"], {}).get("stationary"))
         n_viol = sum(1 for d in dets
                      if track_states.get(d["id"], {}).get("stationary")
-                     and compute_overlap_ratio(d["xyxy"], mask, footprint=0.5, denom="mask") >= self.overlap
+                     and compute_overlap_ratio(d["xyxy"], mask, footprint=0.5, denom=self.denom) >= self.overlap
                      and light_state in ("green", "flashing"))
         hud = f"veh={n_veh} stop={n_stop} viol/rev={n_viol}"
         cv2.putText(disp, hud, (8, disp.shape[0] - 12), cv2.FONT_HERSHEY_SIMPLEX,

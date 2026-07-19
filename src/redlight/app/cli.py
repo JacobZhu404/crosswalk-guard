@@ -77,7 +77,7 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
         "plate": PlateRecognizer(cfg),
         "trackstate": TrackStateManagerV2(preset),
         "engine": BatchViolationEngine(**_engine_kwargs),
-        "viz": Visualizer(cfg, preset=preset),
+        "viz": Visualizer(cfg, preset=preset, occ_denom=occ_denom or "mask"),
         "plate_consensus": PlateConsensus(keep_history=180),
     }
     # 按 video 名加载 per-video 行人信号位置先验 (light_priors.json), 接入 observe() prior 直采。
