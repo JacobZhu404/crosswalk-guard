@@ -54,3 +54,6 @@ archive/
 Thumbs.db
 .idea/
 .vscode/
+
+# Phase 2 GT 重建快照（本地，不入库）
+_snapshot_pre_build/

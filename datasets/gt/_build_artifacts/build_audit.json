@@ -1,0 +1,186 @@
+{
+  "videos": {
+    "违章01": {
+      "has_violation": 0,
+      "segments_total": 3,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章02": {
+      "has_violation": 1,
+      "segments_total": 3,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章03": {
+      "has_violation": 1,
+      "segments_total": 3,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章04": {
+      "has_violation": 1,
+      "segments_total": 2,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章05": {
+      "has_violation": 1,
+      "segments_total": 1,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章06": {
+      "has_violation": 1,
+      "segments_total": 2,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章07": {
+      "has_violation": 1,
+      "segments_total": 2,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章08": {
+      "has_violation": 1,
+      "segments_total": 1,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章09": {
+      "has_violation": 1,
+      "segments_total": 4,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章10": {
+      "has_violation": 0,
+      "segments_total": 1,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    },
+    "违章11": {
+      "has_violation": 1,
+      "segments_total": 2,
+      "changed": [],
+      "high_risk": [],
+      "neg_ok": true,
+      "aborted": false,
+      "neg_offenders": []
+    }
+  },
+  "crosswalk_dryrun": [
+    {
+      "video": "违章02",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章03",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章04",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章05",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章06",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章07",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 0.9913,
+      "min_iou": 0.9651,
+      "consistent": true
+    },
+    {
+      "video": "违章08",
+      "status": "compared",
+      "n_feedback": 3,
+      "n_base_frames": 3,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章09",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 1.0,
+      "min_iou": 1.0,
+      "consistent": true
+    },
+    {
+      "video": "违章11",
+      "status": "compared",
+      "n_feedback": 4,
+      "n_base_frames": 4,
+      "mean_iou": 0.9975,
+      "min_iou": 0.99,
+      "consistent": true
+    }
+  ]
+}
