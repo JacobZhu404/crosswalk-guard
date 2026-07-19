@@ -14,9 +14,9 @@ datasets/gt/
 ├── light_states.csv               # [canonical] 灯态 GT（4 处引用，带 confidence/note）
 ├── light_regression.csv           # [canonical] 灯态硬 case 回归集（4 处引用）
 ├── videos.csv                     # [canonical] 视频清单 + has_violation
-├── crosswalk/                     # [canonical] 斑马线多边形 GT（4 处引用，8 视频）
+├── crosswalk/                     # [canonical] 斑马线多边形 GT（4 处引用，9 视频）
 │   └── 违章{02..09,11}.json
-├── tracking/                      # [canonical] 跟踪骨架 GT（4 处引用，8 视频，box=null 未标）
+├── tracking/                      # [canonical] 跟踪骨架 GT（4 处引用，9 视频，box=null 未标）
 │   └── 违章{02..09,11}.json
 ├── light_state/                   # [legacy] 旧版灯态肉眼确认段（gt_state 空，已取代）
 │   └── 违章01_gt.csv  违章02_gt.csv
@@ -40,9 +40,9 @@ datasets/gt/
 | 视频 | 违章 | events | light_states | crosswalk | tracking | plate | 关键备注 |
 |------|------|--------|--------------|-----------|----------|-------|----------|
 | 违章01 | 0(负) | ✅ | ✅ label_result解析 | ⬜ N/A | ⬜ N/A | ⬜ | 真负例；legacy light_state/01_gt.csv（gt_state空）已取代 |
-| 违章02 | 1 | ✅ | ✅ 混合¹ | ✅ poly | 🟡 box=null | ✅+图² | feedback 灯/斑马线均有 |
-| 违章03 | 1 | ✅ | ✅ 灯仅反光推断 | ✅ poly | 🟡 box=null | ✅+图² | 车牌 京ABV3428+无牌 |
-| 违章04 | 1 | ✅ | ✅ 旧GT肉眼确认¹ | ✅ poly | 🟡 box=null | ✅+图² | 车牌 京N07YK6 |
+| 违章02 | 1 | ✅ | ✅ 混合¹ | ✅ poly | 🟡 box=null | ✅ | feedback 灯/斑马线均有 |
+| 违章03 | 1 | ✅ | ✅ 灯仅反光推断 | ✅ poly | 🟡 box=null | ✅ | 车牌 京ABV3428+无牌 |
+| 违章04 | 1 | ✅ | ✅ 旧GT肉眼确认¹ | ✅ poly | 🟡 box=null | ✅ | 车牌 京N07YK6 |
 | 违章05 | 1 | ✅ | ✅ | ✅ poly | 🟡 box=null | ✅ | ⚠️ **灯态画廊未修正**（缺 light_feedback） |
 | 违章06 | 1 | ✅ | ✅ | ✅ poly | 🟡 box=null | ✅ | 三车 |
 | 违章07 | 1 | ✅ | ✅ | ✅ poly | 🟡 box=null | ✅ | 三车 |
@@ -52,7 +52,8 @@ datasets/gt/
 | 违章11 | 1 | ✅ | ✅ 车牌看不清 | ✅ poly | 🟡 box=null | ⚠️ 看不清 | 车牌无法结构化 |
 
 ¹ 灯态 provenance 混合：02/03/04 初版依赖旧 GT 肉眼确认（legacy `light_state/*_gt.csv`，现仅存 01/02 且 `gt_state` 列空）；其余视频由 `label_result_*` 解析。最终以 `light_states.csv` 为准，其 `note` 字段已标注各段来源。
-² 车牌图像集仅 `datasets/ped_signal/{02,03,04}` + `labels.csv`；其余视频车牌仅以 `events.csv` 的车牌字符串形式存在。
+² 车牌：结构化真值仅以 `events.csv` 的 `violating_plates` 字符串存在（覆盖全部 11 视频）；独立的**车牌图像评测集**在 `datasets/plate_eval_set/`（50 个 crop：6 correct / 24 incorrect / 20 missed + `meta.csv`，帧级，未按 02/03/04 分），属 plate 模态图像资产，矩阵未逐视频展开。
+³ `datasets/ped_signal/{02,03,04}`（含 `labels.csv`）是**行人信号灯训练 crop**（标签 `stand`/`off`/`walk`，由 `build_ped_signal_crops.py` 造、喂 `ped_signal.pt` 灯分类器），属**灯态模态**训练资产，**不是车牌** —— 为未来灯态立项保留，勿与 `plate_eval_set` 混淆。
 
 **画廊修正覆盖**（独立视角，非 canonical）：
 - `light_feedback.csv`（593 行）：违章 01,02,03,04,06,07,11（**7/11**，缺 05,08,09,10）
