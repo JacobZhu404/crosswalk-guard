@@ -84,6 +84,24 @@ cc 已收的三条决策：
 
 - 不优化效果（判定逻辑不动）、不改 GT、不做 LLM 生成小作文（COT 是确定性渲染，保持）。
 
+## 7.1 报告呈现优化（wb 报告优化轮, 提交于 generate_report 主体之后）
+
+Jacob 对交付报告的两条呈现反馈 + 落地：
+
+### 视频播放（根因: 编码, 非插件）
+- 管线 `cli.py:52` 用 `cv2.VideoWriter_fourcc(*"mp4v")` 写 annotated.mp4 → **MPEG-4 Visual(mp4v) 编码, 浏览器 `<video>` 无法解码**(Chrome/Safari 要 H.264)。故「URL 里嵌入的视频放不了」是**编码问题, 不是插件问题**; VLC/QuickTime 能播 mp4v。
+- 修复（报告层, 不改管线）: 渲染时从缓存 annotated.mp4 **切出违规窗口(±4s) 的 H.264(`avc1`) 小切片 `clip.mp4`**(降分辨率到 ≤854 宽, 单切片 4–19MB, 浏览器可直接播放), 内嵌 `<video>`; 同时附 `file://` 直链「用电脑播放器打开完整视频」(VLC/QuickTime 播 mp4v 原片)。
+- cv2 在本机 `.venv` 支持 `avc1` 写入（已验证）；切片是帧级拷贝, 保留原 box-denom 红框。
+
+### COT 结构化（信息密度）
+- 原 COT 是 `analysis.py` 渲染的长文小作文（每车 3–4 行, 多数“未占道”噪声）。
+- 改为直接读缓存 `cot/analysis_*.json`(结构化真源)渲染:
+  - **灯态时间线表**(起/止/灯态配色/置信);
+  - **违规事件卡**(车牌/时间窗/灯态/置信/max_overlap/关联轨迹数);
+  - **车辆占道明细表**(只列真正占过道的车: tid/车型/峰值占道%/占道时段/车牌/结论, 违规行高亮, 主违规轨迹补齐事件层车牌);
+  - 原始长文收进可折叠 `<details>`。
+- 全部为读缓存重渲染, **无 `--fresh` 也能出**(底层 box-denom annotated.mp4 不变, 一致性硬规则不被破坏); 但若改了管线判定/denom, 仍须按 §3.1 一次 `--fresh` 全 11。
+
 ## 8. 实现文件
 
 - `scripts/generate_report.py`（纯标准库 + 懒导入 `redlight.app.cli` 以隔离 cv2）

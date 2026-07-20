@@ -14,6 +14,10 @@
   - 只读、只反映, 不改 violation_engine / GT / canonical。
   - 默认读缓存; --fresh 重跑全 11 视频管线(v2 + occ_denom=box, 对齐 0.889 基线)。缓存缺失→提示需 --fresh。
 
+视频与 COT 呈现(报告层, 不改动判定):
+  - 视频: 管线写的是 mp4v(MPEG-4 Visual)编码, 浏览器 <video> 无法直接解码; 故渲染时从缓存 annotated.mp4 切出违规窗口的 **H.264 小切片(clip.mp4)** 内嵌播放, 并附「用电脑播放器打开完整视频」的 file:// 直链(VLC/QuickTime 可播 mp4v)。
+  - COT: 直接读缓存 cot/analysis_*.json(结构化真源)渲染灯态时间线表 + 车辆占道明细表 + 违规事件卡, 原始小作文收进可折叠 <details>。信息密度高于纯长文。
+
 ⚠️ 一致性硬规则(交付报告务必遵守):
   - 交付的报告必须来自「一次干净的 --fresh 全 11 视频」, 不可把旧缓存视频与新重跑视频混在一份报告里。
   - 原因: denom 修复(visualizer 红框改跟随 occ_denom=box)提交后, 修复前渲染的 annotated.mp4 仍是旧 mask-denom 红框, 与 box-denom 判定不一致 → 破「视频红框==结论」。
@@ -218,6 +222,161 @@ def _evidence_block(event, run_dir, rel_run):
             f"{_fmt_span(event['start_ts'], event['end_ts'])}</figcaption></figure>")
 
 
+def load_analysis(run_dir):
+    """读 cot/analysis_<video>.json(结构化真源: light_segments/tracks/events)。无则 None。"""
+    cands = glob.glob(os.path.join(run_dir, "cot", "analysis_*.json"))
+    if not cands:
+        return None
+    try:
+        with open(cands[0], encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return None
+
+
+def make_clip(run_dir, events, fps, duration, pad=4.0, max_dur=60.0):
+    """从缓存 annotated.mp4 切出违规窗口(±pad)的 H.264 小切片 -> run_dir/clip.mp4(浏览器可直接播放)。
+    无违规则取前 min(15s, duration) 预览。失败/无 cv2 返回 None(调用方回退到 file:// 直链)。
+    注意: 这是对缓存 annotated.mp4 的派生复制(帧级拷贝, 保留原 box-denom 红框), 不改判定。
+    """
+    src = os.path.join(run_dir, "annotated.mp4")
+    if not os.path.exists(src):
+        return None
+    try:
+        import cv2
+    except Exception:
+        return None
+    if events:
+        s = max(0.0, min(e["start_ts"] for e in events) - pad)
+        e = min(duration, max(e["end_ts"] for e in events) + pad)
+    else:
+        s, e = 0.0, min(duration, 15.0)
+    if e - s > max_dur:
+        mid = (s + e) / 2
+        s = max(0.0, mid - max_dur / 2)
+        e = min(duration, s + max_dur)
+    if e <= s:
+        return None
+    cap = cv2.VideoCapture(src)
+    if not cap.isOpened():
+        return None
+    W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fpsr = cap.get(cv2.CAP_PROP_FPS) or fps or 30.0
+    # 降分辨率到 <=854 宽, 大幅缩小切片体积(内嵌播放更轻); 红框等比缩放仍清晰。
+    scale = min(1.0, 854.0 / W) if W > 0 else 1.0
+    nW, nH = (W, H) if scale >= 1.0 else (int(round(W * scale)), int(round(H * scale)))
+    vw = cv2.VideoWriter(os.path.join(run_dir, "clip.mp4"),
+                         cv2.VideoWriter_fourcc(*"avc1"), fpsr, (nW, nH))
+    if not vw.isOpened():
+        cap.release()
+        return None
+    cap.set(cv2.CAP_PROP_POS_FRAMES, int(s * fpsr))
+    f = int(s * fpsr)
+    end_f = int(e * fpsr)
+    while f < end_f:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if scale < 1.0:
+            frame = cv2.resize(frame, (nW, nH))
+        vw.write(frame)
+        f += 1
+    cap.release()
+    vw.release()
+    out = os.path.join(run_dir, "clip.mp4")
+    if not os.path.exists(out) or os.path.getsize(out) == 0:
+        return None
+    return "clip.mp4"
+
+
+def _video_block(run_dir, rel_run, video, events, fps, duration):
+    src = os.path.join(run_dir, "annotated.mp4")
+    clip_name = make_clip(run_dir, events, fps, duration)
+    abs_src = os.path.abspath(src)
+    link = (f"<a href='file://{esc(abs_src)}' target='_blank' "
+            f"style='font-size:12px'>⬇ 用电脑播放器打开完整视频 (VLC/QuickTime)</a>")
+    if clip_name and os.path.exists(os.path.join(run_dir, clip_name)):
+        clip_rel = f"{esc(rel_run)}/{esc(clip_name)}"
+        return (f"<video src='{clip_rel}' controls muted playsinline "
+                f"style='max-width:640px;background:#000'></video>"
+                f"<p class='note'>↑ 切片为 H.264 编码, 浏览器可直接播放(覆盖违规窗口, "
+                f"保留原识别红框)。完整视频为 mp4v 编码, 浏览器无法解码, 请用上方链接在播放器打开。</p>"
+                f"{link}")
+    if os.path.exists(src):
+        return (f"<video src='{esc(rel_run)}/annotated.mp4' controls muted playsinline "
+                f"style='max-width:640px;background:#000'></video>"
+                f"<br>{link}")
+    return f"<p class='warn'>未找到 annotated.mp4(需在 --fresh 时生成)。{link}</p>"
+
+
+def _state_color(st):
+    return {"green": "#0a0", "red": "#c00", "yellow": "#b80", "unknown": "#999"}.get(st, "#333")
+
+
+def _structured_cot(run_dir, video):
+    """读 analysis_*.json 渲染结构化 COT(灯态时间线表 + 违规事件卡 + 车辆占道明细表),
+    原始长文小作文收进可折叠 <details>。无 json 时回退到原始 <pre>。"""
+    a = load_analysis(run_dir)
+    if not a:
+        return _cot_block(run_dir)
+    segs = a.get("light_segments", [])
+    tracks = a.get("tracks", {})
+    events = a.get("events", [])
+    member = set()
+    for ev in events:
+        member.update(ev.get("member_tracks", []))
+    # 主违规轨迹的确认车牌(per-track plate 可能为空, 用事件层车牌补齐)
+    ev_plate = {ev["track_id"]: ev.get("plate", "") for ev in events if ev.get("status") == "confirmed"}
+    # ---- 灯态时间线 ----
+    lrows = ""
+    for s in segs:
+        c = _state_color(s.get("state", ""))
+        lrows += (f"<tr><td>{s['start']:.1f}</td><td>{s['end']:.1f}</td>"
+                  f"<td style='color:{c};font-weight:bold'>{esc(s.get('state',''))}</td>"
+                  f"<td>{s.get('conf', 0):.2f}</td></tr>")
+    light_tbl = (f"<table class='mini'><tr><th>起(s)</th><th>止(s)</th><th>灯态</th>"
+                 f"<th>置信</th></tr>{lrows}</table>")
+    # ---- 违规事件卡 ----
+    ev_html = ""
+    for ev in events:
+        ev_html += (f"<div class='vcard'><b>违规事件 #{ev.get('event_id','?')}</b> &nbsp; "
+                    f"车牌 <b>{esc(ev.get('plate',''))}</b> "
+                    f"[{ev.get('start_ts', 0):.1f}-{ev.get('end_ts', 0):.1f}s] &nbsp; "
+                    f"灯态={esc(ev.get('light_state',''))} &nbsp; 置信={ev.get('confidence', 0):.2f} "
+                    f"&nbsp; max_overlap={ev.get('max_overlap', 0):.2f} &nbsp; "
+                    f"关联轨迹={len(ev.get('member_tracks', []))}</div>")
+    if not ev_html:
+        ev_html = "<p class='warn'>无违规事件(confirmed 为空)</p>"
+    # ---- 车辆占道明细(只列真正占过道的车) ----
+    vt = [t for t in tracks.values() if (t.get("occupancy") or {}).get("peak", 0) > 0]
+    vt.sort(key=lambda t: t["occupancy"]["peak"], reverse=True)
+    vrows = ""
+    for t in vt:
+        occ = t["occupancy"]
+        plate = (t.get("plate") or {}).get("text", "") or ev_plate.get(t["tid"], "") or "(未识别)"
+        is_v = t["tid"] in member
+        cls = "vrow-ok" if is_v else ""
+        verdict = "✅ 违规(confirmed)" if is_v else "不违规"
+        per = f"{occ['peak'] * 100:.0f}%"
+        span = f"[{occ.get('first_ts', 0):.1f}-{occ.get('last_ts', 0):.1f}s]"
+        vrows += (f"<tr class='{cls}'><td>{t['tid']}</td>"
+                  f"<td>{esc(t.get('vehicle_class', ''))}</td><td>{per}</td>"
+                  f"<td>{span}</td><td>{esc(plate)}</td><td>{verdict}</td></tr>")
+    if not vrows:
+        vrows = "<tr><td colspan=6>无车辆占道</td></tr>"
+    veh_tbl = (f"<table class='mini'><tr><th>tid</th><th>车型</th><th>峰值占道</th>"
+               f"<th>占道时段</th><th>车牌</th><th>结论</th></tr>{vrows}</table>")
+    raw = _cot_block(run_dir)
+    return f"""
+    <div class='cot-struct'>
+      <h5>灯态时间线</h5>{light_tbl}
+      <h5>违规事件</h5>{ev_html}
+      <h5>车辆占道明细 ({len(vt)} 辆占道 / 共 {len(tracks)} 轨迹)</h5>{veh_tbl}
+      <details><summary>原始 COT 小作文(完整长文)</summary>{raw}</details>
+    </div>"""
+
+
 def _cot_block(run_dir):
     cot_dir = os.path.join(run_dir, "cot")
     md = None
@@ -274,9 +433,13 @@ def render_html(videos, runs, events_csv, videos_csv, source_csv, out_path,
         confirmed = [e for e in events if e["status"] == "confirmed"]
         has_v = meta.get(v, False)
         res = summarize_video(confirmed, gt.get(v, []), has_v, min_overlap_s)
+        analysis = load_analysis(run_dir)
+        fps = (analysis or {}).get("fps", 30.0)
+        duration = (analysis or {}).get("duration", 0.0)
         per_video[v] = {
             "run_dir": run_dir, "rel_run": rel_run, "events": events,
             "confirmed": confirmed, "has_v": has_v, "res": res,
+            "fps": fps, "duration": duration,
         }
 
     agg = aggregate([per_video[v]["res"] for v in videos])
@@ -332,9 +495,9 @@ def render_html(videos, runs, events_csv, videos_csv, source_csv, out_path,
               {veh_rows}
             </table>
             <h4>完整识别视频 (annotated.mp4)</h4>
-            {_video_block(pv['run_dir'], pv['rel_run'], v)}
+            {_video_block(pv['run_dir'], pv['rel_run'], v, pv['confirmed'], pv['fps'], pv['duration'])}
             <h4>小作文 (COT)</h4>
-            {_cot_block(pv['run_dir'])}
+            {_structured_cot(pv['run_dir'], v)}
             <h4>GT 对比(两者都要)</h4>
             {_gt_side_by_side(v, src_anno, events_rows)}
             <div class='match'>
@@ -364,6 +527,12 @@ def render_html(videos, runs, events_csv, videos_csv, source_csv, out_path,
   .freetext{{white-space:pre-wrap;background:#f5f5f5;padding:8px;border-radius:4px;font-size:12px}}
   pre.cot{{white-space:pre-wrap;background:#f0f4ff;padding:8px;border-left:3px solid #06c;font-size:12px;max-height:360px;overflow:auto}}
   .match{{background:#eef;padding:6px;border-radius:4px;margin-top:8px;font-size:13px}}
+  .note{{color:#666;font-size:11px;margin:4px 0}}
+  .cot-struct h5{{margin:10px 0 4px;color:#06c;font-size:13px}}
+  .vcard{{background:#fee;padding:6px;border-radius:4px;margin:4px 0;font-size:12px}}
+  .vrow-ok{{background:#fff3cd}}
+  .vrow-ok td{{font-weight:bold}}
+  video{{border-radius:4px}}
   figure{{margin:2px}} figcaption{{font-size:10px;color:#666}}
   .summary{{background:#fff;border:1px solid #ccc;border-radius:6px;padding:10px;margin:10px 0}}
 </style></head><body>
