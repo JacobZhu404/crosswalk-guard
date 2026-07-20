@@ -155,8 +155,8 @@ def main():
             frame = fd.get_frame(r["video"], int(r["fi"]))
             if frame is not None:
                 h, w = frame.shape[:2]
-                scale = 420.0 / w
-                small = cv2.resize(frame, (420, int(h * scale)))
+                scale = 320.0 / w
+                small = cv2.resize(frame, (320, int(h * scale)))
                 S = lambda x: int(round(x * scale))
                 prior = priors.get(r["video"])
                 if prior is not None:
@@ -208,11 +208,11 @@ body{font-family:-apple-system,sans-serif;background:#f1f5f9;margin:0;padding:0 
 #export{margin-left:auto;background:#fff;color:#0f172a;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px;}
 h1{color:#0f172a;margin:8px 0 4px;} .intro{color:#475569;font-size:13px;margin:0 0 14px;}
 h2{color:#0f172a;font-size:16px;margin:18px 0 6px;} .cnt{color:#64748b;font-weight:400;font-size:13px;}
-.grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
-.crop-card{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;width:200px;background:#fff;}
+.grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
+.crop-card{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;width:320px;background:#fff;}
 .crop-card.saved{box-shadow:0 0 0 2px #22c55e inset;}
-.crop-card img{width:200px;height:200px;object-fit:cover;display:block;background:#000;}
-.crop-card img.ctx{width:300px;height:auto;object-fit:contain;background:#1e293b;border-bottom:1px solid #e2e8f0;}
+.crop-card img{width:320px;height:200px;object-fit:cover;display:block;background:#000;}
+.crop-card img.ctx{width:320px;height:auto;object-fit:contain;background:#1e293b;border-bottom:1px solid #e2e8f0;}
 .crop-card .ctx.noimg{width:300px;height:170px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;background:#1e293b;}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#334155;margin:6px 0 14px;background:#fff;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;}
 .legend b{font-weight:700;}
