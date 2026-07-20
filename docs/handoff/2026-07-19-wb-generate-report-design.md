@@ -1,6 +1,6 @@
 # 可复现识别结果报告 generate_report.py — 设计 / 实现说明
 
-> **状态**：已实现并通过单测；`--fresh` 全量跑通 + 验收核对进行中（cc 已拍板三条决策，放行实现）。
+> **状态**：已实现并通过单测 + 13 单测；`--fresh` 全 11 视频跑通、验收全过（`tp=8/fp=1/fn=1 F1=0.889`），已提交 `925a9c4`。**交付报告须一次性 `--fresh` 全量生成（见 §3.1），禁止旧缓存 + 新重跑混时间戳。**
 > **作者**：wb（WorkBuddy）。**owner**：Jacob。**审查**：cc（Claude Code，规划+review）。
 
 ## 1. 目标与三条拍板（cc 定夺）
@@ -40,6 +40,13 @@ cc 已收的三条决策：
 - `--fresh`：循环 11 视频，`cli.run(cot=True, occ_denom="box", crosswalk_detector=CrosswalkDetectorV2, preset=balanced)`，
   并保持 `cfg.output.annotated_video/csv_report/evidence_images=True`。与 0.889 基线同配置
   （仅增 cot/annotated，二者均不改 events 输出 → tp/fp/fn 不变）。
+
+## 3.1 一致性硬规则（交付报告务必遵守）
+
+- **交付报告必须来自一次干净的 `--fresh` 全 11 视频**, 不可把「旧缓存视频 + 新重跑视频」混进同一份报告。
+- 原因: denom 修复(`visualizer` 红框改跟随 `occ_denom=box`)提交后, **修复前**渲染的 `annotated.mp4` 仍是旧 `mask-denom` 红框, 与 `box-denom` 判定不一致 → 破「视频红框 == 结论」这条核心卖点。判定数(tp/fp/fn)不受影响(引擎一直 box), 但视频一致性对一份权威、反复使用的报告是硬要求。
+- 故每次 denom / 判定相关改动后, 一律 `python scripts/generate_report.py --fresh` **一次跑全 11**, 再出 HTML; 不要用「部分读缓存 + 部分重跑」凑报告。
+- 调试期可用 `--videos` 分批前台跑(崩因是后台长任务被平台 SIGKILL, 非代码; `run_*` 目录逐视频落盘 = 崩了能续), 但 **FINAL 报告仍须一次全量 `--fresh`** 重渲染。
 
 ## 4. 报告结构（单 HTML）
 

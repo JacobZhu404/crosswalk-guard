@@ -14,9 +14,16 @@
   - 只读、只反映, 不改 violation_engine / GT / canonical。
   - 默认读缓存; --fresh 重跑全 11 视频管线(v2 + occ_denom=box, 对齐 0.889 基线)。缓存缺失→提示需 --fresh。
 
+⚠️ 一致性硬规则(交付报告务必遵守):
+  - 交付的报告必须来自「一次干净的 --fresh 全 11 视频」, 不可把旧缓存视频与新重跑视频混在一份报告里。
+  - 原因: denom 修复(visualizer 红框改跟随 occ_denom=box)提交后, 修复前渲染的 annotated.mp4 仍是旧 mask-denom 红框, 与 box-denom 判定不一致 → 破「视频红框==结论」。
+    判定数(tp/fp/fn)不受影响(引擎一直 box), 但视频一致性对权威报告是硬要求。
+  - 故每次 denom/判定相关改动后, 一律 `python scripts/generate_report.py --fresh` 一次跑全 11, 再出 HTML; 不要用「部分缓存+部分重跑」凑报告。
+  - 调试期可用 `--videos` 分批前台跑(崩因是后台长任务被 SIGKILL, 非代码; run 目录逐视频落盘=崩了能续), 但 FINAL 报告仍须一次全量 --fresh。
+
 用法:
   python scripts/generate_report.py                  # 读缓存 -> 出 HTML
-  python scripts/generate_report.py --fresh          # 重跑全 11 视频 -> 出 HTML
+  python scripts/generate_report.py --fresh          # 重跑全 11 视频 -> 出 HTML(交付报告用这个)
   python scripts/generate_report.py --bundle         # 复制资产成可迁移归档(默认不拷, ~1GB)
 """
 import os
