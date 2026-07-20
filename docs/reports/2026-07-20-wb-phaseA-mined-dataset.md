@@ -15,7 +15,7 @@
 | `scripts/make_classifier_retrain_gallery.py` | 分层抽样抽检画廊 |
 | `scripts/apply_classifier_retrain_feedback.py` | 反馈合并 (改标 + verified=1) |
 | `tests/test_mine_classifier_retrain.py` | 5 项 TDD (全过) |
-| `data/output/classifier_retrain_gallery/gallery.html` | **Jacob 抽检入口** (自包含 base64, 免服务) |
+| `datasets/classifier_retrain/classifier_retrain_gallery.html` | **Jacob 抽检入口** (自包含 base64, 免服务; gitignore 排除) |
 | `datasets/ped_signal_legacy_238b/` | 旧坏数据集归档 (留档, 不合并) |
 
 ## 2. 数据集总览
@@ -65,7 +65,7 @@
 
 ## 6. 下一步
 
-1. **Jacob 抽检**: 打开 `data/output/classifier_retrain_gallery/gallery.html` (已分层抽 3359/5745 张), 逐张校验弱标签 → 导出 `classifier_retrain_feedback.json` → 跑 `apply_classifier_retrain_feedback.py` (改标 + verified=1)。
+1. **Jacob 抽检**: 打开 `datasets/classifier_retrain/classifier_retrain_gallery.html` (已分层抽 3359/5745 张), 逐张校验弱标签 → 导出 `classifier_retrain_feedback.json` → 跑 `apply_classifier_retrain_feedback.py` (改标 + verified=1)。
 2. **cc review**: 核 split 无泄漏 / 类平衡 / 启发式可靠性 → 放行 Phase B (训练 + val 留出门控)。
 3. **Phase B gate**: 在 val={01,07,11} 上验证判别器泛化 (尤其 07 暗绿、11 不同相机); 过 gate 后按 A 全 11 重训再接线 (计划 §3.1)。
 
