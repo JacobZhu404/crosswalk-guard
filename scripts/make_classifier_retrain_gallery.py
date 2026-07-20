@@ -1,23 +1,11 @@
-"""生成 light-state 重训数据集人工抽检画廊 (HTML, 自包含 base64, 免服务)。
+"""生成 light-state 重训数据集人工抽检画廊 v3 (HTML, 自包含 base64, 免服务)。
 
-用途: 抽检 datasets/classifier_retrain/labels.csv 的弱标签(walk/stand/off),
-修正错误标签并标记 verified=1, 供 train_ped_signal.py (--verified-only) 训练。
+v3 重设计(解决 Jacob 反馈的"上下图不对齐"):
+  每张卡只输出一张预合成对比图 —— 左半=全帧缩略图(prior ROI 蓝框 + 抠图区域红框),
+  右半=实际抠图放大。服务端 cv2 预渲染为单张 JPEG, 浏览器只显示一张 <img>,
+  零 CSS 对齐风险。
 
-分层抽样(降 Jacob 工作量, cc 决策): 默认 strategy=sample:
-  - 100% impostor(off, source∈impostor/impostor_outside)
-  - 100% 06/07 暗绿(walk) + 100% 04 短绿(walk)
-  - 100% 段边界帧(最易误标 impostor 处)
-  - 其余(prior_roi 真信号 + 背景正则)随机抽 20%
-全量模式 --all 展示全部。
-
-工作流:
-  1. PYTHONPATH=src ./.venv/bin/python scripts/make_classifier_retrain_gallery.py
-  2. 浏览器打开 gallery.html, 逐张选正确标签 + 保存
-  3. 导出 classifier_retrain_feedback.json
-  4. PYTHONPATH=src ./.venv/bin/python scripts/apply_classifier_retrain_feedback.py
-
-用法:
-  scripts/make_classifier_retrain_gallery.py [--strategy sample|all] [--max-per-video N]
+用途/抽样/工作流 同 v2。
 """
 import os
 import sys
@@ -42,6 +30,12 @@ DARK_GREEN_VIDEOS = {"违章06", "违章07"}
 SHORT_GREEN_VIDEO = "违章04"
 BOUNDARY_SEC = 2.0
 
+# ---- 预合成对比图的尺寸常量 ----
+FRAME_W = 420          # 左侧全帧缩略图宽度(px)
+CROP_ZOOM = 4          # 右侧 crop 放大倍数(相对于原始 crop 尺寸)
+PAD = 8                # 左右间距 + 外边距
+TXT_H = 26             # 顶部文字行高
+
 
 def _load_priors(path):
     """同 mine_classifier_retrain._load_priors: (px, py, roi_px) 归一化+像素。"""
@@ -57,7 +51,6 @@ def arr_to_b64(arr, quality=72):
 
 
 def _boundary_ts_by_video(light_states_csv):
-    """返回 {video: [boundary_ts, ...]}, 段边界且涉及 green<->非green 跳变。"""
     segs = gt_lookup.load_light_state_csv(light_states_csv)
     out = {}
     for v, seglist in segs.items():
@@ -80,38 +73,104 @@ def _is_boundary(video, ts, boundary_map):
     return False
 
 
-def img_to_b64(path):
-    img = robust_imread(path)
-    if img is None:
+def _composite_card(frame, crop_img, video, prior, x1, y1, x2, y2, label, src, ts):
+    """
+    预合成一张对比 JPEG: [文字行 | 左=全帧(带框) | 右=crop(放大)] → 单张图片。
+
+    返回 numpy array (BGR), 或读图失败返回 None。
+    """
+    if frame is None and crop_img is None:
         return None
-    import cv2
-    ok, buf = cv2.imencode(".jpg", img, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
-    return base64.b64encode(buf.tobytes()).decode("ascii") if ok else None
+
+    # ---- 左侧: 全帧缩略图(带框叠加) ----
+    if frame is not None:
+        h, w = frame.shape[:2]
+        sc = FRAME_W / max(w, 1)
+        S = lambda v: int(round(v * sc))
+        frame_thumb = cv2.resize(frame, (FRAME_W, int(h * sc)))
+
+        # Prior ROI 蓝框 + 十字
+        if prior is not None:
+            px, py, roi_px = prior
+            pcx, pcy = int(px * w), int(py * h)
+            half = roi_px // 2
+            bx1, by1 = max(0, pcx - half), max(0, pcy - half)
+            bx2, by2 = min(w, pcx + half), min(h, pcy + half)
+            cv2.rectangle(frame_thumb, (S(bx1), S(by1)), (S(bx2), S(by2)),
+                          (255, 140, 0), 2)       # 蓝=先验 ROI
+            cv2.drawMarker(frame_thumb, (S(pcx), S(pcy)), (255, 140, 0),
+                           cv2.MARKER_CROSS, 14, 2)
+
+        # Crop 区域 红框
+        cv2.rectangle(frame_thumb, (S(x1), S(y1)), (S(x2), S(y2)),
+                      (220, 38, 38), 2)           # 红=抠图框
+
+        # 标注 source 类型在图上(小字)
+        src_tag = src.replace("_", " ")[:12]
+        cv2.putText(frame_thumb, src_tag, (4, 16),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.42, (200, 200, 200), 1)
+    else:
+        frame_thumb = np.ones((200, FRAME_W, 3), np.uint8) * 30
+        cv2.putText(frame_thumb, "no frame", (10, 110),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (120, 120, 120), 1)
+
+    # ---- 右侧: crop 放大 ----
+    if crop_img is not None:
+        ch, cw = crop_img.shape[:2]
+        crop_big = cv2.resize(crop_img, (cw * CROP_ZOOM, ch * CROP_ZOOM))
+    else:
+        crop_big = np.ones((200, 160, 3), np.uint8) * 30
+        cv2.putText(crop_big, "no crop", (5, 105),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (120, 120, 120), 1)
+
+    # ---- 合成画布: [文字 | 左帧 | 右crop] ----
+    total_h = max(frame_thumb.shape[0], crop_big.shape[0]) + PAD * 2 + TXT_H
+    total_w = frame_thumb.shape[1] + crop_big.shape[1] + PAD * 3
+    canvas = np.ones((total_h, total_w, 3), np.uint8) * 245  # 浅灰底
+
+    # 放入左右两图
+    y_off = TXT_H + PAD
+    canvas[y_off:y_off + frame_thumb.shape[0],
+           PAD:PAD + frame_thumb.shape[1]] = frame_thumb
+    cx_off = PAD * 2 + frame_thumb.shape[1]
+    canvas[y_off:y_off + crop_big.shape[0],
+           cx_off:cx_off + crop_big.shape[1]] = crop_big
+
+    # 顶部信息条
+    info = f"[{video}] t={ts}s  label={label}  src={src}"
+    info2 = f"red_box=({x1},{y1},{x2},{y2})"
+    if prior:
+        px, py, _ = prior
+        fh, fw = frame.shape[:2] if frame is not None else (1, 1)
+        info2 += f"  prior_center=({int(px*fw)},{int(py*fh)})"
+
+    cv2.putText(canvas, info, (PAD, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (40, 40, 40), 1)
+    cv2.putText(canvas, info2, (PAD, TXT_H - 2), cv2.FONT_HERSHEY_SIMPLEX,
+                0.36, (100, 100, 100), 1)
+
+    return canvas
 
 
 def main():
-    ap = argparse.ArgumentParser(description="生成 light-state 重训数据集抽检画廊")
+    ap = argparse.ArgumentParser(description="生成 light-state 重训数据集抽检画廊 v3")
     ap.add_argument("--labels", default=os.path.join(ROOT, "datasets", "classifier_retrain", "labels.csv"))
     ap.add_argument("--out", default=os.path.join(ROOT, "datasets", "classifier_retrain", "classifier_retrain_gallery.html"))
     ap.add_argument("--light-states", default=os.path.join(ROOT, "datasets", "gt", "light_states.csv"))
     ap.add_argument("--strategy", default="sample", choices=["sample", "all"])
     ap.add_argument("--sample-frac", type=float, default=0.20)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--no-context", action="store_true",
-                    help="不生成全帧上下文叠加层(只显示抠图 crop)")
     args = ap.parse_args()
 
     import random
     random.seed(args.seed)
 
     rows = load_labeled_crops(args.labels)
-    # load_labeled_crops 把 crop_path 解析成绝对路径(便于读图); 但 labels.csv 存相对路径,
-    # feedback 必须回相对路径才能被 apply_classifier_retrain_feedback.py 按 crop_path 匹配。
     dataset_root = os.path.dirname(os.path.abspath(args.labels))
     boundary_map = _boundary_ts_by_video(args.light_states)
     priors = _load_priors(os.path.join(ROOT, "configs", "light_priors.json"))
-    fd = FrameDataset(os.path.join(ROOT, "datasets", "frames")) if not args.no_context else None
+    fd = FrameDataset(os.path.join(ROOT, "datasets", "frames"))
 
+    # 分层抽样
     if args.strategy == "all":
         sel = list(rows)
     else:
@@ -136,52 +195,50 @@ def main():
 
     cards_by_video = {}
     skipped = 0
+
     for r in sel:
-        b64 = img_to_b64(r["crop_path"])
-        if b64 is None:
+        # 读 crop 图
+        crop_img = robust_imread(r["crop_path"])
+        if crop_img is None:
             skipped += 1
             continue
-        rel_cp = os.path.relpath(r["crop_path"], dataset_root)  # 回相对路径, 供 apply 匹配
+
+        rel_cp = os.path.relpath(r["crop_path"], dataset_root)
         cur = r["label"]
         color = CONF_COLOR.get(cur, "#475569")
         tag = "边界" if _is_boundary(r["video"], float(r["frame_ts"]), boundary_map) else ""
 
-        # ---- 全帧上下文叠加层(判定"蒙中 vs 真识别"的核心) ----
-        # 蓝框=先验 ROI(推理时模型固定 gaze 处, observe 路径②)
-        # 红框=实际抠图框(impostor_outside=引擎按颜色检测到的绿斑 bbox)
-        # 蓝十字=先验中心(模型永远盯这)
-        ctx_b64 = None
-        if fd is not None and str(r.get("fi", "")).isdigit():
-            frame = fd.get_frame(r["video"], int(r["fi"]))
-            if frame is not None:
-                h, w = frame.shape[:2]
-                scale = 320.0 / w
-                small = cv2.resize(frame, (320, int(h * scale)))
-                S = lambda x: int(round(x * scale))
-                prior = priors.get(r["video"])
-                if prior is not None:
-                    px, py, roi_px = prior
-                    cx, cy = int(px * w), int(py * h)
-                    half = roi_px // 2
-                    bx1, by1 = max(0, cx - half), max(0, cy - half)
-                    bx2, by2 = min(w, cx + half), min(h, cy + half)
-                    cv2.rectangle(small, (S(bx1), S(by1)), (S(bx2), S(by2)),
-                                  (255, 140, 0), 2)          # 蓝=先验 ROI
-                    cv2.drawMarker(small, (S(cx), S(cy)), (255, 140, 0),
-                                   cv2.MARKER_CROSS, 14, 2)  # 先验中心十字
-                x1, y1, x2, y2 = int(float(r["x1"])), int(float(r["y1"])), \
-                                 int(float(r["x2"])), int(float(r["y2"]))
-                cv2.rectangle(small, (S(x1), S(y1)), (S(x2), S(y2)),
-                              (220, 38, 38), 2)              # 红=抠图框
-                ctx_b64 = arr_to_b64(small, quality=50)
-        ctx_html = (f'<img class="ctx" src="data:image/jpeg;base64,{ctx_b64}"/>'
-                    if ctx_b64 else '<div class="ctx noimg">无全帧</div>')
+        # 读全帧
+        frame = None
+        fi_val = r.get("fi", "")
+        if str(fi_val).isdigit():
+            frame = fd.get_frame(r["video"], int(fi_val))
 
+        # 坐标
+        x1, y1, x2, y2 = (int(float(r[k])) for k in ("x1","y1","x2","y2"))
+
+        # 预合成单张对比图
+        composite = _composite_card(
+            frame, crop_img, r["video"],
+            priors.get(r["video"]),
+            x1, y1, x2, y2, cur, r["source"], r["frame_ts"]
+        )
+
+        if composite is None:
+            skipped += 1
+            continue
+
+        comp_b64 = arr_to_b64(composite, quality=70)
+        if comp_b64 is None:
+            skipped += 1
+            continue
+
+        # ---- 卡片 HTML（只有一张 img） ----
         card = f"""
-        <div class="crop-card" data-cp="{rel_cp}" data-video="{r['video']}" data-t="{r['frame_ts']}" data-cur="{cur}">
-          {ctx_html}
-          <img src="data:image/jpeg;base64,{b64}"/>
-          <div class="meta">{r['video']} t={r['frame_ts']}s <span class="cur" style="background:{color}">{cur}</span>{('<span class="bd">'+tag+'</span>') if tag else ''}</div>
+        <div class="card" data-cp="{rel_cp}" data-video="{r['video']}" data-t="{r['frame_ts']}" data-cur="{cur}">
+          <img src="data:image/jpeg;base64,{comp_b64}" loading="lazy"/>
+          <div class="meta">{r['video']} t={r['frame_ts']}s <span class="cur" style="background:{color}">{cur}</span>
+            <span class="src">{r['source']}</span>{('<span class="bd">'+tag+'</span>') if tag else ''}</div>
           <div class="fb">
             <select class="verdict">
               <option value="">--改标--</option>
@@ -196,56 +253,60 @@ def main():
         </div>"""
         cards_by_video.setdefault(r["video"], []).append(card)
 
+    # ---- 组装 HTML ----
     cards_html = ""
     for v in sorted(cards_by_video):
         cards_html += f'<h2>{v} <span class="cnt">({len(cards_by_video[v])}张)</span></h2><div class="grid">{"".join(cards_by_video[v])}</div>'
 
     html = """<!doctype html><html lang="zh"><head><meta charset="utf-8">
-<title>light-state 重训数据集抽检画廊</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>light-state 重训数据集抽检</title>
 <style>
-body{font-family:-apple-system,sans-serif;background:#f1f5f9;margin:0;padding:0 20px 40px;}
-#tb{position:sticky;top:0;background:#0f172a;color:#fff;padding:10px 16px;display:flex;gap:16px;align-items:center;z-index:10;margin:0 -20px 18px;font-size:13px;}
-#export{margin-left:auto;background:#fff;color:#0f172a;border:none;border-radius:4px;padding:5px 12px;cursor:pointer;font-size:12px;}
-h1{color:#0f172a;margin:8px 0 4px;} .intro{color:#475569;font-size:13px;margin:0 0 14px;}
-h2{color:#0f172a;font-size:16px;margin:18px 0 6px;} .cnt{color:#64748b;font-weight:400;font-size:13px;}
-.grid{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px;}
-.crop-card{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;width:320px;background:#fff;}
-.crop-card.saved{box-shadow:0 0 0 2px #22c55e inset;}
-.crop-card img{width:320px;height:auto;object-fit:contain;display:block;background:#000;}
-.crop-card img.ctx{width:320px;height:auto;object-fit:contain;background:#1e293b;border-bottom:1px solid #e2e8f0;}
-.crop-card .ctx.noimg{width:300px;height:170px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;background:#1e293b;}
-.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#334155;margin:6px 0 14px;background:#fff;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;}
+body{font-family:-apple-system,sans-serif;background:#f1f5f9;margin:0;padding:0 16px 40px;}
+#tb{position:sticky;top:0;background:#0f172a;color:#fff;padding:8px 14px;display:flex;gap:12px;align-items:center;z-index:10;margin:0 -16px 14px;font-size:13px;flex-wrap:wrap;}
+#export{margin-left:auto;background:#fff;color:#0f172a;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:12px;}
+h1{color:#0f172a;margin:6px 0 2px;font-size:18px;}
+.intro{color:#475569;font-size:12px;margin:0 0 12px;line-height:1.55;}
+h2{color:#0f172a;font-size:15px;margin:16px 0 5px;} .cnt{color:#64748b;font-weight:400;font-size:12px;}
+.grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;}
+/* 卡片: 单张预合成图, 无 CSS 对齐问题 */
+.card{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;width:auto;max-width:760px;background:#fff;}
+.card.saved{box-shadow:0 0 0 2px #22c55e inset;}
+.card img{display:block;width:100%;height:auto;background:#000;}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:#334155;margin:4px 0 12px;background:#fff;padding:6px 10px;border:1px solid #e2e8f0;border-radius:6px;}
 .legend b{font-weight:700;}
-.legend .sw{display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-right:4px;border-radius:3px;}
-.sw-prior{background:#ff8c00;} .sw-crop{background:#dc2626;} .sw-cross{background:#ff8c00;border-radius:50%;}
-.meta{font-size:11px;padding:4px 6px;color:#334155;}
-.cur{display:inline-block;color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:700;}
-.bd{display:inline-block;color:#fff;font-size:9px;padding:1px 5px;border-radius:6px;margin-left:4px;background:#9333ea;}
-.fb{padding:6px;display:flex;gap:4px;align-items:center;font-size:11px;background:#f8fafc;}
-.fb select{font-size:11px;padding:3px;border:1px solid #cbd5e1;border-radius:4px;}
-.fb button{background:#0f172a;color:#fff;border:none;border-radius:4px;padding:4px 10px;cursor:pointer;font-size:11px;}
-.fb .status{font-size:10px;}
+.legend .sw{display:inline-block;width:12px;height:12px;vertical-align:-2px;margin-right:3px;border-radius:2px;}
+.sw-prior{background:#ff8c00;border:1px solid #cc7000;} .sw-crop{background:#dc2626;border:1px solid #b91c1c;}
+.meta{font-size:10.5px;padding:3px 6px;color:#334155;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.cur{display:inline-block;color:#fff;font-size:9px;padding:1px 5px;border-radius:6px;font-weight:600;}
+.src{font-size:9px;color:#94a3b8;}
+.bd{display:inline-block;color:#fff;font-size:8px;padding:1px 4px;border-radius:4px;background:#9333ea;}
+.fb{padding:5px 6px;display:flex;gap:4px;align-items:center;font-size:10.5px;background:#f8fafc;border-top:1px solid #e2e8f0;}
+.fb select{font-size:10.5px;padding:2px 4px;border:1px solid #cbd5e1;border-radius:4px;}
+.fb button{background:#0f172a;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10.5px;}
+.fb .status{font-size:9px;}
 </style></head><body>
-<div id="tb"><b>light-state 重训数据集抽检</b><span id="cnt">已保存 0</span><span class="hint">分层抽样: impostor+暗绿+04短绿+段边界帧全核, 其余随机20%。选正确标签→保存; 全标完点"导出反馈JSON"; 再跑 apply_classifier_retrain_feedback.py</span><button id="export">导出反馈JSON</button></div>
+<div id="tb"><b>light-state 重训数据集抽检</b><span id="cnt">已保存 0</span><span class="hint">impostor+暗绿+04短绿+段边界全核 其余随机20%</span><button id="export">导出反馈JSON</button></div>
 <h1>light-state 重训数据集抽检</h1>
 <div class="legend">
-  <span><span class="sw sw-prior"></span><b>蓝框</b>=先验 ROI（推理时模型<b>固定 gaze 处</b>，observe 路径②）</span>
-  <span><span class="sw sw-cross"></span><b>蓝十字</b>=先验中心（模型永远盯这）</span>
-  <span><span class="sw sw-crop"></span><b>红框</b>=实际抠图框（impostor_outside=引擎按颜色检到的绿斑 bbox；prior_roi=同蓝框）</span>
+  <span><span class="sw sw-prior"></span><b>蓝框</b>=先验 ROI（模型固定 gaze 处）</span>
+  <span><span class="sw sw-crop"></span><b>红框</b>=实际抠图区（prior_roi≈蓝框；impostor_outside=引擎绿斑，可能远离蓝框）</span>
 </div>
-<p class="intro">上图=全帧上下文叠加层，下图=抠出的 crop。判定"蒙中 vs 真识别"：<b>prior_roi 图</b>蓝框是你标的先验，模型推理时永远盯这——灯偏中心只是先验略偏（妆饰性），标签 GT 锚定不会错；<b>impostor_outside 图</b>红框=引擎检到的绿斑，绿斑本身就是框中心，说明引擎确实锁了那团绿——你只需判它是真信号（改标 walk/stand）还是非信号（背心/植物/反射，保留 off）。<b>选正确标签→保存</b>：walk=真绿过街 / stand=真红站立 / off=非信号 / 删除=难判废图。默认选中当前弱标签，对就保存，错就改。</p>
+<p class="intro">每张卡=<b>一张预合成图</b>: 左=全帧缩略图(带蓝框+红框)，右=crop 放大。一眼可判「红框里的内容 ≈ 右边放大的内容」是否一致。<br/>
+<b>prior_roi</b>: 红框≈蓝框附近，crop 内容应与红框区域匹配。<b>impostor_outside</b>: 红框可能远离蓝框——引擎在别处捡到绿斑，你只需判它是真信号还是非信号。<br/>
+操作：选正确标签→保存→全标完点导出→跑 apply_classifier_retrain_feedback.py。</p>
 """ + cards_html + """
 <script>
 const saved=new Map();
 function upd(){document.getElementById('cnt').textContent='已保存 '+saved.size;}
-document.querySelectorAll('.crop-card .save').forEach(btn=>{
+document.querySelectorAll('.card .save').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    const card=btn.closest('.crop-card');
+    const card=btn.closest('.card');
     const v=card.querySelector('.verdict').value;
     const st=card.querySelector('.status');
     if(!v){st.textContent='请先选标签';st.style.color='#dc2626';return;}
     saved.set(card.dataset.cp,{label:v,video:card.dataset.video,t:card.dataset.t,cur:card.dataset.cur});
-    st.textContent='已保存 ✓';st.style.color='#16a34a';card.classList.add('saved');upd();
+    st.textContent='✓';st.style.color='#16a34a';card.classList.add('saved');upd();
   });
 });
 document.getElementById('export').addEventListener('click',()=>{
@@ -257,11 +318,11 @@ document.getElementById('export').addEventListener('click',()=>{
 
     with open(args.out, "w", encoding="utf-8") as f:
         f.write(html)
+
     print(f"[OK] 画廊 -> {args.out}")
-    print(f"  展示 {len(sel)} 张 (跳过 {skipped} 张读图失败); 全量 {len(rows)} 张")
-    print(f"  分层: impostor+暗绿+04短绿+段边界帧全核 + 其余随机{args.sample_frac:.0%}")
-    print(f"  浏览器打开, 逐张校验, 导出 classifier_retrain_feedback.json")
-    print(f"  再跑: PYTHONPATH=src ./.venv/bin/python scripts/apply_classifier_retrain_feedback.py")
+    print(f"  展示 {len(sel)} 张 (跳过 {skipped} 张); 全量 {len(rows)} 张")
+    print(f"  分层: impostor+暗绿+04短绿+段边界全核 + 其余随机{args.sample_frac:.0%}")
+    print(f"  每张卡=预合成对比图(左全帧+右crop), 无CSS对齐风险")
 
 
 if __name__ == "__main__":
