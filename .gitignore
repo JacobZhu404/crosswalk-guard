@@ -22,6 +22,10 @@ runs/
 datasets/frames/
 datasets/ped_signal/*.jpg
 datasets/ped_signal/*/*.jpg
+datasets/classifier_retrain/*/*.jpg
+datasets/classifier_retrain/*.jpg
+datasets/classifier_retrain/*.html
+datasets/ped_signal_legacy_238b/
 input_video/
 
 # ---- 大权重/视频/压缩包(外部存储, 勿入 git 历史) ----

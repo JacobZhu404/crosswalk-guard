@@ -1,0 +1,152 @@
+{
+  "schema": "walk/stand/off",
+  "split": {
+    "train": [
+      "违章02",
+      "违章03",
+      "违章04",
+      "违章05",
+      "违章06",
+      "违章08",
+      "违章09",
+      "违章10"
+    ],
+    "val": [
+      "违章01",
+      "违章07",
+      "违章11"
+    ]
+  },
+  "prior_roi_px": {
+    "违章01": 160,
+    "违章02": 160,
+    "违章03": 160,
+    "违章04": 220,
+    "违章05": 160,
+    "违章06": 160,
+    "违章07": 160,
+    "违章08": 160,
+    "违章09": 160,
+    "违章10": 160,
+    "违章11": 160
+  },
+  "counts": {
+    "违章01": {
+      "walk": 0,
+      "stand": 221,
+      "off": 266,
+      "impostor": 66,
+      "impostor_outside": 183,
+      "prior_off": 17,
+      "verified": 0
+    },
+    "违章02": {
+      "walk": 272,
+      "stand": 197,
+      "off": 219,
+      "impostor": 35,
+      "impostor_outside": 162,
+      "prior_off": 22,
+      "verified": 0
+    },
+    "违章03": {
+      "walk": 412,
+      "stand": 412,
+      "off": 248,
+      "impostor": 55,
+      "impostor_outside": 158,
+      "prior_off": 35,
+      "verified": 0
+    },
+    "违章04": {
+      "walk": 32,
+      "stand": 177,
+      "off": 178,
+      "impostor": 7,
+      "impostor_outside": 161,
+      "prior_off": 10,
+      "verified": 0
+    },
+    "违章05": {
+      "walk": 192,
+      "stand": 0,
+      "off": 188,
+      "impostor": 151,
+      "impostor_outside": 28,
+      "prior_off": 9,
+      "verified": 0
+    },
+    "违章06": {
+      "walk": 266,
+      "stand": 81,
+      "off": 227,
+      "impostor": 58,
+      "impostor_outside": 161,
+      "prior_off": 8,
+      "verified": 0
+    },
+    "违章07": {
+      "walk": 236,
+      "stand": 183,
+      "off": 233,
+      "impostor": 19,
+      "impostor_outside": 197,
+      "prior_off": 17,
+      "verified": 0
+    },
+    "违章08": {
+      "walk": 216,
+      "stand": 0,
+      "off": 10,
+      "impostor": 0,
+      "impostor_outside": 0,
+      "prior_off": 10,
+      "verified": 0
+    },
+    "违章09": {
+      "walk": 433,
+      "stand": 30,
+      "off": 370,
+      "impostor": 174,
+      "impostor_outside": 176,
+      "prior_off": 20,
+      "verified": 0
+    },
+    "违章10": {
+      "walk": 0,
+      "stand": 66,
+      "off": 92,
+      "impostor": 15,
+      "impostor_outside": 74,
+      "prior_off": 3,
+      "verified": 0
+    },
+    "违章11": {
+      "walk": 127,
+      "stand": 57,
+      "off": 104,
+      "impostor": 4,
+      "impostor_outside": 98,
+      "prior_off": 2,
+      "verified": 0
+    }
+  },
+  "total": {
+    "walk": 2186,
+    "stand": 1424,
+    "off": 2135,
+    "impostor": 584,
+    "impostor_outside": 1398,
+    "prior_off": 153
+  },
+  "impostor_sources": {
+    "neg_videos": [
+      "违章01",
+      "违章10"
+    ],
+    "false_green_scan": 584,
+    "outside_prior_green": 1398,
+    "prior_off": 153
+  },
+  "note": "off=impostor(非信号绿)+限量背景正则; 最终接线模型须 train+val 合并全11重训(计划§3.1)"
+}
