@@ -89,7 +89,7 @@ def _composite_card(frame, crop_img, video, prior, x1, y1, x2, y2, label, src, t
         S = lambda v: int(round(v * sc))
         frame_thumb = cv2.resize(frame, (FRAME_W, int(h * sc)))
 
-        # Prior ROI 蓝框 + 十字
+        # Prior ROI 蓝框 + 十字 (先画, 在下层)
         if prior is not None:
             px, py, roi_px = prior
             pcx, pcy = int(px * w), int(py * h)
@@ -101,9 +101,18 @@ def _composite_card(frame, crop_img, video, prior, x1, y1, x2, y2, label, src, t
             cv2.drawMarker(frame_thumb, (S(pcx), S(pcy)), (255, 140, 0),
                            cv2.MARKER_CROSS, 14, 2)
 
-        # Crop 区域 红框
-        cv2.rectangle(frame_thumb, (S(x1), S(y1)), (S(x2), S(y2)),
-                      (220, 38, 38), 2)           # 红=抠图框
+        # Crop 区域 红框 (后画, 在上层; 加粗+纯红+角标记确保可见)
+        rx1, ry1, rx2, ry2 = S(x1), S(y1), S(x2), S(y2)
+        cv2.rectangle(frame_thumb, (rx1, ry1), (rx2, ry2),
+                      (0, 0, 255), 3)             # 红=抠图框 (BGR纯红, 3px粗)
+        # 四角短横线标记(即使被蓝框覆盖也能看见角落)
+        corner_len = 12
+        corners = [(rx1, ry1), (rx2, ry1), (rx1, ry2), (rx2, ry2)]
+        for cx_, cy_ in corners:
+            dx = corner_len if cx_ == rx1 else -corner_len
+            dy = corner_len if cy_ == ry1 else -corner_len
+            cv2.line(frame_thumb, (cx_, cy_), (cx_+dx, cy_), (0, 0, 255), 3)
+            cv2.line(frame_thumb, (cx_, cy_), (cx_, cy_+dy), (0, 0, 255), 3)
 
         # 标注 source 类型在图上(小字)
         src_tag = src.replace("_", " ")[:12]
@@ -136,17 +145,9 @@ def _composite_card(frame, crop_img, video, prior, x1, y1, x2, y2, label, src, t
     canvas[y_off:y_off + crop_big.shape[0],
            cx_off:cx_off + crop_big.shape[1]] = crop_big
 
-    # 顶部信息条
-    info = f"[{video}] t={ts}s  label={label}  src={src}"
-    info2 = f"red_box=({x1},{y1},{x2},{y2})"
-    if prior:
-        px, py, _ = prior
-        fh, fw = frame.shape[:2] if frame is not None else (1, 1)
-        info2 += f"  prior_center=({int(px*fw)},{int(py*fh)})"
-
+    # 顶部信息条(只保留视频+时间+标签, 不要坐标)
+    info = f"{video}  t={ts}s  [{label}]  ({src})"
     cv2.putText(canvas, info, (PAD, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.45, (40, 40, 40), 1)
-    cv2.putText(canvas, info2, (PAD, TXT_H - 2), cv2.FONT_HERSHEY_SIMPLEX,
-                0.36, (100, 100, 100), 1)
 
     return canvas
 
@@ -286,16 +287,16 @@ h2{color:#0f172a;font-size:15px;margin:16px 0 5px;} .cnt{color:#64748b;font-weig
 .fb button{background:#0f172a;color:#fff;border:none;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:10.5px;}
 .fb .status{font-size:9px;}
 </style></head><body>
-<div id="tb"><b>light-state 重训数据集抽检</b><span id="cnt">已保存 0</span><span class="hint">impostor+暗绿+04短绿+段边界全核 其余随机20%</span><button id="export">导出反馈JSON</button></div>
+<div id="tb"><b>重训数据集抽检</b><span id="cnt">已保存 0</span><span class="hint">选标签→保存→全标完导出JSON</span><button id="export">导出反馈JSON</button></div>
 <h1>light-state 重训数据集抽检</h1>
 <div class="legend">
-  <span><span class="sw sw-prior"></span><b>蓝框</b>=先验 ROI（模型固定 gaze 处）</span>
-  <span><span class="sw sw-crop"></span><b>红框</b>=实际抠图区（prior_roi≈蓝框；impostor_outside=引擎绿斑，可能远离蓝框）</span>
+  <span><span class="sw sw-prior"></span><b>蓝框</b>=信号灯区域（算法盯的位置）</span>
+  <span><span class="sw sw-crop"></span><b>红框</b>=实际抠出来的位置（右边放大图就是红框里的内容）</span>
 </div>
-<p class="intro">每张卡=<b>一张预合成图</b>: 左=全帧缩略图(带蓝框+红框)，右=crop 放大。一眼可判「红框里的内容 ≈ 右边放大的内容」是否一致。<br/>
-<b>prior_roi</b>: 红框≈蓝框附近，crop 内容应与红框区域匹配。<b>impostor_outside</b>: 红框可能远离蓝框——引擎在别处捡到绿斑，你只需判它是真信号还是非信号。<br/>
-操作：选正确标签→保存→全标完点导出→跑 apply_classifier_retrain_feedback.py。</p>
-""" + cards_html + """
+<p class="intro">每张图=<b>左边全景</b>(带框) + <b>右边放大</b>(抠出的区域)。<br/>
+判断这张图里的是什么东西，选标签保存即可：<br/>
+• <b>walk</b> = 绿灯 / 行人过街信号 &nbsp;• <b>stand</b> = 红灯 / 站立等待 &nbsp;• <b>off</b> = 不是信号灯（背心/植物/车身/反光等） &nbsp;• <b>删除</b> = 看不清或废图<br/>
+默认已填好算法的猜测，对就直接保存，错就改。</p>""" + cards_html + """
 <script>
 const saved=new Map();
 function upd(){document.getElementById('cnt').textContent='已保存 '+saved.size;}
