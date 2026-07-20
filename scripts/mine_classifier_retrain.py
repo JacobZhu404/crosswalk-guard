@@ -53,7 +53,7 @@ WALK_MAX_MULT = 8          # walk 过采样上限(相对 base, 平衡红多绿�
 JITTER_PX = 12             # walk 过采样微抖动像素
 BG_OFF_PROB = 0.05         # 每帧采背景正则概率
 
-HEADER = ["crop_path", "video", "frame_ts", "x1", "y1", "x2", "y2", "source", "label", "verified"]
+HEADER = ["crop_path", "video", "frame_ts", "fi", "x1", "y1", "x2", "y2", "source", "label", "verified"]
 
 
 def _load_priors(path):
@@ -257,7 +257,8 @@ def main():
             if not save_jpg(sub, fpath):
                 continue
             rows.append({"crop_path": os.path.join(video, fname), "video": video,
-                         "frame_ts": round(a["ts"], 2), "x1": x1, "y1": y1, "x2": x2, "y2": y2,
+                         "frame_ts": round(a["ts"], 2), "fi": a["fi"],
+                         "x1": x1, "y1": y1, "x2": x2, "y2": y2,
                          "source": a["source"], "label": a["label"], "verified": 0})
             counts[video][a["label"]] += 1
             if a["source"] == "impostor":
