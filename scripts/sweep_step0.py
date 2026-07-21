@@ -40,8 +40,12 @@ MANIFEST = os.path.join(ROOT, "datasets", "classifier_retrain", "manifest.json")
 MODELS_DIR = os.path.join(ROOT, "models")
 
 
-def train_one(seed, dropout, wd, epochs, out_pt):
+def train_one(seed, dropout, wd, epochs, out_pt, supplemental_csv=None):
     rows = exclude_deleted(load_labeled_crops(LABELS_CSV, verified_only=False))
+    if supplemental_csv:
+        sup = exclude_deleted(load_labeled_crops(supplemental_csv, verified_only=False))
+        print(f"[data] 补充负例质量样本: {len(sup)} 行")
+        rows.extend(sup)
     train_v, val_v = load_manifest_split(MANIFEST)
     tr_rows, _ = split_rows(rows, train_v, val_v)
     Xtr, ytr = _rows_to_dataset(tr_rows)
@@ -123,13 +127,17 @@ def main():
     ap.add_argument("--epochs", type=int, default=30)
     ap.add_argument("--probe", default="违章04:42.0:43.2")
     ap.add_argument("--out-json", default=os.path.join(ROOT, "data", "output", "sweep_step0.json"))
+    ap.add_argument("--supplemental-csv", default=None,
+                    help="负例质量杠杆: 补充负视频假绿裁剪 labels.csv")
+    ap.add_argument("--model-prefix", default="ped_signal_v2_s0reg",
+                    help="模型文件名前缀(默认 ped_signal_v2_s0reg; 负例杠杆用 ped_signal_v2_negqual)")
     args = ap.parse_args()
 
     per_seed = {}
     for seed in args.seeds:
         t0 = time.time()
-        out_pt = os.path.join(MODELS_DIR, f"ped_signal_v2_s0reg_s{seed}.pt")
-        train_one(seed, args.dropout, args.weight_decay, args.epochs, out_pt)
+        out_pt = os.path.join(MODELS_DIR, f"{args.model_prefix}_s{seed}.pt")
+        train_one(seed, args.dropout, args.weight_decay, args.epochs, out_pt, supplemental_csv=args.supplemental_csv)
         g = gate_one(out_pt, args.dropout, args.probe)
         per_seed[seed] = g
         dt = time.time() - t0
@@ -145,7 +153,9 @@ def main():
         "config": {
             "seeds": args.seeds, "dropout": args.dropout,
             "weight_decay": args.weight_decay, "epochs": args.epochs,
-            "probe": args.probe, "note": "Step0 正则化(非加容量); 复用 diag 四关纯函数",
+            "probe": args.probe,
+            "supplemental_csv": args.supplemental_csv,
+            "note": "Step0 正则化(非加容量); 负例杠杆(补充假绿 off) 复用 diag 四关纯函数",
         },
         "per_seed": per_seed,
         "agg_mean_std_min": agg,

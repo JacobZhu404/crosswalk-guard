@@ -87,6 +87,8 @@ def main():
                     help="Step0 正则: 卷积特征后 Dropout 比例(0.0=关, 架构与旧版逐字节一致, 旧权重可加载)")
     ap.add_argument("--weight-decay", type=float, default=0.0,
                     help="Step0 正则: Adam L2 权重衰减(稳训练, 非加容量)")
+    ap.add_argument("--supplemental-negatives", default=None,
+                    help="负例质量杠杆: 补充负视频假绿裁剪 labels.csv 路径, 作为 off 类追加到训练集")
     args = ap.parse_args()
 
     # ---- 可复现: _build_net 权重初始化走 torch 默认生成器, 不锁种子则每次训练 init 不同 ->
@@ -105,6 +107,11 @@ def main():
     if args.downweight_source:
         rows = downsample_source(rows, args.downweight_source, args.downweight_ratio)
         print(f"[data] 下采样 source={args.downweight_source} 到 {args.downweight_ratio} -> {len(rows)} 行")
+    if args.supplemental_negatives:
+        sup = load_labeled_crops(args.supplemental_negatives, verified_only=False)
+        sup = exclude_deleted(sup)
+        print(f"[data] 补充负例质量样本: {len(sup)} 行(source=negative_quality, label=off)")
+        rows.extend(sup)
 
     # ---- split ----
     train_v, val_v = load_manifest_split(args.manifest)
