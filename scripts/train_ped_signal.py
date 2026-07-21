@@ -58,11 +58,15 @@ def _rows_to_dataset(rows):
     return _imgs_to_X(imgs), torch.tensor(ys, dtype=torch.long)
 
 
-def train_net(X, y, epochs=30, lr=1e-3, balanced=False, seed=0):
+def train_net(X, y, epochs=30, lr=1e-3, balanced=False, seed=0, dropout=0.0, weight_decay=0.0):
     """训练 tiny-CNN。balanced=True 时对少数类( walk/stand)过采样、off 下采样到均衡,
-    缓解弱标签下 off 占 91.7% 的严重失衡(否则模型会退化成'全判 off')。"""
-    net = _build_net()
-    opt = torch.optim.Adam(net.parameters(), lr=lr)
+    缓解弱标签下 off 占 91.7% 的严重失衡(否则模型会退化成'全判 off')。
+
+    dropout>0 / weight_decay>0 为 Step0 正则化(稳训练, 非加容量): dropout 仅在卷积特征后插入,
+    且 _build_net(dropout=0.0) 架构与旧版逐字节一致 -> 旧权重可加载。
+    """
+    net = _build_net(dropout=dropout)
+    opt = torch.optim.Adam(net.parameters(), lr=lr, weight_decay=weight_decay)
     lossf = nn.CrossEntropyLoss()
     net.train()
     if balanced and X.shape[0] > 0:

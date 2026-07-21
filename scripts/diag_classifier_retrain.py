@@ -183,9 +183,11 @@ def main():
     ap.add_argument("--out-json", default=os.path.join(ROOT, "data", "output", "diag_classifier_retrain.json"),
                     help="诊断 JSON 输出路径(默认主模型路径; 跑去 outside 消融时务必改指 "
                          "diag_classifier_retrain_dropoutside.json, 否则会覆盖主模型 JSON)")
+    ap.add_argument("--dropout", type=float, default=0.0,
+                    help="正则化模型必须与训练时 --dropout 一致, 否则 state_dict 模块数不匹配、加载失败")
     args = ap.parse_args()
 
-    clf = SignalStateClassifier(args.model, verbose=False)
+    clf = SignalStateClassifier(args.model, verbose=False, dropout=args.dropout)
     print(f"[classifier] available={clf.available} path={args.model}")
     if not clf.available:
         print("判别器不可用, 退出")

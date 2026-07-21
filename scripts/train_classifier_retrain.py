@@ -83,6 +83,10 @@ def main():
     ap.add_argument("--no-eval", dest="eval_split", action="store_false", default=True,
                     help="跳过按 manifest split 的 train/val 评测")
     ap.add_argument("--seed", type=int, default=0, help="可复现种子(torch/np/random 全锁, 序列消融要求 gate 数字可比)")
+    ap.add_argument("--dropout", type=float, default=0.0,
+                    help="Step0 正则: 卷积特征后 Dropout 比例(0.0=关, 架构与旧版逐字节一致, 旧权重可加载)")
+    ap.add_argument("--weight-decay", type=float, default=0.0,
+                    help="Step0 正则: Adam L2 权重衰减(稳训练, 非加容量)")
     args = ap.parse_args()
 
     # ---- 可复现: _build_net 权重初始化走 torch 默认生成器, 不锁种子则每次训练 init 不同 ->
@@ -113,7 +117,8 @@ def main():
         return
     # seed 穿透: 必须显式传 args.seed, 否则 train_net 平衡采样器的 RandomState 冻在默认 0,
     # --seed 只抖了权重 init、minibatch 顺序不变 → ≥5 seed 共享同序, 低估真方差(cc ruling 62aeaf1)。
-    net = train_net(Xtr, ytr, epochs=args.epochs, balanced=args.balanced, seed=args.seed)
+    net = train_net(Xtr, ytr, epochs=args.epochs, balanced=args.balanced, seed=args.seed,
+                    dropout=args.dropout, weight_decay=args.weight_decay)
 
     # ---- 评测(固定 split, 取代 LOVO) ----
     if args.eval_split and va_rows:

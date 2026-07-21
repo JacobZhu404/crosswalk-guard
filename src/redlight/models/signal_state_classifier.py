@@ -13,26 +13,34 @@ LABELS = ["walk", "stand", "off"]
 _INPUT = 48
 
 
-def _build_net():
+def _build_net(dropout=0.0):
     """tiny CNN (3x48x48 -> 3)。与 SignalStateClassifier 的输入约定一致(/255, NCHW, 48x48)。
 
     单一真相源: 训练脚本与分类器都从这里取网络结构, 避免 state_dict 与架构对不上。
+
+    dropout>0 时在卷积特征后插入 Dropout 作正则(Step0 稳定训练, 非加容量)。
+    **dropout=0.0(默认)时架构与旧版逐字节一致**, 故生产权重 ped_signal.pt 等旧 .pt 仍可直接
+    load_state_dict; 仅当 dropout>0 才多插一个 Dropout 模块, 该模块无参数、eval 时自动关闭。
     """
     import torch.nn as nn
     # 固定尺寸(无 adaptive pool, 便于导出/对齐): 48->24->12, 16*12*12=2304
-    return nn.Sequential(
+    layers = [
         nn.Conv2d(3, 8, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
         nn.Conv2d(8, 16, 3, padding=1), nn.ReLU(), nn.MaxPool2d(2),
-        nn.Flatten(), nn.Linear(16 * 12 * 12, 3),
-    )
+    ]
+    if dropout and dropout > 0:
+        layers.append(nn.Dropout(dropout))
+    layers += [nn.Flatten(), nn.Linear(16 * 12 * 12, 3)]
+    return nn.Sequential(*layers)
 
 
 class SignalStateClassifier:
-    def __init__(self, model_path=None, verbose=True):
+    def __init__(self, model_path=None, verbose=True, dropout=0.0):
         self.model_path = model_path
         self.net = None
         self.available = False
         self._infer = None  # 后端推理函数, 由加载方式决定
+        self.dropout = dropout
 
         if not model_path or not os.path.isfile(model_path):
             return
@@ -62,7 +70,7 @@ class SignalStateClassifier:
 
     def _load_torch(self, model_path, verbose):
         import torch
-        net = _build_net()
+        net = _build_net(dropout=self.dropout)
         state = torch.load(model_path, map_location="cpu", weights_only=True)
         net.load_state_dict(state)
         net.eval()
@@ -70,7 +78,8 @@ class SignalStateClassifier:
         self._infer = self._infer_torch
         self.available = True
         if verbose:
-            print(f"[信号分类器] PyTorch 权重已加载: {model_path}")
+            print(f"[信号分类器] PyTorch 权重已加载: {model_path}" +
+                  (f" (dropout={self.dropout})" if self.dropout else ""))
 
     def _preprocess(self, roi_bgr):
         import cv2
