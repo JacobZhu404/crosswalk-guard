@@ -12,6 +12,7 @@ sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 from diag_classifier_retrain import (
     parse_probe_window, gate_neg_off_ratio, gate_true_green_recall, gate_probe_window,
+    compute_ablation_gain,
 )
 
 NEG = {"违章01", "违章10"}
@@ -64,3 +65,27 @@ def test_gate_probe_window_pass():
 def test_gate_probe_window_fail():
     ok, val = gate_probe_window(walk=3, off=8, other=1, thr=0.5)
     assert (not ok) and abs(val - 0.25) < 1e-9
+
+
+def test_compute_ablation_gain_positive_triggers():
+    # 去 outside(0.537) 相对 主模型(0.238) -> +29.9pp, 超 5pp 阈值, 触发降权
+    res = compute_ablation_gain(current_07=0.537, baseline_07=0.238)
+    assert res is not None
+    assert res["07_val_recall_baseline"] == 0.238
+    assert res["07_val_recall_compare"] == 0.537
+    assert abs(res["gain_pp"] - 29.9) < 1e-6
+    assert res["trigger_downweight"] is True
+    assert res["threshold_pp"] == 5.0
+
+
+def test_compute_ablation_gain_negative_no_trigger():
+    # 对照版更差 -> 负增益, 不触发
+    res = compute_ablation_gain(current_07=0.20, baseline_07=0.238)
+    assert res is not None
+    assert abs(res["gain_pp"] - (-3.8)) < 1e-6
+    assert res["trigger_downweight"] is False
+
+
+def test_compute_ablation_gain_none_guard():
+    assert compute_ablation_gain(None, 0.238) is None
+    assert compute_ablation_gain(0.537, None) is None

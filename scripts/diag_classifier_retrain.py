@@ -17,6 +17,13 @@
   PYTHONPATH=src ./.venv/bin/python scripts/diag_classifier_retrain.py
   PYTHONPATH=src ./.venv/bin/python scripts/diag_classifier_retrain.py --probe 违章04:42.0:43.2
   PYTHONPATH=src ./.venv/bin/python scripts/diag_classifier_retrain.py --compare-json <去outside版诊断.json>
+  # ⚠️ 跑去 outside 消融时必须改指独立输出, 否则覆盖主模型 JSON:
+  PYTHONPATH=src ./.venv/bin/python scripts/diag_classifier_retrain.py \
+      --model models/ped_signal_v2_dropoutside.pt \
+      --out-json data/output/diag_classifier_retrain_dropoutside.json
+  # 再在主模型诊断里对比(主模型 JSON 保持不动):
+  PYTHONPATH=src ./.venv/bin/python scripts/diag_classifier_retrain.py \
+      --compare-json data/output/diag_classifier_retrain_dropoutside.json
 """
 import os
 import sys
@@ -78,6 +85,24 @@ def gate_probe_window(walk, off, other, thr=0.5):
     tot = walk + off + other
     ratio = walk / tot if tot else None
     return (ratio is not None and ratio >= thr), ratio
+
+
+def compute_ablation_gain(current_07, baseline_07, thr_pp=ABLATION_RECALL_GAIN_PP):
+    """消融增益(可单测): 对比版 07(val)收率相对基线的提升百分点。
+    current_07 = 本次运行(如去 impostor_outside 版)的 07 val 收率;
+    baseline_07 = 参考基线(如全量主模型)的 07 val 收率。
+    gain_pp>0 表示去源有帮助; >= thr_pp 触发降权。
+    ⚠️ 旧实现把 (基线, 本次) 变量名颠倒导致符号反, 此处显式命名防再错。"""
+    if current_07 is None or baseline_07 is None:
+        return None
+    gain_pp = (current_07 - baseline_07) * 100
+    return {
+        "07_val_recall_baseline": baseline_07,
+        "07_val_recall_compare": current_07,
+        "gain_pp": round(gain_pp, 1),
+        "trigger_downweight": gain_pp >= thr_pp,
+        "threshold_pp": thr_pp,
+    }
 
 
 # ------------------------------------------------------------------ 域混淆(新数据集)
@@ -155,6 +180,9 @@ def main():
     ap.add_argument("--manifest", default=os.path.join(ROOT, "datasets", "classifier_retrain", "manifest.json"))
     ap.add_argument("--probe", default=None, help="04 短暗绿探针: 违章04:42.0:43.2")
     ap.add_argument("--compare-json", default=None, help="去 outside 重训版诊断 JSON, 做消融对比")
+    ap.add_argument("--out-json", default=os.path.join(ROOT, "data", "output", "diag_classifier_retrain.json"),
+                    help="诊断 JSON 输出路径(默认主模型路径; 跑去 outside 消融时务必改指 "
+                         "diag_classifier_retrain_dropoutside.json, 否则会覆盖主模型 JSON)")
     args = ap.parse_args()
 
     clf = SignalStateClassifier(args.model, verbose=False)
@@ -227,20 +255,20 @@ def main():
         else:
             print(f"\n[probe] {pv} 无视频, 跳过")
 
-    # 消融对比(去 outside 版)
+    # 消融对比(去 outside 版): 当前运行=主模型(基线), compare-json=去 outside 版(对照)
+    # ⚠️ 角色固定: baseline_07 永远取当前运行的 07 val(主模型全量);
+    #    current_07 取 --compare-json 里的 07 val(去 outside 版)。这样无论先跑哪版,
+    #    增益方向都恒为「去 outside 收率 − 主模型收率」, 不会再反号。
     if args.compare_json:
-        base_07 = g2_07
+        baseline_07 = g2_07
         other = json.load(open(args.compare_json))
-        o07 = other.get("gates", {}).get("gate2_dark_green", {}).get("07_val", {}).get("value")
-        if base_07 is not None and o07 is not None:
-            gain_pp = (o07 - base_07) * 100
-            out["ablation"] = {
-                "07_val_recall_base": base_07, "07_val_recall_drop_outside": o07,
-                "gain_pp": round(gain_pp, 1),
-                "trigger_downweight": gain_pp >= ABLATION_RECALL_GAIN_PP,
-                "threshold_pp": ABLATION_RECALL_GAIN_PP,
-            }
-            print(f"\n=== 消融(去 outside) === 07 收率 {base_07:.3f} -> {o07:.3f} (回升 {gain_pp:.1f}pp, 触发阈值 {ABLATION_RECALL_GAIN_PP}pp)")
+        current_07 = other.get("gates", {}).get("gate2_dark_green", {}).get("07_val", {}).get("value")
+        res = compute_ablation_gain(current_07, baseline_07)
+        if res is not None:
+            out["ablation"] = res
+            print(f"\n=== 消融(去 outside) === 07 收率 {baseline_07:.3f}(主模型) "
+                  f"-> {current_07:.3f}(去outside) "
+                  f"(回升 {res['gain_pp']:.1f}pp, 触发阈值 {res['threshold_pp']}pp)")
 
     # 汇总
     print("\n=== 四关判定 ===")
@@ -248,7 +276,7 @@ def main():
     print(f"  关2 保暗绿 06train={g2_06:.3f} 07val={g2_07:.3f}")
     print(f"  关4 val泛化: {g['gate4_val_generalization']}")
 
-    dst = os.path.join(ROOT, "data", "output", "diag_classifier_retrain.json")
+    dst = args.out_json
     os.makedirs(os.path.dirname(dst), exist_ok=True)
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
