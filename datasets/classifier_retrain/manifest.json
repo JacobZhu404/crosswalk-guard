@@ -33,39 +33,39 @@
   "counts": {
     "违章01": {
       "walk": 0,
-      "stand": 221,
-      "off": 266,
+      "stand": 222,
+      "off": 265,
       "impostor": 66,
       "impostor_outside": 183,
       "prior_off": 17,
-      "verified": 0
+      "verified": 1
     },
     "违章02": {
       "walk": 272,
-      "stand": 197,
-      "off": 219,
+      "stand": 96,
+      "off": 320,
       "impostor": 35,
       "impostor_outside": 162,
       "prior_off": 22,
-      "verified": 0
+      "verified": 115
     },
     "违章03": {
       "walk": 412,
-      "stand": 412,
-      "off": 248,
+      "stand": 103,
+      "off": 557,
       "impostor": 55,
       "impostor_outside": 158,
       "prior_off": 35,
-      "verified": 0
+      "verified": 311
     },
     "违章04": {
       "walk": 32,
-      "stand": 177,
-      "off": 178,
+      "stand": 187,
+      "off": 168,
       "impostor": 7,
       "impostor_outside": 161,
       "prior_off": 10,
-      "verified": 0
+      "verified": 10
     },
     "违章05": {
       "walk": 192,
@@ -78,57 +78,57 @@
     },
     "违章06": {
       "walk": 266,
-      "stand": 81,
-      "off": 227,
-      "impostor": 58,
+      "stand": 85,
+      "off": 221,
+      "impostor": 56,
       "impostor_outside": 161,
       "prior_off": 8,
-      "verified": 0
+      "verified": 4
     },
     "违章07": {
-      "walk": 236,
-      "stand": 183,
-      "off": 233,
+      "walk": 237,
+      "stand": 315,
+      "off": 99,
       "impostor": 19,
-      "impostor_outside": 197,
+      "impostor_outside": 196,
       "prior_off": 17,
-      "verified": 0
+      "verified": 133
     },
     "违章08": {
-      "walk": 216,
+      "walk": 0,
       "stand": 0,
-      "off": 10,
+      "off": 226,
       "impostor": 0,
       "impostor_outside": 0,
       "prior_off": 10,
-      "verified": 0
+      "verified": 216
     },
     "违章09": {
-      "walk": 433,
-      "stand": 30,
-      "off": 370,
+      "walk": 438,
+      "stand": 37,
+      "off": 358,
       "impostor": 174,
       "impostor_outside": 176,
       "prior_off": 20,
-      "verified": 0
+      "verified": 12
     },
     "违章10": {
       "walk": 0,
-      "stand": 66,
-      "off": 92,
+      "stand": 85,
+      "off": 71,
       "impostor": 15,
-      "impostor_outside": 74,
+      "impostor_outside": 72,
       "prior_off": 3,
-      "verified": 0
+      "verified": 20
     },
     "违章11": {
       "walk": 127,
-      "stand": 57,
-      "off": 104,
+      "stand": 127,
+      "off": 34,
       "impostor": 4,
       "impostor_outside": 98,
       "prior_off": 2,
-      "verified": 0
+      "verified": 70
     }
   },
   "total": {
