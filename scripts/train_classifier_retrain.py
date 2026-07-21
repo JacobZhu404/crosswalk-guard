@@ -23,6 +23,9 @@ import argparse
 import json
 import random
 
+import numpy as np
+import torch
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "src"))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
@@ -79,7 +82,15 @@ def main():
     ap.add_argument("--drop-source", default=None, help="消融: 直接去除该 source 全部行")
     ap.add_argument("--no-eval", dest="eval_split", action="store_false", default=True,
                     help="跳过按 manifest split 的 train/val 评测")
+    ap.add_argument("--seed", type=int, default=0, help="可复现种子(torch/np/random 全锁, 序列消融要求 gate 数字可比)")
     args = ap.parse_args()
+
+    # ---- 可复现: _build_net 权重初始化走 torch 默认生成器, 不锁种子则每次训练 init 不同 ->
+    #     gate 数字不可比, 序列消融失效。train_net 的 balanced 分支已用 np RandomState(seed),
+    #     此处再锁 torch 默认生成器 + np/random 全局, 三处对齐。 ---
+    torch.manual_seed(args.seed)
+    np.random.seed(args.seed)
+    random.seed(args.seed)
 
     # ---- 数据装载 ----
     rows = load_labeled_crops(args.labels, verified_only=False)
