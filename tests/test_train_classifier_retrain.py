@@ -105,3 +105,35 @@ def test_train_smoke_exports_v2(tmp_path):
         c = Counter(clf.classify(_synth(lb, 1, rng)[0])[0] for _ in range(15))
         return c.most_common(1)[0][0]
     assert [mv(lb) for lb in LABELS] == LABELS, "v2 应正确区分三类"
+
+
+def _synth_Xy(per=20):
+    imgs, ys = [], []
+    for i, lb in enumerate(LABELS):
+        for im in _synth(lb, n=per):
+            imgs.append(im)
+            ys.append(i)
+    return _imgs_to_X(imgs), torch.tensor(ys)
+
+
+def test_train_net_seed_threads_to_sampler():
+    """seed 须穿透到平衡采样器(cc ruling 62aeaf1 盲区):
+
+    - 同 seed + 同 torch init -> 权重完全一致(可复现);
+    - 不同 seed -> 权重不同(证明 RandomState(seed) 真被采样序消费, 非冻在默认 0)。
+    权重 init 用 torch 默认生成器, 故每调用前固定 torch.manual_seed 以隔离 seed 参数效应。
+    """
+    X, y = _synth_Xy()
+    torch.manual_seed(0)
+    n1 = train_net(X, y, epochs=5, balanced=True, seed=3)
+    torch.manual_seed(0)
+    n2 = train_net(X, y, epochs=5, balanced=True, seed=3)
+    close = all(torch.allclose(p1, p2, atol=1e-5)
+                for p1, p2 in zip(n1.parameters(), n2.parameters()))
+    assert close, "同 seed 应完全可复现(权重 init 已固定)"
+
+    torch.manual_seed(0)
+    n3 = train_net(X, y, epochs=5, balanced=True, seed=9)
+    diff = any(not torch.allclose(p1, p2, atol=1e-4)
+               for p1, p2 in zip(n1.parameters(), n3.parameters()))
+    assert diff, "不同 seed 应改变平衡采样序 -> 权重不同(seed 须穿透, 否则 ≥5 seed 共享同序)"

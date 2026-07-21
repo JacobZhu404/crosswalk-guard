@@ -111,7 +111,9 @@ def main():
     if Xtr is None or ytr is None:
         print("无训练数据, 退出")
         return
-    net = train_net(Xtr, ytr, epochs=args.epochs, balanced=args.balanced)
+    # seed 穿透: 必须显式传 args.seed, 否则 train_net 平衡采样器的 RandomState 冻在默认 0,
+    # --seed 只抖了权重 init、minibatch 顺序不变 → ≥5 seed 共享同序, 低估真方差(cc ruling 62aeaf1)。
+    net = train_net(Xtr, ytr, epochs=args.epochs, balanced=args.balanced, seed=args.seed)
 
     # ---- 评测(固定 split, 取代 LOVO) ----
     if args.eval_split and va_rows:

@@ -1,7 +1,8 @@
 # wb → cc:Phase B 回炉计划(data-first, 序列消融, 可复现优先)
 
-> 承接 cc brief `3d6ebef` + cc review(分级放行)。本计划相对 cc 批准结构有**两处必要修订**,
-> 均源于本轮跑 Step1 时发现的**训练不可复现**问题(见 §0),已记入并提交,待 cc 确认修订方向。
+> 承接 cc brief `3d6ebef` + cc review(分级放行) + cc ruling `62aeaf1`(方差独立复现 + §0/§2 两处
+> 修订**已放行**)。本计划相对 cc 批准结构有**两处必要修订**, 均源于本轮跑 Step1 时发现的**训练不可复现**
+> 问题(见 §0), 已记入并提交, cc 已放行 §0/§2 修订方向。
 > **先计划后训, gate 不过不接线; 绝不擅自重挖数据集。**
 
 ## 0. ⚠️ 重大发现:训练未播种 → 单跑 gate 数字不可信(已修,但结论需重基线)
@@ -28,8 +29,12 @@ v2(不降权) 跨 seed 0/1/2/3:
 
 ## 1. 方法论(强制, 取代单跑判定)
 - 所有训练**必须播种**(`--seed` 已加); 但单 seed 仍不够。
-- **多 seed 评估**:每版训练跑 **≥5 seed**, 报各关 **mean±std**。版本"过 gate"当且仅当 **mean** 达标, 不凭单个幸运 seed。
+- **多 seed 评估**:每版训练跑 **≥5 seed**, 报各关 **mean±std**, **且必须额外报 worst-seed(min)**。
+  版本"过 gate"当且仅当 **mean 达标 且 worst-seed(min) 不违约** —— 只在幸运 seed 过关的模型不可接线
+  (cc ruling `62aeaf1`); 不凭单个幸运 seed。
 - **方差本身是指标**:std 大 = 模型不稳 → 先上正则(见 Step 0), 不进后续步骤。
+- **median 信号占比 = 方向性诊断量, 非硬 gate**(cc 校准#2 + ruling 重申):median 即便很低, 只要四关
+  mean 全过也必须放行; 它只用于判断提纯是否有方向性收益, 不参与 gate 判定。
 - 关1/关4 真瓶颈须有专门杠杆(见 §负例质量), 不能靠 outside 降权。
 
 ## 2. 回炉步骤(按已证强度 + 稳定性重排; cc 原序见 §注)
@@ -72,17 +77,18 @@ v2(不降权) 跨 seed 0/1/2/3:
 
 每版独立 `.pt` + 独立 diag JSON(mean±std, ≥5 seed) → **cc review 过才进下一步**, 不捆版。
 
-## 4. Gate 判定(四关 + 提纯诊断, 均取多 seed mean)
-- 关1 拒负例(01/10) mean ≥ 0.75
-- 关2 06train·07val mean ≥ 0.90(07 val 诚实)
-- 关3 04 探针 walk mean ≥ 0.5
-- 关4 val 泛化(01/07/11) mean 全过
-- **median 信号占比 = 方向性诊断量, 非硬 gate**(cc 校准#2):median 5% 但四关 mean 全过也必须放行。
+## 4. Gate 判定(四关 + 提纯诊断, 均取多 seed mean + worst-seed min)
+- 关1 拒负例(01/10) mean ≥ 0.75, **且 worst-seed(min) ≥ 0.75**
+- 关2 06train·07val mean ≥ 0.90(07 val 诚实), **且 worst-seed(min) ≥ 0.90**
+- 关3 04 探针 walk mean ≥ 0.5, **且 worst-seed(min) ≥ 0.5**
+- 关4 val 泛化(01/07/11) mean 全过, **且 worst-seed(min) 全过**
+- **median 信号占比 = 方向性诊断量, 非硬 gate**(cc 校准#2 + ruling 重申):median 即便很低, 只要四关
+  mean **与** worst-seed(min) 全过也必须放行; 只用于判断提纯方向性收益, 不参与 gate 判定。
 
 ## 5. 红线(不变 + 新增)
 - 先计划 cc review 再动手; 绝不擅自重挖(Step2 重挖仅放行后)。
 - 一次一变量, 不捆版训; 版本各自独立 `.pt`, 不覆盖 ped_signal.pt 基线 / v2。
-- **绝不凭单 seed 判版本**:必须 ≥5 seed mean±std(本计划核心修正)。
+- **绝不凭单 seed 判版本**:必须 ≥5 seed mean±std **且报 worst-seed(min)**(本计划核心修正, cc ruling 强化)。
 - gate 四关 mean 不过绝不接线; Phase C 全 11 重训; 不碰 enforce_transition_limit。
 - 892 盲区 → 重挖后必重跑画廊抽检。scoped git、署名、trunk main、TDD 先。
 
@@ -99,4 +105,9 @@ v2(不降权) 跨 seed 0/1/2/3:
 **注**:cc 原批准结构(序列消融/不覆盖/重挖后重抽检/07 边界/容量末评)全部保留; 本计划仅在
 **方法论(加多 seed)** 与 **步骤重排(正则 Step0 首要, outside 降权降级次要)** 两处修订, 因 §0 发现
 单跑结论不可信。Step1 已在播种后重跑, 结论:outside 降权近乎无效, 模型不稳是真因。
-**下一步**:等 cc 确认修订方向。若认可, 从 Step0(正则)起多 seed 跑。
+**状态(2026-07-21)**:cc ruling `62aeaf1` 已**放行 §0/§2 两处修订**, 并新增两条方法论细则
+(报 worst-seed(min) + median 维持诊断非硬 gate)。另要求补 **seed 穿透修复**(train_net 调用漏传
+`seed=args.seed` → 平衡采样器 RandomState 冻在 0)作为 Step0 前置 —— 该修复 + 单测已完成并验证
+(`test_train_net_seed_threads_to_sampler` 通过)。
+**下一步**:§0/§2 已放行, 不必再等确认; 直接进入 Step0(正则: weight decay + dropout, 非加容量),
+≥5 seed 跑, 报 mean±std **与 worst-seed(min)**。
