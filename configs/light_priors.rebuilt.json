@@ -3,7 +3,7 @@
     "source": "重建自 datasets/light_location_gt.json (Jacob 硬GT)",
     "date": "2026-07-21",
     "policy": "偏框→GT中心重定位; 02/04保留(IoU>0.1); 10多灯待Jacob甄别; roi_px不动(单变量)",
-    "status": "候选, 未覆盖生产 light_priors.json; 待 wb YOLO验证 + 生产不回退验证后再 swap",
+    "status": "⚠️作废/存疑: 手持相机运动使固定单点prior跟不住灯(见 docs/handoff/2026-07-21-cc-finding-handheld-motion-breaks-fixed-prior.md), 不作重挖依据/不swap生产; 仅静态段fallback候选",
     "roi_px_note": "roi_px 本轮不动, 框收紧列后续单独变量"
   },
   "违章02": [
