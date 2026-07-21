@@ -44,7 +44,8 @@ def signal_ratio(img, want):
     size = mask.size
     if size == 0:
         return None
-    return min(1.0, float(mask.sum()) / size)  # 夹紧到 [0,1](防退化 crop)
+    # ⚠️ cv2.inRange 返回 0/255(8-bit), 必须按布尔像素计数, 不能 mask.sum()(=255×真实占比)
+    return float((mask > 0).sum()) / size
 
 
 def load_rows(labels_csv):
