@@ -1,0 +1,7751 @@
+{
+  "threshold": 0.005,
+  "fieldnames": [
+    "crop_path",
+    "video",
+    "frame_ts",
+    "fi",
+    "x1",
+    "y1",
+    "x2",
+    "y2",
+    "source",
+    "label",
+    "verified"
+  ],
+  "total_in": 5740,
+  "kept": 4780,
+  "dropped": 960,
+  "dropped_by_video": {
+    "违章01": {
+      "walk": 0,
+      "stand": 80,
+      "off": 0,
+      "other": 0
+    },
+    "违章02": {
+      "walk": 61,
+      "stand": 10,
+      "off": 0,
+      "other": 0
+    },
+    "违章03": {
+      "walk": 175,
+      "stand": 6,
+      "off": 0,
+      "other": 0
+    },
+    "违章04": {
+      "walk": 15,
+      "stand": 102,
+      "off": 0,
+      "other": 0
+    },
+    "违章06": {
+      "walk": 33,
+      "stand": 17,
+      "off": 0,
+      "other": 0
+    },
+    "违章07": {
+      "walk": 218,
+      "stand": 172,
+      "off": 0,
+      "other": 0
+    },
+    "违章09": {
+      "walk": 24,
+      "stand": 25,
+      "off": 0,
+      "other": 0
+    },
+    "违章10": {
+      "walk": 0,
+      "stand": 22,
+      "off": 0,
+      "other": 0
+    }
+  },
+  "dropped_detail": [
+    {
+      "crop_path": "违章01/违章01_t7.5_32_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "224",
+      "signal_ratio": 0.0046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t7.8_33_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "231",
+      "signal_ratio": 0.0042578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t8.5_37_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "252",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t8.7_38_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "259",
+      "signal_ratio": 0.0019921875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t9.0_40_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "266",
+      "signal_ratio": 0.0020703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t9.2_43_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "273",
+      "signal_ratio": 0.0005078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t9.4_45_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "280",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t9.7_47_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "287",
+      "signal_ratio": 0.003359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t9.9_49_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "294",
+      "signal_ratio": 0.004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t10.1_51_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "301",
+      "signal_ratio": 0.0021875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t10.6_55_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "315",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t14.8_74_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "441",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t15.1_75_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "448",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t15.6_77_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "462",
+      "signal_ratio": 0.0031640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t15.8_78_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "469",
+      "signal_ratio": 0.0041015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t18.6_90_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "553",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t18.9_92_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "560",
+      "signal_ratio": 0.0005078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t19.1_94_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "567",
+      "signal_ratio": 0.000390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t19.3_96_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "574",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t19.6_98_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "581",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t19.8_100_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "588",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t20.0_102_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "595",
+      "signal_ratio": 0.0019921875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t20.3_103_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "602",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t20.5_104_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "609",
+      "signal_ratio": 0.00171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t20.7_106_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "616",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t21.0_108_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "623",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t24.0_122_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "714",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t24.3_124_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "721",
+      "signal_ratio": 0.0026953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t24.5_126_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "728",
+      "signal_ratio": 0.00265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t25.0_128_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "742",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t29.2_150_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "868",
+      "signal_ratio": 0.00109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t29.5_152_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "875",
+      "signal_ratio": 0.0044140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t29.9_154_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "889",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t30.2_156_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "896",
+      "signal_ratio": 0.0028515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t32.8_168_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "973",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t33.0_170_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "980",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t33.2_171_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "987",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t33.5_173_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "994",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t34.2_176_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1015",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t34.4_177_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1022",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t34.6_178_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1029",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t34.9_179_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1036",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t35.1_180_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1043",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t35.4_181_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1050",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t35.6_182_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1057",
+      "signal_ratio": 0.0012109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t38.0_193_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1127",
+      "signal_ratio": 0.0038671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t38.2_194_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1134",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t38.4_195_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1141",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t38.7_197_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1148",
+      "signal_ratio": 0.001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t38.9_199_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1155",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t39.1_201_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1162",
+      "signal_ratio": 0.0003125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t41.7_213_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1239",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t42.0_215_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1246",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t42.2_217_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1253",
+      "signal_ratio": 0.0021875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t42.4_219_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1260",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t42.7_221_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1267",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t45.3_232_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1344",
+      "signal_ratio": 0.0041015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t45.5_233_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1351",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t45.7_234_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1358",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t46.0_235_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1365",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t46.2_237_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1372",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t46.4_239_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1379",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t46.7_241_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1386",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t46.9_243_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1393",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t47.1_245_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1400",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t47.4_247_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1407",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t47.6_249_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1414",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t47.9_251_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1421",
+      "signal_ratio": 0.0005859375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t62.7_282_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1862",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t62.9_283_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1869",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t63.2_284_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1876",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t63.4_286_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1883",
+      "signal_ratio": 0.0005078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t63.6_288_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1890",
+      "signal_ratio": 0.0045703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t64.3_291_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1911",
+      "signal_ratio": 0.0012109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t64.8_293_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1925",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t65.1_294_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1932",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t65.3_296_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1939",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t65.5_297_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1946",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t66.0_300_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1960",
+      "signal_ratio": 0.0008984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章01/违章01_t66.2_302_stand.jpg",
+      "video": "违章01",
+      "label": "stand",
+      "fi": "1967",
+      "signal_ratio": 0.004375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t1.2_5_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "35",
+      "signal_ratio": 0.0028125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t2.1_12_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "63",
+      "signal_ratio": 0.0028125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t2.4_14_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "70",
+      "signal_ratio": 0.0045703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t2.6_15_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "77",
+      "signal_ratio": 0.00484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t4.0_22_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "119",
+      "signal_ratio": 0.004921875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t4.2_23_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "126",
+      "signal_ratio": 0.0032421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t7.1_36_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "210",
+      "signal_ratio": 0.0044140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t7.3_38_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "217",
+      "signal_ratio": 0.002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t7.5_40_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "224",
+      "signal_ratio": 0.0048828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t7.8_42_stand.jpg",
+      "video": "违章02",
+      "label": "stand",
+      "fi": "231",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t21.0_110_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "623",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t26.6_134_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "791",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t50.7_240_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "1505",
+      "signal_ratio": 0.000234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t57.0_269_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "1694",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t71.2_331_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2114",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t71.9_335_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2135",
+      "signal_ratio": 0.00078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t72.1_337_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2142",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t72.4_338_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2149",
+      "signal_ratio": 0.0005078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t72.6_339_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2156",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t72.8_340_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2163",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t73.1_341_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2170",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t73.3_342_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2177",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t73.5_343_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2184",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t73.8_344_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2191",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t74.0_345_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2198",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t74.2_346_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2205",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t74.5_347_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2212",
+      "signal_ratio": 0.0001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t74.7_348_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2219",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t75.0_349_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2226",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t75.2_350_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2233",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t75.4_351_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2240",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t75.7_352_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2247",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t75.9_354_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2254",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t76.1_355_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2261",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t76.4_356_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2268",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t76.6_357_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2275",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t76.8_358_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2282",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t77.1_359_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2289",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t77.3_360_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2296",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t77.5_361_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2303",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t77.8_362_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2310",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t78.0_363_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2317",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t78.3_364_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2324",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t78.5_365_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2331",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t78.7_366_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2338",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t79.0_367_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2345",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t79.2_368_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2352",
+      "signal_ratio": 0.0003125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t79.4_369_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2359",
+      "signal_ratio": 0.0007421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t79.7_370_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2366",
+      "signal_ratio": 0.000859375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t79.9_371_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2373",
+      "signal_ratio": 0.0012109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t80.2_372_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2380",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t80.4_373_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2387",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t80.6_374_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2394",
+      "signal_ratio": 0.000234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t80.8_375_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2401",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t81.1_377_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2408",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t81.3_378_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2415",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t81.6_379_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2422",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t81.8_380_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2429",
+      "signal_ratio": 0.00046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t82.0_381_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2436",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t82.3_382_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2443",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t82.5_383_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2450",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t82.7_384_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2457",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t83.0_385_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2464",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t83.2_386_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2471",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t83.5_387_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2478",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t83.7_388_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2485",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t83.9_389_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2492",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t84.2_390_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2499",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t84.4_391_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2506",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t84.6_392_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2513",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章02/违章02_t84.9_393_walk.jpg",
+      "video": "违章02",
+      "label": "walk",
+      "fi": "2520",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.0_379_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2198",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.2_380_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2205",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.5_381_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2212",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.7_382_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2219",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.0_383_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2226",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.2_384_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2233",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.4_385_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2240",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.7_386_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2247",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.9_387_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2254",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.1_388_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2261",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.4_389_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2268",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.6_390_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2275",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.8_391_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2282",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.1_392_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2289",
+      "signal_ratio": 0.00015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.3_393_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2296",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.5_394_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2303",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.8_395_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2310",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.0_396_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2317",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.3_397_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2324",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.5_398_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2331",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.7_399_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2338",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.0_400_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2345",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.2_401_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2352",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.4_402_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2359",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.9_404_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2373",
+      "signal_ratio": 0.0002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.2_405_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2380",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.4_406_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2387",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.6_407_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2394",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.8_408_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2401",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.1_409_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2408",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.3_410_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2415",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.6_412_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2422",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.8_413_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2429",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.0_414_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2436",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.3_415_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2443",
+      "signal_ratio": 0.00046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.5_417_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2450",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.7_418_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2457",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.0_419_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2464",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.2_420_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2471",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.5_421_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2478",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.7_422_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2485",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.9_424_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2492",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.2_425_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2499",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.4_426_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2506",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.6_427_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2513",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.9_428_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2520",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.1_429_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2527",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.3_430_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2534",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.6_431_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2541",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.8_432_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2548",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.0_433_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2555",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.3_434_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2562",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.5_435_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2569",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.8_436_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2576",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.0_437_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2583",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.2_438_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2590",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.5_439_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2597",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.7_440_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2604",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.9_442_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2611",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.2_444_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2618",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.4_445_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2625",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.6_446_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2632",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.9_447_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2639",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.1_448_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2646",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.3_449_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2653",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.6_450_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2660",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.8_451_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2667",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.0_452_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2674",
+      "signal_ratio": 0.00078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.3_453_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2681",
+      "signal_ratio": 0.0009765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.5_455_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2688",
+      "signal_ratio": 0.0009375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.8_456_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2695",
+      "signal_ratio": 0.0023046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.0_457_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2702",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.2_458_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2709",
+      "signal_ratio": 0.002578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.5_459_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2716",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.9_461_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2730",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t92.2_462_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2737",
+      "signal_ratio": 0.001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t92.4_463_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2744",
+      "signal_ratio": 0.0042578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t92.6_464_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2751",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t101.6_502_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3017",
+      "signal_ratio": 0.0002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t101.8_503_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3024",
+      "signal_ratio": 0.0046484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t102.1_504_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3031",
+      "signal_ratio": 0.00453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t111.5_547_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3311",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t111.7_548_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3318",
+      "signal_ratio": 0.0012890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t112.0_549_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3325",
+      "signal_ratio": 0.004765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t112.2_550_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3332",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t121.6_592_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3612",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t121.9_593_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3619",
+      "signal_ratio": 0.0048828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t128.0_621_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3801",
+      "signal_ratio": 0.0041796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t131.3_636_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3899",
+      "signal_ratio": 0.0049609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t131.5_637_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3906",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t131.8_639_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3913",
+      "signal_ratio": 0.00296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t132.0_640_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3920",
+      "signal_ratio": 0.0042578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t133.9_648_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3976",
+      "signal_ratio": 0.004609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t156.3_744_stand.jpg",
+      "video": "违章03",
+      "label": "stand",
+      "fi": "4641",
+      "signal_ratio": 0.0009765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t156.5_745_stand.jpg",
+      "video": "违章03",
+      "label": "stand",
+      "fi": "4648",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t156.8_746_stand.jpg",
+      "video": "违章03",
+      "label": "stand",
+      "fi": "4655",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t157.0_748_stand.jpg",
+      "video": "违章03",
+      "label": "stand",
+      "fi": "4662",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t157.2_749_stand.jpg",
+      "video": "违章03",
+      "label": "stand",
+      "fi": "4669",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t157.5_750_stand.jpg",
+      "video": "违章03",
+      "label": "stand",
+      "fi": "4676",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.0_915_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2198",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.2_916_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2205",
+      "signal_ratio": 0.0002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.5_917_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2212",
+      "signal_ratio": 0.00015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t74.7_918_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2219",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.0_919_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2226",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.2_920_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2233",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.4_921_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2240",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.7_922_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2247",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t75.9_923_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2254",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.1_924_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2261",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.4_925_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2268",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.6_926_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2275",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t76.8_927_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2282",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.1_928_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2289",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.3_929_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2296",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.5_930_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2303",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t77.8_931_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2310",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.0_932_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2317",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.3_933_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2324",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.5_934_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2331",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t78.7_935_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2338",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.0_936_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2345",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.2_937_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2352",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.4_938_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2359",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t79.9_940_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2373",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.2_941_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2380",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.4_942_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2387",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.6_943_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2394",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t80.8_944_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2401",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.1_945_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2408",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.3_946_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2415",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.6_947_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2422",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t81.8_948_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2429",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.0_949_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2436",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.3_950_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2443",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.5_951_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2450",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t82.7_952_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2457",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.0_953_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2464",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.2_954_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2471",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.5_955_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2478",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.7_956_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2485",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t83.9_957_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2492",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.2_958_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2499",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.4_959_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2506",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.6_960_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2513",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t84.9_961_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2520",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.1_962_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2527",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.3_963_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2534",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.6_964_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2541",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t85.8_965_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2548",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.0_966_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2555",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.3_967_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2562",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.5_968_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2569",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t86.8_969_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2576",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.0_970_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2583",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.2_971_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2590",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.5_972_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2597",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.7_973_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2604",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t87.9_974_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2611",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.2_975_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2618",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.4_976_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2625",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.6_977_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2632",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t88.9_978_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2639",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.1_979_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2646",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.3_980_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2653",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.6_981_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2660",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t89.8_982_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2667",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.0_983_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2674",
+      "signal_ratio": 0.00015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.3_984_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2681",
+      "signal_ratio": 0.0022265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.5_985_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2688",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t90.8_986_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2695",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.0_987_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2702",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.2_988_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2709",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.5_989_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2716",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.7_990_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2723",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t91.9_991_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2730",
+      "signal_ratio": 0.000546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t92.2_992_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2737",
+      "signal_ratio": 0.001796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t92.4_993_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2744",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t92.6_994_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "2751",
+      "signal_ratio": 0.00234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t101.6_1032_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3017",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t101.8_1033_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3024",
+      "signal_ratio": 0.0044140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章03/违章03_t102.1_1034_walk.jpg",
+      "video": "违章03",
+      "label": "walk",
+      "fi": "3031",
+      "signal_ratio": 0.004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t6.4_31_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "189",
+      "signal_ratio": 0.00030991735537190085,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t6.6_32_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "196",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t14.1_65_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "420",
+      "signal_ratio": 0.003471074380165289,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t14.4_66_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "427",
+      "signal_ratio": 0.003574380165289256,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t14.6_67_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "434",
+      "signal_ratio": 0.002293388429752066,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t14.8_68_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "441",
+      "signal_ratio": 0.0030165289256198348,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t15.1_70_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "448",
+      "signal_ratio": 0.0018801652892561983,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t15.3_71_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "455",
+      "signal_ratio": 0.002128099173553719,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t15.6_73_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "462",
+      "signal_ratio": 0.0016322314049586777,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t15.8_75_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "469",
+      "signal_ratio": 0.002128099173553719,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t16.0_76_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "476",
+      "signal_ratio": 0.0017148760330578513,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t16.3_77_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "483",
+      "signal_ratio": 0.0015082644628099174,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t16.5_78_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "490",
+      "signal_ratio": 0.0011363636363636363,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t16.7_79_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "497",
+      "signal_ratio": 0.0015289256198347107,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t18.1_85_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "539",
+      "signal_ratio": 0.0028305785123966943,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t18.4_86_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "546",
+      "signal_ratio": 0.0003512396694214876,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t18.6_87_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "553",
+      "signal_ratio": 0.0003512396694214876,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t18.9_88_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "560",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t19.1_89_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "567",
+      "signal_ratio": 2.066115702479339e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t19.3_90_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "574",
+      "signal_ratio": 0.00010330578512396694,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t19.6_91_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "581",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t19.8_92_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "588",
+      "signal_ratio": 6.198347107438017e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t20.0_93_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "595",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t20.3_94_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "602",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t20.5_95_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "609",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t20.7_96_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "616",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t21.0_97_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "623",
+      "signal_ratio": 4.132231404958678e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t21.2_98_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "630",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t21.4_99_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "637",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t21.7_100_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "644",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t21.9_101_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "651",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t22.2_102_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "658",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t22.4_103_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "665",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t22.6_104_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "672",
+      "signal_ratio": 8.264462809917356e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t22.9_105_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "679",
+      "signal_ratio": 0.00010330578512396694,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t23.1_106_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "686",
+      "signal_ratio": 4.132231404958678e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t23.3_107_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "693",
+      "signal_ratio": 4.132231404958678e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t23.6_108_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "700",
+      "signal_ratio": 0.00033057851239669424,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t23.8_109_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "707",
+      "signal_ratio": 2.066115702479339e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t24.0_110_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "714",
+      "signal_ratio": 0.00010330578512396694,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t24.3_111_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "721",
+      "signal_ratio": 0.00043388429752066115,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t24.5_112_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "728",
+      "signal_ratio": 0.00012396694214876033,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t24.8_113_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "735",
+      "signal_ratio": 2.066115702479339e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t25.0_114_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "742",
+      "signal_ratio": 0.00030991735537190085,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t25.2_115_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "749",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t25.5_117_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "756",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t25.7_118_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "763",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t25.9_119_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "770",
+      "signal_ratio": 0.00012396694214876033,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t26.2_120_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "777",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t26.4_121_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "784",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t26.6_122_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "791",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t26.9_123_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "798",
+      "signal_ratio": 8.264462809917356e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t27.1_124_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "805",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t27.3_125_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "812",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t27.6_126_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "819",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t27.8_127_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "826",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t28.1_128_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "833",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t28.3_129_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "840",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t28.5_130_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "847",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t28.8_131_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "854",
+      "signal_ratio": 6.198347107438017e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t29.0_132_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "861",
+      "signal_ratio": 8.264462809917356e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t29.2_133_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "868",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t29.5_134_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "875",
+      "signal_ratio": 0.00033057851239669424,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t29.7_135_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "882",
+      "signal_ratio": 6.198347107438017e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t29.9_136_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "889",
+      "signal_ratio": 6.198347107438017e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t30.2_137_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "896",
+      "signal_ratio": 0.0005165289256198347,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t30.4_138_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "903",
+      "signal_ratio": 0.00028925619834710745,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t30.6_139_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "910",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t30.9_140_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "917",
+      "signal_ratio": 2.066115702479339e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t31.1_141_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "924",
+      "signal_ratio": 0.00018595041322314049,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t31.4_142_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "931",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t31.6_143_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "938",
+      "signal_ratio": 0.00012396694214876033,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t31.8_144_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "945",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t32.1_145_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "952",
+      "signal_ratio": 0.0004958677685950413,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t32.3_146_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "959",
+      "signal_ratio": 0.00022727272727272727,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t32.5_147_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "966",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t32.8_148_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "973",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t33.0_149_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "980",
+      "signal_ratio": 4.132231404958678e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t33.2_151_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "987",
+      "signal_ratio": 2.066115702479339e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t33.5_152_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "994",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t33.7_153_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1001",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t33.9_154_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1008",
+      "signal_ratio": 6.198347107438017e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t34.2_155_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1015",
+      "signal_ratio": 0.0009917355371900827,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t34.4_157_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1022",
+      "signal_ratio": 0.0006611570247933885,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t34.6_158_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1029",
+      "signal_ratio": 0.0016322314049586777,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t34.9_161_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1036",
+      "signal_ratio": 0.0025826446280991736,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t35.1_162_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1043",
+      "signal_ratio": 0.003140495867768595,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t35.4_163_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1050",
+      "signal_ratio": 0.002024793388429752,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t35.6_164_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1057",
+      "signal_ratio": 0.0008057851239669421,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t35.8_165_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1064",
+      "signal_ratio": 0.00026859504132231406,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t36.1_166_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1071",
+      "signal_ratio": 8.264462809917356e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t36.3_167_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1078",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t36.5_168_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1085",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t36.8_169_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1092",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t37.0_170_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1099",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t37.2_171_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1106",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t37.5_172_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1113",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t37.7_173_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1120",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t38.0_174_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1127",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t38.2_175_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1134",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t38.4_176_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1141",
+      "signal_ratio": 2.066115702479339e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t38.7_177_stand.jpg",
+      "video": "违章04",
+      "label": "stand",
+      "fi": "1148",
+      "signal_ratio": 0.0036363636363636364,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.7_195_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1267",
+      "signal_ratio": 0.004256198347107438,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.9_196_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1274",
+      "signal_ratio": 0.001446280991735537,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t43.1_197_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1281",
+      "signal_ratio": 0.0023760330578512395,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.7_360_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1267",
+      "signal_ratio": 0.0007438016528925619,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.9_361_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1274",
+      "signal_ratio": 0.001177685950413223,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t43.1_362_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1281",
+      "signal_ratio": 0.0009917355371900827,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.4_363_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1260",
+      "signal_ratio": 0.00262396694214876,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.9_365_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1274",
+      "signal_ratio": 0.0010950413223140495,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t43.1_366_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1281",
+      "signal_ratio": 0.001446280991735537,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.4_371_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1260",
+      "signal_ratio": 0.0014049586776859503,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.4_375_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1260",
+      "signal_ratio": 0.0036363636363636364,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.9_377_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1274",
+      "signal_ratio": 0.004979338842975207,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.9_381_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1274",
+      "signal_ratio": 0.0007644628099173553,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t42.4_383_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1260",
+      "signal_ratio": 0.0010743801652892562,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章04/违章04_t43.1_386_walk.jpg",
+      "video": "违章04",
+      "label": "walk",
+      "fi": "1281",
+      "signal_ratio": 0.0017355371900826446,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t0.0_0_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "0",
+      "signal_ratio": 0.004140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t0.2_1_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "7",
+      "signal_ratio": 0.004140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.4_6_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "42",
+      "signal_ratio": 0.0044921875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.7_7_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "49",
+      "signal_ratio": 0.002421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.9_8_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "56",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.1_9_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "63",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.4_10_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "70",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.6_11_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "77",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t4.5_20_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "133",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t9.9_44_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "294",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t10.2_45_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "301",
+      "signal_ratio": 0.0009765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t39.0_213_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1155",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t39.3_215_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1162",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t39.5_217_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1169",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t39.7_219_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1176",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t40.0_221_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1183",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t40.2_224_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1190",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t40.4_226_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1197",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t40.7_228_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1204",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t46.1_256_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1365",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t46.4_258_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1372",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t46.6_260_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1379",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t46.8_262_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1386",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t47.1_264_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1393",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t47.3_266_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1400",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t47.5_267_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1407",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t47.8_268_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1414",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t48.0_269_stand.jpg",
+      "video": "违章06",
+      "label": "stand",
+      "fi": "1421",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t0.0_431_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "0",
+      "signal_ratio": 0.0040234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t0.2_432_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "7",
+      "signal_ratio": 0.002890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.4_437_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "42",
+      "signal_ratio": 0.00328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.9_439_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "56",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.1_440_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "63",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.4_441_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "70",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.6_442_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "77",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.8_443_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "84",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t4.3_449_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "126",
+      "signal_ratio": 0.0040625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t4.7_451_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "140",
+      "signal_ratio": 0.0012109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t6.9_460_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "203",
+      "signal_ratio": 0.004453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t9.9_473_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "294",
+      "signal_ratio": 0.0019140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t10.2_474_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "301",
+      "signal_ratio": 0.0008984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t0.0_554_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "0",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t0.2_555_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "7",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.4_560_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "42",
+      "signal_ratio": 0.0020703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.7_561_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "49",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t1.9_562_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "56",
+      "signal_ratio": 0.001640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.1_563_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "63",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.4_564_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "70",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.6_565_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "77",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章06/违章06_t2.8_566_walk.jpg",
+      "video": "违章06",
+      "label": "walk",
+      "fi": "84",
+      "signal_ratio": 0.002890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.0_0_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "0",
+      "signal_ratio": 0.00328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.5_2_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "14",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.7_3_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "21",
+      "signal_ratio": 0.0028515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.9_4_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "28",
+      "signal_ratio": 0.00265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.2_6_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "35",
+      "signal_ratio": 0.000703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.4_7_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "42",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.6_8_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "49",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.9_9_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "56",
+      "signal_ratio": 0.0003125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t2.1_11_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "63",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t2.4_12_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "70",
+      "signal_ratio": 0.00125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t2.6_13_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "77",
+      "signal_ratio": 0.004375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t3.1_15_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "91",
+      "signal_ratio": 0.0032421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.4_26_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "161",
+      "signal_ratio": 0.0027734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.7_27_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "168",
+      "signal_ratio": 0.001484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.9_28_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "175",
+      "signal_ratio": 0.000859375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.1_29_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "182",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.4_30_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "189",
+      "signal_ratio": 0.0005078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.6_31_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "196",
+      "signal_ratio": 0.001484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.8_32_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "203",
+      "signal_ratio": 0.0011328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.1_33_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "210",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.3_34_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "217",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.5_35_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "224",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.8_36_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "231",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.0_37_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "238",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.2_38_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "245",
+      "signal_ratio": 0.00140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.5_39_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "252",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.7_40_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "259",
+      "signal_ratio": 0.0003125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.0_41_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "266",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.2_42_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "273",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.4_43_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "280",
+      "signal_ratio": 0.00015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.7_44_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "287",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.9_45_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "294",
+      "signal_ratio": 0.000703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.1_46_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "301",
+      "signal_ratio": 0.0011328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.4_47_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "308",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.6_48_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "315",
+      "signal_ratio": 0.002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.8_50_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "322",
+      "signal_ratio": 0.00296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.1_51_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "329",
+      "signal_ratio": 0.0027734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.3_52_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "336",
+      "signal_ratio": 0.00234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.6_53_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "343",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.8_54_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "350",
+      "signal_ratio": 0.0015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t12.0_55_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "357",
+      "signal_ratio": 0.001796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t12.3_57_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "364",
+      "signal_ratio": 0.00140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t12.5_58_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "371",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t12.7_59_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "378",
+      "signal_ratio": 0.00203125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t13.0_60_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "385",
+      "signal_ratio": 0.0032421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t13.2_61_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "392",
+      "signal_ratio": 0.0028125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t13.4_62_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "399",
+      "signal_ratio": 0.0025390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t13.7_63_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "406",
+      "signal_ratio": 0.002109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t13.9_64_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "413",
+      "signal_ratio": 0.0017578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t14.1_65_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "420",
+      "signal_ratio": 0.001875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t14.4_66_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "427",
+      "signal_ratio": 0.00203125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t14.6_67_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "434",
+      "signal_ratio": 0.0023828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t14.8_68_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "441",
+      "signal_ratio": 0.001640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t15.1_69_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "448",
+      "signal_ratio": 0.00125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t15.3_70_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "455",
+      "signal_ratio": 0.0015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t15.6_72_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "462",
+      "signal_ratio": 0.0015234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t15.8_73_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "469",
+      "signal_ratio": 0.002109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t16.0_74_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "476",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t16.3_75_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "483",
+      "signal_ratio": 0.0010546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t16.5_76_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "490",
+      "signal_ratio": 0.0012109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t16.7_77_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "497",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t17.0_78_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "504",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t17.2_79_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "511",
+      "signal_ratio": 0.001484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t17.4_80_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "518",
+      "signal_ratio": 0.0016015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t17.7_81_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "525",
+      "signal_ratio": 0.001484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t17.9_82_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "532",
+      "signal_ratio": 0.0012890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t18.1_83_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "539",
+      "signal_ratio": 0.001015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t18.4_84_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "546",
+      "signal_ratio": 0.001875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t18.6_85_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "553",
+      "signal_ratio": 0.0013671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t18.9_86_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "560",
+      "signal_ratio": 0.0020703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t19.1_87_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "567",
+      "signal_ratio": 0.0017578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t19.3_88_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "574",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t19.6_89_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "581",
+      "signal_ratio": 0.0020703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t19.8_90_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "588",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t20.0_91_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "595",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t20.3_92_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "602",
+      "signal_ratio": 0.00125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t20.5_93_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "609",
+      "signal_ratio": 0.001328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t20.7_95_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "616",
+      "signal_ratio": 0.0015234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t21.0_96_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "623",
+      "signal_ratio": 0.001796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t21.2_97_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "630",
+      "signal_ratio": 0.00125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t21.4_98_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "637",
+      "signal_ratio": 0.0017578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t21.7_99_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "644",
+      "signal_ratio": 0.0019140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t21.9_100_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "651",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t22.1_101_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "658",
+      "signal_ratio": 0.0027734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t22.4_102_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "665",
+      "signal_ratio": 0.002890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t22.6_103_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "672",
+      "signal_ratio": 0.0028125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t22.9_104_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "679",
+      "signal_ratio": 0.0031640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t23.1_105_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "686",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t23.3_106_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "693",
+      "signal_ratio": 0.00296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t23.6_107_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "700",
+      "signal_ratio": 0.0028515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t23.8_108_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "707",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t24.0_109_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "714",
+      "signal_ratio": 0.0033984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t24.3_111_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "721",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t24.5_112_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "728",
+      "signal_ratio": 0.0025390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t24.8_113_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "735",
+      "signal_ratio": 0.002421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t25.0_114_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "742",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t25.2_115_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "749",
+      "signal_ratio": 0.0022265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t25.4_116_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "756",
+      "signal_ratio": 0.0023046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t25.7_117_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "763",
+      "signal_ratio": 0.0030078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t25.9_118_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "770",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t26.2_119_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "777",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t26.4_120_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "784",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t26.6_121_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "791",
+      "signal_ratio": 0.002109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t26.9_122_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "798",
+      "signal_ratio": 0.0025,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t27.1_123_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "805",
+      "signal_ratio": 0.002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t27.3_125_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "812",
+      "signal_ratio": 0.002421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t27.6_126_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "819",
+      "signal_ratio": 0.0020703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t27.8_127_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "826",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t28.1_128_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "833",
+      "signal_ratio": 0.001484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t28.3_129_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "840",
+      "signal_ratio": 0.00171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t28.5_130_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "847",
+      "signal_ratio": 0.000234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t28.8_131_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "854",
+      "signal_ratio": 0.00140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t29.0_132_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "861",
+      "signal_ratio": 0.0013671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t29.2_133_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "868",
+      "signal_ratio": 0.001875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t29.5_135_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "875",
+      "signal_ratio": 0.001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t29.7_136_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "882",
+      "signal_ratio": 0.0015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t29.9_137_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "889",
+      "signal_ratio": 0.000390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t30.2_138_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "896",
+      "signal_ratio": 0.0022265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t30.4_139_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "903",
+      "signal_ratio": 0.001640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t30.6_140_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "910",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t30.9_141_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "917",
+      "signal_ratio": 0.001875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t31.1_142_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "924",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t31.3_143_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "931",
+      "signal_ratio": 0.0016015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t31.6_144_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "938",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t31.8_145_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "945",
+      "signal_ratio": 0.00171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t32.0_146_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "952",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t32.3_147_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "959",
+      "signal_ratio": 0.0021875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t32.5_148_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "966",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t32.8_149_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "973",
+      "signal_ratio": 0.0019921875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t33.0_150_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "980",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t33.2_151_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "987",
+      "signal_ratio": 0.00265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t33.5_152_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "994",
+      "signal_ratio": 0.002578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t33.7_153_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1001",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t33.9_154_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1008",
+      "signal_ratio": 0.0023046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t34.2_155_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1015",
+      "signal_ratio": 0.00171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t34.4_156_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1022",
+      "signal_ratio": 0.0015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t34.6_157_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1029",
+      "signal_ratio": 0.001875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t34.9_158_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1036",
+      "signal_ratio": 0.001640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t35.1_159_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1043",
+      "signal_ratio": 0.0017578125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t35.4_160_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1050",
+      "signal_ratio": 0.0019140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t35.6_161_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1057",
+      "signal_ratio": 0.002109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t35.8_162_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1064",
+      "signal_ratio": 0.0020703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t36.1_163_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1071",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t36.3_164_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1078",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t36.5_165_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1085",
+      "signal_ratio": 0.0015234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t36.8_166_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1092",
+      "signal_ratio": 0.0015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t37.0_167_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1099",
+      "signal_ratio": 0.0010546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t37.2_168_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1106",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t37.5_169_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1113",
+      "signal_ratio": 0.001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t37.7_170_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1120",
+      "signal_ratio": 0.001328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t37.9_171_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1127",
+      "signal_ratio": 0.00109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t38.2_172_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1134",
+      "signal_ratio": 0.0010546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t38.4_173_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1141",
+      "signal_ratio": 0.000703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t38.6_174_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1148",
+      "signal_ratio": 0.0012109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t38.9_175_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1155",
+      "signal_ratio": 0.0010546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t39.1_176_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1162",
+      "signal_ratio": 0.000703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t39.4_177_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1169",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t39.6_178_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1176",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t39.8_179_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1183",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t40.1_180_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1190",
+      "signal_ratio": 0.0006640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t40.3_182_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1197",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t40.5_183_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1204",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t40.8_184_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1211",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t41.0_185_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1218",
+      "signal_ratio": 0.001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t41.2_186_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1225",
+      "signal_ratio": 0.001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t41.5_187_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1232",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t41.7_188_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1239",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t42.0_190_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1246",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t42.2_191_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1253",
+      "signal_ratio": 0.0009765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t42.4_192_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1260",
+      "signal_ratio": 0.0010546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t42.7_193_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1267",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t42.9_194_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "1274",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t44.1_195_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1309",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t44.3_196_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1316",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t44.5_197_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1323",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t44.8_198_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1330",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t45.0_199_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1337",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t45.2_200_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1344",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t45.5_201_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1351",
+      "signal_ratio": 0.0032421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t45.7_202_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1358",
+      "signal_ratio": 0.0027734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t46.0_203_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1365",
+      "signal_ratio": 0.0016015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t46.2_205_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1372",
+      "signal_ratio": 0.0012890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t46.4_207_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1379",
+      "signal_ratio": 0.00109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t46.7_209_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1386",
+      "signal_ratio": 0.0016015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t46.9_211_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1393",
+      "signal_ratio": 0.0021484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t47.1_212_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1400",
+      "signal_ratio": 0.002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t47.4_213_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1407",
+      "signal_ratio": 0.0033203125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t47.6_214_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1414",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t47.8_215_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1421",
+      "signal_ratio": 0.0040625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t48.1_216_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1428",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t48.3_217_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1435",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t48.5_219_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1442",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t48.8_220_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1449",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t49.0_221_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1456",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t49.3_222_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1463",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t49.5_223_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1470",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t49.7_224_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1477",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t50.0_225_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1484",
+      "signal_ratio": 0.0038671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t50.2_226_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1491",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t50.4_227_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1498",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t50.7_228_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1505",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t50.9_229_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1512",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t51.1_230_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1519",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t51.4_231_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1526",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t51.6_232_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1533",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t51.9_233_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1540",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t52.1_234_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1547",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t52.3_235_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1554",
+      "signal_ratio": 0.0034765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t52.6_236_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1561",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t52.8_237_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1568",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t53.0_238_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1575",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t53.3_239_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1582",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t53.5_240_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1589",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t53.7_242_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1596",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t54.0_243_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1603",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t54.2_244_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1610",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t54.4_245_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1617",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t54.7_246_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1624",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t54.9_247_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1631",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t55.1_248_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1638",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t55.4_249_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1645",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t55.6_250_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1652",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t55.9_251_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1659",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t56.1_252_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1666",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t56.3_253_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1673",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t56.6_254_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1680",
+      "signal_ratio": 0.0031640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t56.8_255_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1687",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t57.0_256_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1694",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t57.3_257_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1701",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t57.5_258_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1708",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t57.7_259_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1715",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t58.0_260_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1722",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t58.2_261_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1729",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t58.5_262_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1736",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t58.7_263_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1743",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t58.9_264_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1750",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t59.1_265_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1757",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t59.4_266_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1764",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t59.6_267_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1771",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t59.9_268_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1778",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t60.1_269_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1785",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t60.3_270_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1792",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t60.6_271_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1799",
+      "signal_ratio": 0.004140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t60.8_272_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1806",
+      "signal_ratio": 0.0038671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t61.0_273_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1813",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t61.3_274_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1820",
+      "signal_ratio": 0.0040234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t61.5_275_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1827",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t61.8_276_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1834",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t62.0_277_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1841",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t62.2_278_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1848",
+      "signal_ratio": 0.0040625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t62.5_279_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1855",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t62.7_280_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1862",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t62.9_281_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1869",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t63.2_282_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1876",
+      "signal_ratio": 0.0038671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t63.4_283_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1883",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t63.6_284_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1890",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t63.9_285_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1897",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t64.1_286_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1904",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t64.3_287_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1911",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t64.6_289_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1918",
+      "signal_ratio": 0.0033984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t64.8_290_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1925",
+      "signal_ratio": 0.0037109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t65.0_291_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1932",
+      "signal_ratio": 0.003359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t65.3_292_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1939",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t65.5_293_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1946",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t65.8_294_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1953",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t66.0_295_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1960",
+      "signal_ratio": 0.003984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t66.2_296_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1967",
+      "signal_ratio": 0.0033984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t66.5_297_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1974",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t66.7_298_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1981",
+      "signal_ratio": 0.0034765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t66.9_299_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1988",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t67.2_300_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "1995",
+      "signal_ratio": 0.0034765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t67.4_301_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2002",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t67.6_302_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2009",
+      "signal_ratio": 0.0033984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t67.9_304_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2016",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t68.1_305_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2023",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t68.3_306_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2030",
+      "signal_ratio": 0.003203125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t68.6_307_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2037",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t68.8_308_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2044",
+      "signal_ratio": 0.0032421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t69.0_309_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2051",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t69.3_310_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2058",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t69.5_311_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2065",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t69.8_312_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2072",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t70.0_313_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2079",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t70.2_314_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2086",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t70.5_315_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2093",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t70.7_316_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2100",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t70.9_317_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2107",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t71.2_318_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2114",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t71.4_319_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2121",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t71.6_320_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2128",
+      "signal_ratio": 0.0036328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t71.9_321_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2135",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t72.1_323_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2142",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t72.3_324_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2149",
+      "signal_ratio": 0.0034375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t72.6_325_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2156",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t72.8_326_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2163",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t73.1_327_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2170",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t73.3_328_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2177",
+      "signal_ratio": 0.003359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t73.5_329_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2184",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t73.8_330_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2191",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t74.0_331_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2198",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t74.2_332_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2205",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t74.5_333_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2212",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t74.7_334_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2219",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t74.9_335_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2226",
+      "signal_ratio": 0.003359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t75.2_336_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2233",
+      "signal_ratio": 0.0038671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t75.4_337_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2240",
+      "signal_ratio": 0.0033984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t75.7_338_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2247",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t75.9_339_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2254",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t76.1_340_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2261",
+      "signal_ratio": 0.0037890625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t76.4_341_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2268",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t76.6_342_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2275",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t76.8_343_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2282",
+      "signal_ratio": 0.0040234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t77.1_344_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2289",
+      "signal_ratio": 0.0033203125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t77.3_345_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2296",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t77.5_346_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2303",
+      "signal_ratio": 0.003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t77.8_347_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2310",
+      "signal_ratio": 0.0033984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t78.0_348_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2317",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t78.2_349_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2324",
+      "signal_ratio": 0.00390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t78.5_350_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2331",
+      "signal_ratio": 0.003671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t78.7_351_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2338",
+      "signal_ratio": 0.00359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t79.0_352_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2345",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t79.2_353_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2352",
+      "signal_ratio": 0.003828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t79.4_354_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2359",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t79.7_355_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2366",
+      "signal_ratio": 0.0041015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t79.9_356_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2373",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t80.1_357_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2380",
+      "signal_ratio": 0.0040234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t80.4_358_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2387",
+      "signal_ratio": 0.00375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t80.6_359_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2394",
+      "signal_ratio": 0.0046484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t81.8_365_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2429",
+      "signal_ratio": 0.0011328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t82.0_367_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2436",
+      "signal_ratio": 0.000234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t82.2_369_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2443",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t82.5_371_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2450",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t82.7_373_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2457",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t83.0_375_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2464",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t83.2_377_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2471",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t83.4_379_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2478",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t83.7_381_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2485",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t85.1_387_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2527",
+      "signal_ratio": 0.00421875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t85.5_389_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2541",
+      "signal_ratio": 0.0025390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t86.3_394_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2562",
+      "signal_ratio": 0.0015234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t86.5_396_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2569",
+      "signal_ratio": 0.0005078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t86.7_398_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2576",
+      "signal_ratio": 0.00125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t87.0_400_stand.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2583",
+      "signal_ratio": 0.0016015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t75.4_485_off.jpg",
+      "video": "违章07",
+      "label": "stand",
+      "fi": "2240",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.0_599_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "0",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.2_600_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "7",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.5_601_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "14",
+      "signal_ratio": 0.0038671875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.7_602_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "21",
+      "signal_ratio": 0.0033203125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t0.9_603_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "28",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.2_604_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "35",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.4_605_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "42",
+      "signal_ratio": 0.0001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.6_606_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "49",
+      "signal_ratio": 0.0008984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t1.9_607_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "56",
+      "signal_ratio": 0.0001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t2.1_608_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "63",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t2.6_610_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "77",
+      "signal_ratio": 0.0022265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t2.8_611_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "84",
+      "signal_ratio": 0.00484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t3.1_612_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "91",
+      "signal_ratio": 0.003046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t3.5_614_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "105",
+      "signal_ratio": 0.0046484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.0_620_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "147",
+      "signal_ratio": 0.0025,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.2_621_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "154",
+      "signal_ratio": 0.0009375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.4_622_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "161",
+      "signal_ratio": 0.003125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.7_623_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "168",
+      "signal_ratio": 0.0046484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t5.9_624_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "175",
+      "signal_ratio": 0.00078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.1_625_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "182",
+      "signal_ratio": 0.0044140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.4_626_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "189",
+      "signal_ratio": 0.00109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.6_627_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "196",
+      "signal_ratio": 0.00140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t6.8_628_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "203",
+      "signal_ratio": 0.0026171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.1_629_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "210",
+      "signal_ratio": 0.00140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.3_630_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "217",
+      "signal_ratio": 0.0030859375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.5_631_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "224",
+      "signal_ratio": 0.00109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t7.8_632_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "231",
+      "signal_ratio": 0.0035546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.0_633_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "238",
+      "signal_ratio": 0.0019140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.2_634_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "245",
+      "signal_ratio": 0.00171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.5_635_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "252",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t8.7_636_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "259",
+      "signal_ratio": 0.0004296875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.0_637_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "266",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.2_638_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "273",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.4_639_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "280",
+      "signal_ratio": 0.00015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.7_640_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "287",
+      "signal_ratio": 0.0002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t9.9_641_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "294",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.1_642_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "301",
+      "signal_ratio": 0.001015625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.4_643_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "308",
+      "signal_ratio": 0.0024609375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.6_644_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "315",
+      "signal_ratio": 0.0028515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t10.8_645_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "322",
+      "signal_ratio": 0.0028515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.1_646_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "329",
+      "signal_ratio": 0.0028515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.3_647_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "336",
+      "signal_ratio": 0.0025390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.6_648_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "343",
+      "signal_ratio": 0.001640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t11.8_649_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "350",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t12.0_650_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "357",
+      "signal_ratio": 0.0019140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章07/违章07_t12.3_651_walk.jpg",
+      "video": "违章07",
+      "label": "walk",
+      "fi": "364",
+      "signal_ratio": 0.001484375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t0.0_0_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "0",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t0.2_1_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "7",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t0.5_3_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "14",
+      "signal_ratio": 7.8125e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t0.7_4_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "21",
+      "signal_ratio": 0.0005859375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t0.9_5_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "28",
+      "signal_ratio": 0.000625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t1.2_7_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "35",
+      "signal_ratio": 0.00109375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t1.4_9_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "42",
+      "signal_ratio": 0.0001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t1.6_10_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "49",
+      "signal_ratio": 0.0001953125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t1.9_13_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "56",
+      "signal_ratio": 0.0003125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t2.1_14_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "63",
+      "signal_ratio": 0.000546875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t2.4_15_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "70",
+      "signal_ratio": 0.00046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t2.6_16_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "77",
+      "signal_ratio": 0.00078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t2.8_17_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "84",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t3.1_18_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "91",
+      "signal_ratio": 0.0005859375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t3.3_19_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "98",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t3.5_20_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "105",
+      "signal_ratio": 0.0008984375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t3.8_22_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "112",
+      "signal_ratio": 0.0030078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t5.2_28_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "154",
+      "signal_ratio": 0.0001171875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t5.4_30_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "161",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t5.7_32_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "168",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t5.9_34_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "175",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t6.1_36_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "182",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t6.4_38_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "189",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t6.6_40_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "196",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t6.8_42_stand.jpg",
+      "video": "违章09",
+      "label": "stand",
+      "fi": "203",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t14.8_77_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "441",
+      "signal_ratio": 0.0043359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.0_82_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "476",
+      "signal_ratio": 0.0039453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.3_83_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "483",
+      "signal_ratio": 0.0025390625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.5_84_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "490",
+      "signal_ratio": 0.003359375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.7_85_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "497",
+      "signal_ratio": 0.00453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t39.8_187_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1183",
+      "signal_ratio": 0.0034765625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.1_188_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1190",
+      "signal_ratio": 0.002265625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.3_189_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1197",
+      "signal_ratio": 0.0009375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.5_190_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1204",
+      "signal_ratio": 0.00140625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.8_191_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1211",
+      "signal_ratio": 0.0015234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t41.0_192_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1218",
+      "signal_ratio": 0.004375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t14.8_675_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "441",
+      "signal_ratio": 0.0030078125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t15.3_677_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "455",
+      "signal_ratio": 0.0023828125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t15.8_679_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "469",
+      "signal_ratio": 0.0015234375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.0_680_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "476",
+      "signal_ratio": 0.0003515625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.3_681_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "483",
+      "signal_ratio": 0.003046875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t16.5_682_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "490",
+      "signal_ratio": 0.0011328125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t17.7_687_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "525",
+      "signal_ratio": 0.0045703125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t39.4_779_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1169",
+      "signal_ratio": 0.0014453125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t39.6_780_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1176",
+      "signal_ratio": 0.00125,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t39.8_781_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1183",
+      "signal_ratio": 0.0006640625,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.1_782_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1190",
+      "signal_ratio": 0.0016796875,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.3_783_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1197",
+      "signal_ratio": 0.0002734375,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章09/违章09_t40.8_785_walk.jpg",
+      "video": "违章09",
+      "label": "walk",
+      "fi": "1211",
+      "signal_ratio": 3.90625e-05,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t0.0_0_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "0",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t0.2_1_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "7",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t0.5_2_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "14",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t4.2_20_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "126",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t4.5_21_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "133",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t4.7_22_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "140",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t5.0_24_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "147",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t5.2_25_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "154",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t5.4_26_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "161",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t5.7_27_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "168",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t5.9_28_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "175",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t6.1_29_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "182",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t8.5_41_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "252",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t8.7_43_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "259",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t9.0_45_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "266",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t9.2_47_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "273",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t9.7_50_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "287",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t9.9_52_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "294",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t10.1_54_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "301",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t14.6_76_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "434",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t15.1_80_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "448",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    },
+    {
+      "crop_path": "违章10/违章10_t15.3_82_stand.jpg",
+      "video": "违章10",
+      "label": "stand",
+      "fi": "455",
+      "signal_ratio": 0.0,
+      "reason": "low_signal"
+    }
+  ]
+}
