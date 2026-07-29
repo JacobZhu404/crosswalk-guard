@@ -18,8 +18,9 @@
      governing: bool                      # 是否=管这条斑马线的那盏行人灯
   }, ... ] }
 ```
-- **governing 约束**:每帧**至多一个** `governing=true`(且必是 `type=pedestrian`)。全帧无可见行人灯→无 governing(或 no_light)。
-- **派生真值**:`gt_walk(frame) = 存在 governing 框 且 其 color==green`;governing 灯不可见/unclear → 该帧灯态 UNKNOWN(评测排除,承误绿测量三态纪律)。
+- **governing 约束**:`governing=true` 可标**多盏**(一帧可能有多方向/多斑马线的行人灯,Jacob 2026-07-29 指出);全帧无可见行人灯→无 governing(或 no_light)。UI 用可切换 checkbox(非单选 radio)。
+- **派生真值**:每帧的 governing 框集合 = 该帧行人灯真值。误绿评测按"管线选中灯"就近匹配到某个 governing 框,取其 color 判 gt_walk(==green);无 governing 框可匹配/其 color unclear → 该帧灯态 UNKNOWN(评测排除,承误绿测量三态纪律)。多 governing 的精确匹配规则在改 `measure_falsegreen.py` 时定。
+- **简化 Jacob 工作量(2026-07-29)**:只需勾出 governing 那些框 + 核对其颜色;其余候选框不用逐个标类型/颜色(干扰负样本由"非 governing 候选"自动派生)。
 - **多灯视频(02/10)**:靠 governing 标记指认唯一那盏,不再靠猜。
 
 ## 2. 预填(把"从零画"降成"点确认")

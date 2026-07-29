@@ -103,7 +103,7 @@ _HTML_HEAD = """<!doctype html><html lang=zh><head><meta charset=utf-8>
 <h1>canonical 灯态 GT 标注 — 预填确认式</h1>
 <div class=hint>
 <b>橙框</b>=系统检测(YOLO∪HSV) <b>蓝框</b>=你之前的标注 <b>绿框</b>=governing(管这条斑马线的行人灯)。<br>
-每帧:核对右侧每个框的 <b>颜色/类型</b>,选出唯一 <b>governing</b>(点该行 gov◯);错框点 <b>删</b>;漏了就在图上 <b>拖</b>一个新框;整帧无灯勾 <b>无灯</b>。核对完点 <b>[✓确认本帧]</b>。<br>
+每帧:勾出 <b>governing</b>(管斑马线的行人灯,<b>可多盏</b>,勾 gov☑)并核对其颜色;错框点 <b>删</b>;漏了就在图上 <b>拖</b>一个新框;整帧无灯勾 <b>无灯</b>。核对完点 <b>[✓确认本帧]</b>。<br>只有 governing 那些框影响评测,其余候选框不用管。<br>
 进度自动存本地(localStorage),可关页续标。全标完点底部 <b>[生成GT JSON]→[复制]</b> 贴回给 cc。
 </div>
 <div class=nav id=nav></div><div id=frames></div>
@@ -155,14 +155,14 @@ function renderRows(f){const box=state[f.id].boxes;
     <td>${i}</td>
     <td><select onchange="setF('${f.id}',${i},'type',this.value)">${TYPES.map(t=>`<option ${b.type===t?'selected':''}>${t}</option>`).join('')}</select></td>
     <td><select onchange="setF('${f.id}',${i},'color',this.value)">${COLORS.map(cc=>`<option ${b.color===cc?'selected':''}>${cc}</option>`).join('')}</select></td>
-    <td><input type=radio name="gov_${f.id}" ${b.governing?'checked':''} onclick="setGov('${f.id}',${i})"></td>
+    <td><input type=checkbox ${b.governing?'checked':''} onclick="event.stopPropagation();setGov('${f.id}',${i})"></td>
     <td class="b${b.source}">${b.source}</td>
     <td><button onclick="event.stopPropagation();delBox('${f.id}',${i})">删</button></td></tr>`; });
   h+='</table><button onclick="clearGov(\\''+f.id+'\\')">清 governing</button>';
   document.getElementById('rt_'+f.id).innerHTML=h;}
 function pick(id,i){sel[id]=i;const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
 function setF(id,i,k,v){state[id].boxes[i][k]=v;save();const f=FRAMES.find(x=>x.id===id);redraw(f);}
-function setGov(id,i){state[id].boxes.forEach((b,j)=>b.governing=(j===i));save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
+function setGov(id,i){state[id].boxes[i].governing=!state[id].boxes[i].governing;save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}  // 可多盏; checkbox 可切换(修取消不还原)
 function clearGov(id){state[id].boxes.forEach(b=>b.governing=false);save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
 function delBox(id,i){state[id].boxes.splice(i,1);if(sel[id]>=i)sel[id]=Math.max(0,sel[id]-1);save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
 function confirmFrame(id){state[id].confirmed=true;state[id].no_light=document.getElementById('nl_'+id).checked;save();document.getElementById('fr_'+id).classList.add('done');prog();}
