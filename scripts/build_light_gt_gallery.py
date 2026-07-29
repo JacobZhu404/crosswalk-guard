@@ -102,9 +102,10 @@ _HTML_HEAD = """<!doctype html><html lang=zh><head><meta charset=utf-8>
 </style></head><body>
 <h1>canonical 灯态 GT 标注 — 预填确认式</h1>
 <div class=hint>
-<b>橙框</b>=系统检测(YOLO∪HSV) <b>蓝框</b>=你之前的标注 <b>绿框</b>=governing(管这条斑马线的行人灯)。<br>
-每帧:勾出 <b>governing</b>(管斑马线的行人灯,<b>可多盏</b>,勾 gov☑)并核对其颜色;错框点 <b>删</b>;漏了就在图上 <b>拖</b>一个新框;整帧无灯勾 <b>无灯</b>。核对完点 <b>[✓确认本帧]</b>。<br>只有 governing 那些框影响评测,其余候选框不用管。<br>
-进度自动存本地(localStorage),可关页续标。全标完点底部 <b>[生成GT JSON]→[复制]</b> 贴回给 cc。
+<b>橙/蓝框</b>=候选(系统检测/你旧标注,只是选项)。<b>绿框</b>=你选定的 governing 行人灯(进真值)。<br>
+<b>操作:在图上点一个候选框</b>→ 变绿(=governing);<b>再点</b>→取消。可点多盏。候选里没有→<b>在图上拖</b>一个新框。<br>
+<b>快捷键</b>(鼠标先移到某帧上激活):<b>1</b>红 <b>2</b>绿 <b>3</b>灭 <b>4</b>倒计时 <b>5</b>看不清(改选中框颜色)· <b>0</b>整帧无灯 · <b>回车/n</b>确认并下一帧 · <b>p</b>上一帧 · <b>Delete</b>删选中的手画框。<br>
+<b>错的候选框不用删,不点就忽略。</b> 进度自动存本地可续标。全标完点底部 <b>[生成GT JSON]→[复制]</b>。
 </div>
 <div class=nav id=nav></div><div id=frames></div>
 <hr><button class=big onclick=exportJSON()>生成GT JSON</button>
@@ -117,11 +118,13 @@ const TYPES=["pedestrian","vehicle","distractor"];
 """
 
 _HTML_JS = """
-const LSKEY="light_gt_annot_v1";
+const LSKEY="light_gt_annot_v2";   // v2: 点图选gov+快捷键(重设计); 旧v1状态忽略
 let state=JSON.parse(localStorage.getItem(LSKEY)||"null");
 if(!state){ state={}; FRAMES.forEach(f=>{ state[f.id]={boxes:f.boxes.map(b=>Object.assign({},b)),no_light:false,confirmed:false}; }); }
 else { FRAMES.forEach(f=>{ if(!state[f.id]) state[f.id]={boxes:f.boxes.map(b=>Object.assign({},b)),no_light:false,confirmed:false}; }); }
-let sel={};  // frameId -> selected box index
+let sel={};            // frameId -> 选中框 index(供快捷键改色/删)
+let activeFrame=null;  // 鼠标所在帧(快捷键作用对象)
+const CKMAP={"1":"red","2":"green","3":"off","4":"countdown","5":"unclear"};
 function save(){ localStorage.setItem(LSKEY,JSON.stringify(state)); }
 
 function mk(f){
@@ -129,49 +132,66 @@ function mk(f){
   d.innerHTML=`<div class=left><div class=ttl>${f.video} fi=${f.fi} t=${f.t}s</div>
      <div class=wrap><img src="${f.img}" width=${f.dw} height=${f.dh}>
       <canvas id="cv_${f.id}" width=${f.dw} height=${f.dh}></canvas></div>
-     <div><label><input type=checkbox id="nl_${f.id}" ${state[f.id].no_light?'checked':''}> 整帧无灯</label>
-      <button onclick="confirmFrame('${f.id}')">✓确认本帧</button></div></div>
+     <div><label><input type=checkbox id="nl_${f.id}" ${state[f.id].no_light?'checked':''} onchange="setNL('${f.id}',this.checked)"> 整帧无灯(0)</label>
+      <button onclick="confirmFrame('${f.id}')">✓确认本帧(回车)</button></div></div>
    <div class=right id="rt_${f.id}"></div>`;
   document.getElementById('frames').appendChild(d);
+  d.addEventListener('mouseenter',()=>{activeFrame=f.id;});
   const cv=d.querySelector('canvas');
-  let drag=false,sx,sy,cur=null;
-  cv.addEventListener('mousedown',e=>{const r=cv.getBoundingClientRect();sx=(e.clientX-r.left)*cv.width/r.width;sy=(e.clientY-r.top)*cv.height/r.height;drag=true;cur=null;});
-  cv.addEventListener('mousemove',e=>{if(!drag)return;const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;cur=[Math.min(sx,x),Math.min(sy,y),Math.max(sx,x),Math.max(sy,y)];redraw(f);drawTmp(f,cur);});
-  cv.addEventListener('mouseup',()=>{drag=false; if(cur&&(cur[2]-cur[0])>3&&(cur[3]-cur[1])>3){
-     state[f.id].boxes.push({box_norm:[+(cur[0]/cv.width).toFixed(4),+(cur[1]/cv.height).toFixed(4),+(cur[2]/cv.width).toFixed(4),+(cur[3]/cv.height).toFixed(4)],color:"green",type:"pedestrian",governing:false,source:"manual"});
-     sel[f.id]=state[f.id].boxes.length-1; save(); renderRows(f);} cur=null;redraw(f);});
-  renderRows(f); redraw(f);
+  let drag=false,sx,sy,cur=null,moved=false;
+  cv.addEventListener('mousedown',e=>{const r=cv.getBoundingClientRect();sx=(e.clientX-r.left)*cv.width/r.width;sy=(e.clientY-r.top)*cv.height/r.height;drag=true;moved=false;cur=null;activeFrame=f.id;});
+  cv.addEventListener('mousemove',e=>{if(!drag)return;const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;if(Math.abs(x-sx)>4||Math.abs(y-sy)>4)moved=true;if(moved){cur=[Math.min(sx,x),Math.min(sy,y),Math.max(sx,x),Math.max(sy,y)];redraw(f);drawTmp(f,cur);}});
+  cv.addEventListener('mouseup',e=>{drag=false;
+    if(moved&&cur&&(cur[2]-cur[0])>3&&(cur[3]-cur[1])>3){  // 拖=画新框(自动governing)
+      state[f.id].boxes.push({box_norm:[+(cur[0]/cv.width).toFixed(4),+(cur[1]/cv.height).toFixed(4),+(cur[2]/cv.width).toFixed(4),+(cur[3]/cv.height).toFixed(4)],color:"green",type:"pedestrian",governing:true,source:"manual"});
+      sel[f.id]=state[f.id].boxes.length-1;
+    } else {  // 点=命中候选框→切换 governing
+      const r=cv.getBoundingClientRect();const x=(e.clientX-r.left)*cv.width/r.width,y=(e.clientY-r.top)*cv.height/r.height;
+      const i=hitTest(f,x,y); if(i>=0){sel[f.id]=i;state[f.id].boxes[i].governing=!state[f.id].boxes[i].governing;}
+    }
+    cur=null;moved=false;save();redraw(f);renderRight(f);});
+  redraw(f); renderRight(f);
 }
-function colorOf(b){return b.source==='prior'?'#06f':(b.source==='manual'?'#c0f':'#e67e00');}
+function hitTest(f,x,y){const cv=document.getElementById('cv_'+f.id);let best=-1,bestA=1e9;
+  state[f.id].boxes.forEach((b,i)=>{const p=b.box_norm;const x1=p[0]*cv.width,y1=p[1]*cv.height,x2=p[2]*cv.width,y2=p[3]*cv.height;
+    if(x>=x1&&x<=x2&&y>=y1&&y<=y2){const a=(x2-x1)*(y2-y1);if(a<bestA){bestA=a;best=i;}}});return best;}
+function srcColor(b){return b.source==='prior'?'#06f':(b.source==='manual'?'#c0f':'#e67e00');}
 function redraw(f){const cv=document.getElementById('cv_'+f.id);const c=cv.getContext('2d');c.clearRect(0,0,cv.width,cv.height);
   state[f.id].boxes.forEach((b,i)=>{const p=b.box_norm;const x=p[0]*cv.width,y=p[1]*cv.height,w=(p[2]-p[0])*cv.width,h=(p[3]-p[1])*cv.height;
-    c.lineWidth=(i===sel[f.id])?4:2; c.strokeStyle=b.governing?'#0a0':colorOf(b); if(i===sel[f.id])c.strokeStyle='#e0e';
+    c.lineWidth=(i===sel[f.id])?4:(b.governing?3:1.3); c.strokeStyle=b.governing?'#0a0':srcColor(b); if(i===sel[f.id])c.strokeStyle='#e0e';
     c.strokeRect(x,y,w,h);
-    c.fillStyle=c.strokeStyle;c.font='11px sans-serif';c.fillText((b.governing?'★':'')+b.type[0]+'/'+b.color,x,Math.max(9,y-2));});}
-function drawTmp(f,bx){const cv=document.getElementById('cv_'+f.id);const c=cv.getContext('2d');c.strokeStyle='#e0e';c.lineWidth=2;c.strokeRect(bx[0],bx[1],bx[2]-bx[0],bx[3]-bx[1]);}
-function renderRows(f){const box=state[f.id].boxes;
-  let h='<table><tr><th>#</th><th>类型</th><th>颜色</th><th>gov</th><th>源</th><th></th></tr>';
-  box.forEach((b,i)=>{ h+=`<tr class="${i===sel[f.id]?'sel':''} ${b.governing?'gov':''}" onclick="pick('${f.id}',${i})">
-    <td>${i}</td>
-    <td><select onchange="setF('${f.id}',${i},'type',this.value)">${TYPES.map(t=>`<option ${b.type===t?'selected':''}>${t}</option>`).join('')}</select></td>
-    <td><select onchange="setF('${f.id}',${i},'color',this.value)">${COLORS.map(cc=>`<option ${b.color===cc?'selected':''}>${cc}</option>`).join('')}</select></td>
-    <td><input type=checkbox ${b.governing?'checked':''} onclick="event.stopPropagation();setGov('${f.id}',${i})"></td>
+    if(b.governing){c.fillStyle='#0a0';c.font='bold 12px sans-serif';c.fillText('★'+b.color,x,Math.max(11,y-2));}});}
+function drawTmp(f,bx){const c=document.getElementById('cv_'+f.id).getContext('2d');c.strokeStyle='#e0e';c.lineWidth=2;c.strokeRect(bx[0],bx[1],bx[2]-bx[0],bx[3]-bx[1]);}
+function renderRight(f){const gov=state[f.id].boxes.map((b,i)=>[b,i]).filter(x=>x[0].governing);
+  let h=`<b>governing 灯 (${gov.length})</b> — 点图上候选框增减 / 拖画新框<br>`;
+  if(state[f.id].no_light) h+='<div style="color:#b00">【整帧无灯】</div>';
+  h+='<table>';
+  gov.forEach(([b,i])=>{h+=`<tr class=gov><td>#${i}</td>
+    <td>颜色 <select onchange="setColor('${f.id}',${i},this.value)">${COLORS.map(cc=>`<option ${b.color===cc?'selected':''}>${cc}</option>`).join('')}</select></td>
     <td class="b${b.source}">${b.source}</td>
-    <td><button onclick="event.stopPropagation();delBox('${f.id}',${i})">删</button></td></tr>`; });
-  h+='</table><button onclick="clearGov(\\''+f.id+'\\')">清 governing</button>';
+    <td><button onclick="ungov('${f.id}',${i})">取消gov</button>${b.source==='manual'?`<button onclick="delBox('${f.id}',${i})">删</button>`:''}</td></tr>`;});
+  h+='</table>';
+  if(!gov.length) h+='<div style="color:#888">(尚未选 governing。点图上正确的灯框;没有就在图上拖一个)</div>';
   document.getElementById('rt_'+f.id).innerHTML=h;}
-function pick(id,i){sel[id]=i;const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
-function setF(id,i,k,v){state[id].boxes[i][k]=v;save();const f=FRAMES.find(x=>x.id===id);redraw(f);}
-function setGov(id,i){state[id].boxes[i].governing=!state[id].boxes[i].governing;save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}  // 可多盏; checkbox 可切换(修取消不还原)
-function clearGov(id){state[id].boxes.forEach(b=>b.governing=false);save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
-function delBox(id,i){state[id].boxes.splice(i,1);if(sel[id]>=i)sel[id]=Math.max(0,sel[id]-1);save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRows(f);}
-function confirmFrame(id){state[id].confirmed=true;state[id].no_light=document.getElementById('nl_'+id).checked;save();document.getElementById('fr_'+id).classList.add('done');prog();}
+function setColor(id,i,v){state[id].boxes[i].color=v;save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRight(f);}
+function ungov(id,i){state[id].boxes[i].governing=false;save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRight(f);}
+function delBox(id,i){state[id].boxes.splice(i,1);if(sel[id]>=i)sel[id]=Math.max(0,(sel[id]||0)-1);save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRight(f);}
+function setNL(id,v){state[id].no_light=v;save();const f=FRAMES.find(x=>x.id===id);renderRight(f);}
+function confirmFrame(id){state[id].confirmed=true;save();document.getElementById('fr_'+id).classList.add('done');prog();
+  const idx=FRAMES.findIndex(x=>x.id===id);if(idx+1<FRAMES.length){const nx=FRAMES[idx+1];document.getElementById('fr_'+nx.id).scrollIntoView({behavior:'smooth',block:'center'});activeFrame=nx.id;}}
+document.addEventListener('keydown',e=>{ if(!activeFrame||e.target.tagName==='SELECT')return; const f=FRAMES.find(x=>x.id===activeFrame); if(!f)return;
+  if(e.key in CKMAP){const i=sel[f.id];if(i!=null&&state[f.id].boxes[i]){state[f.id].boxes[i].color=CKMAP[e.key];save();redraw(f);renderRight(f);}e.preventDefault();}
+  else if(e.key==='0'){state[f.id].no_light=!state[f.id].no_light;const nl=document.getElementById('nl_'+f.id);if(nl)nl.checked=state[f.id].no_light;save();renderRight(f);e.preventDefault();}
+  else if(e.key==='Enter'||e.key==='n'){confirmFrame(f.id);e.preventDefault();}
+  else if(e.key==='p'){const idx=FRAMES.findIndex(x=>x.id===f.id);if(idx>0){const pv=FRAMES[idx-1];document.getElementById('fr_'+pv.id).scrollIntoView({behavior:'smooth',block:'center'});activeFrame=pv.id;}e.preventDefault();}
+  else if(e.key==='Delete'||e.key==='Backspace'){const i=sel[f.id];if(i!=null&&state[f.id].boxes[i]&&state[f.id].boxes[i].source==='manual')delBox(f.id,i);e.preventDefault();}
+});
 function prog(){const done=FRAMES.filter(f=>state[f.id].confirmed).length;
   document.getElementById('prog').textContent=` 已确认 ${done}/${FRAMES.length} 帧`;
   const vids=[...new Set(FRAMES.map(f=>f.video))];
   document.getElementById('nav').innerHTML='进度: '+vids.map(v=>{const fs=FRAMES.filter(f=>f.video===v);const dn=fs.filter(f=>state[f.id].confirmed).length;return `<span style="color:${dn===fs.length?'#0a0':'#b00'}">${v.slice(2)} ${dn}/${fs.length}</span>`;}).join(' | ');}
 function exportJSON(){const out=FRAMES.map(f=>{const s=state[f.id];return {video:f.video,source_fi:f.fi,t:f.t,no_light:s.no_light,confirmed:s.confirmed,
-    boxes:s.no_light?[]:s.boxes.map(b=>({box_norm:b.box_norm,color:b.color,type:b.type,governing:!!b.governing}))};});
+    boxes:s.no_light?[]:s.boxes.filter(b=>b.governing).map(b=>({box_norm:b.box_norm,color:b.color,type:"pedestrian",governing:true}))};});
   document.getElementById('out').value=JSON.stringify({schema:"light_canonical_gt_v1",frames:out},null,1);}
 FRAMES.forEach(mk); prog();
 </script></body></html>
