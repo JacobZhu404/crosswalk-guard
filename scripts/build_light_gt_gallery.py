@@ -104,7 +104,7 @@ _HTML_HEAD = """<!doctype html><html lang=zh><head><meta charset=utf-8>
 <div class=hint>
 <b>橙/蓝框</b>=候选(系统检测/你旧标注,只是选项)。<b>绿框</b>=你选定的 governing 行人灯(进真值)。<br>
 <b>操作:在图上点一个候选框</b>→ 变绿(=governing);<b>再点</b>→取消。可点多盏。候选里没有→<b>在图上拖</b>一个新框。<br>
-<b>快捷键</b>(鼠标先移到某帧上激活):<b>1</b>红 <b>2</b>绿 <b>3</b>灭 <b>4</b>倒计时 <b>5</b>看不清(改选中框颜色)· <b>0</b>整帧无灯 · <b>回车/n</b>确认并下一帧 · <b>p</b>上一帧 · <b>Delete</b>删选中的手画框。<br>
+<b>快捷键</b>(鼠标先移到某帧上激活):<b>1</b>红 <b>2</b>绿 <b>3</b>灭 <b>4</b>倒计时 <b>5</b>看不清(改选中框颜色)· <b>0</b>整帧无灯 · <b>回车/n</b>确认并下一帧 · <b>u</b>取消确认(改回可编辑,或点帧内按钮)· <b>p</b>上一帧 · <b>Delete</b>删选中的手画框。<br>
 <b>错的候选框不用删,不点就忽略。</b> 进度自动存本地可续标。全标完点底部 <b>[生成GT JSON]→[复制]</b>。
 </div>
 <div class=nav id=nav></div><div id=frames></div>
@@ -133,7 +133,7 @@ function mk(f){
      <div class=wrap><img src="${f.img}" width=${f.dw} height=${f.dh}>
       <canvas id="cv_${f.id}" width=${f.dw} height=${f.dh}></canvas></div>
      <div><label><input type=checkbox id="nl_${f.id}" ${state[f.id].no_light?'checked':''} onchange="setNL('${f.id}',this.checked)"> 整帧无灯(0)</label>
-      <button onclick="confirmFrame('${f.id}')">✓确认本帧(回车)</button></div></div>
+      <button id="cf_${f.id}" onclick="toggleConfirm('${f.id}')">${state[f.id].confirmed?'↩取消确认(u)':'✓确认本帧(回车)'}</button></div></div>
    <div class=right id="rt_${f.id}"></div>`;
   document.getElementById('frames').appendChild(d);
   d.addEventListener('mouseenter',()=>{activeFrame=f.id;});
@@ -177,12 +177,16 @@ function setColor(id,i,v){state[id].boxes[i].color=v;save();const f=FRAMES.find(
 function ungov(id,i){state[id].boxes[i].governing=false;save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRight(f);}
 function delBox(id,i){state[id].boxes.splice(i,1);if(sel[id]>=i)sel[id]=Math.max(0,(sel[id]||0)-1);save();const f=FRAMES.find(x=>x.id===id);redraw(f);renderRight(f);}
 function setNL(id,v){state[id].no_light=v;save();const f=FRAMES.find(x=>x.id===id);renderRight(f);}
-function confirmFrame(id){state[id].confirmed=true;save();document.getElementById('fr_'+id).classList.add('done');prog();
+function _setBtn(id){const b=document.getElementById('cf_'+id);if(b)b.textContent=state[id].confirmed?'↩取消确认(u)':'✓确认本帧(回车)';}
+function confirmFrame(id){state[id].confirmed=true;save();document.getElementById('fr_'+id).classList.add('done');_setBtn(id);prog();
   const idx=FRAMES.findIndex(x=>x.id===id);if(idx+1<FRAMES.length){const nx=FRAMES[idx+1];document.getElementById('fr_'+nx.id).scrollIntoView({behavior:'smooth',block:'center'});activeFrame=nx.id;}}
+function unconfirmFrame(id){state[id].confirmed=false;save();document.getElementById('fr_'+id).classList.remove('done');_setBtn(id);prog();}
+function toggleConfirm(id){ state[id].confirmed?unconfirmFrame(id):confirmFrame(id); }
 document.addEventListener('keydown',e=>{ if(!activeFrame||e.target.tagName==='SELECT')return; const f=FRAMES.find(x=>x.id===activeFrame); if(!f)return;
   if(e.key in CKMAP){const i=sel[f.id];if(i!=null&&state[f.id].boxes[i]){state[f.id].boxes[i].color=CKMAP[e.key];save();redraw(f);renderRight(f);}e.preventDefault();}
   else if(e.key==='0'){state[f.id].no_light=!state[f.id].no_light;const nl=document.getElementById('nl_'+f.id);if(nl)nl.checked=state[f.id].no_light;save();renderRight(f);e.preventDefault();}
   else if(e.key==='Enter'||e.key==='n'){confirmFrame(f.id);e.preventDefault();}
+  else if(e.key==='u'){unconfirmFrame(f.id);e.preventDefault();}
   else if(e.key==='p'){const idx=FRAMES.findIndex(x=>x.id===f.id);if(idx>0){const pv=FRAMES[idx-1];document.getElementById('fr_'+pv.id).scrollIntoView({behavior:'smooth',block:'center'});activeFrame=pv.id;}e.preventDefault();}
   else if(e.key==='Delete'||e.key==='Backspace'){const i=sel[f.id];if(i!=null&&state[f.id].boxes[i]&&state[f.id].boxes[i].source==='manual')delBox(f.id,i);e.preventDefault();}
 });
@@ -211,7 +215,14 @@ def main():
     ap.add_argument("--videos", nargs="*", default=None, help="只处理指定视频(smoke)")
     ap.add_argument("--limit", type=int, default=0, help="每视频最多抽 N 帧(0=全部)")
     ap.add_argument("--topk", type=int, default=12, help="每帧预填最多 N 个候选框(裁剪 HSV 噪声)")
+    ap.add_argument("--html-only", action="store_true", help="只用现有 frames_prefill.json 重生成 annotate.html(不重跑YOLO)")
     args = ap.parse_args()
+
+    if args.html_only:
+        FRAMES = json.load(open(OUT_DIR / "frames_prefill.json", encoding="utf-8"))
+        write_html(FRAMES)
+        print(f"[html-only] 重生成 {OUT_DIR / 'annotate.html'}  帧={len(FRAMES)}(未重跑YOLO)")
+        return
 
     FRAMES_DIR.mkdir(parents=True, exist_ok=True)
     det = TrafficLightDetector(_cfg(), verbose=False)
