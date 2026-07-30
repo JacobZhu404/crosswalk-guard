@@ -1,0 +1,40 @@
+# CC Brief 给 wb:下一阶段 = 修选灯 / 排干扰(误绿已被干净 GT 钉死为定位问题)
+
+> 出自 cc(arbiter)。据 canonical 逐帧 GT 重算误绿的干净结论。**本文是方向 brief,wb 先出计划 cc review 再动手(先计划后动)。**
+
+## 0. 我们现在站在哪(干净坐实,不再是噪声/循环)
+- 有了 **canonical 逐帧灯态 GT**(`datasets/gt/light_canonical_gt.json`,Jacob 手标,399 帧 / 717 governing 框 / 全 11 视频),取代旧 events 段级 + 稀疏 GT。
+- 用它重算误绿(`scripts/measure_falsegreen_canonical.py`,逐帧比 governing 真值,无段映射/无静态中心):
+  - **R1(最好 GT-free 选灯)帧级误绿 5.51%(22/399);扣掉病态 05 后仅 2.19%(8/365)。**
+  - **成因(该帧 governing 框 IoU 归因,已彻底排除相机运动混淆)= 22 误绿帧:14 选错灯(干扰:反射/背面/车灯/树叶)+ 8 无真灯帧上干扰发绿 + 0 状态判错。**
+  - **即:误绿 100% 是"选了干扰源"、0% 是状态分类错。** L3 反使误绿更糟(R2 11.78%>R1),分类器 `ped_signal.pt` 路径更差 + 漏绿翻倍(不可接)。
+- **结论:治误绿 = 修选灯 / 排干扰(锁定 governing 行人灯),不是状态分类、不是 ImVisible 预训练。** 05 占 64%(小灯/透窗 → 选背面/反射),是独立的小灯 track。
+
+## 1. 下一阶段目标(一句话)
+**在候选里可靠地选出 governing 行人灯、拒掉干扰源(反射/信号灯背面/车灯/绿树叶),把 R1 误绿(尤其扣 05 的 2.19% 残余)继续压低,且不引入漏绿/回退。**
+
+## 2. 现成资产(都已入库)
+- **训练+评测真值**:`datasets/gt/light_canonical_gt.json`。每帧 governing 框(正样本)+ 该帧其余候选(系统自产的干扰,天然硬负样本)。
+- **评分台**:`scripts/measure_falsegreen_canonical.py`(误绿 + 成因 + 分视频 + 漏绿附注);可加**定位精度**(选中框 vs governing 框 IoU 的 precision/recall)作更直接的选灯指标。
+- **候选/选灯**:`ped_light_selector.select_gtfree`(L1形状+L2时序+L3学习,GT-free)、`build_candidates`(YOLO∪HSV)、`l3_ped_full.pt`。
+
+## 3. 要 wb 产出的(计划,非代码)
+出一份**选灯改进计划**,cc review 后再动手,至少覆盖:
+1. **诊断先行**:22 个误绿帧(+漏绿帧)逐个看,归纳干扰源类型分布(反射/背面/车灯/树叶各占多少、集中哪些视频),定位当前 select_gtfree 为何选中它们(L1/L2/L3 各自失效点)。**别直接训模型**。
+2. **方法候选**(择优,给理由):
+   - 用 canonical GT 训一个**"是不是 governing 行人灯"判别器**(正=governing 框 crop,负=同帧非 governing 候选)替换/增强 L3;
+   - 或几何/时序/形状规则强化(竖长条+稳定复现+拒反射闪烁);
+   - 明确为何这次不会重蹈 L3/负例挖矿"越训越糟/不泛化"的覆辙([[light-classifier-retrain]] negqual 教训)。
+3. **防过拟合护栏(硬)**:**按视频 LOVO**(留出视频评测,训练不含该视频),绝不在同批帧上又训又评(Diag2 循环)。报 mean±std + worst-video。
+4. **评测口径**:主指标 = `measure_falsegreen_canonical` 的 R1 误绿(全量 + 扣05)+ 定位精度;**改进必须不涨漏绿**;去循环(选灯不碰 GT,GT 只评测)。
+5. **05 小灯 track(单列,别拖累主线)**:透窗/背面小灯本质是检测召回 + 干扰,主判别器大概率救不了 → 建议接受为已知硬例 或 单独走小灯检测(真 m/x 测试仍待 Jacob 下权重,见 [[prior-misframe-rootcause]] 07-27 裁定)。产品是否常见 05 类场景 = Jacob 定 scope。
+
+## 4. 红线(不变)
+先计划后动、只读不接线、生产 prior/权重只读、gate 不过不接线、禁 GT 进推理/LOVO 去循环、scoped git、署名、trunk main、TDD 先、不碰 enforce_transition_limit、净回退不出货、多 seed 报 min。
+
+## 5. 待 Jacob 拍
+- **scope**:05 类(又小又透窗/背面)在目标部署路口是否常见?常见 → 值得为小灯单独投入;罕见 → 主线只做通用干扰拒识,05 记已知局限。
+- 是否要先让 wb 只做 §3.1 诊断(cheap)再决定 §3.2 方法。
+
+---
+**一句话给 wb**:误绿已被干净 GT 证明是"选了干扰源"(反射/背面/车灯/树叶),不是状态分类。下一步用 canonical GT(governing=正、同帧其余候选=负)把选灯的干扰拒识做起来,LOVO 防过拟合,拿 `measure_falsegreen_canonical` 当评分台;**先出诊断+方法计划,cc review 再动**。
