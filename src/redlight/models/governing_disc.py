@@ -54,7 +54,8 @@ class GoverningDiscNet(nn.Module):
         self.drop = nn.Dropout(0.3)
         self.fc1 = nn.Linear(48 * (CROP // 8) * (CROP // 8), 64)
         self.fc2 = nn.Linear(64, 1)
-        self.temperature = 1.0
+        # temperature 注册为 buffer: 随 state_dict 存/取, 续跑(reload)不丢(cc 温度缓存 bug 修复)
+        self.register_buffer("temperature", torch.tensor(1.0))
 
     def forward_logits(self, x):
         x = self.pool(F.relu(self.conv1(x)))
@@ -151,15 +152,19 @@ def build_crop_dataset(gt: Dict, use_negative_a: bool = False) -> Tuple[List, Li
                 hsv_px = [s["box"] for s in det._candidates(frame)]
                 cands = build_candidates(yolo_px, hsv_px, W, H)
                 for c in cands:
-                    crop = crop_candidate(frame, tuple(c["box"]))
+                    # ⚠️ 坐标 bug 修复(根因): build_candidates 返回的 c["box"] 是 **像素**,
+                    # 必须归一化后才喂 crop_candidate(后者按 ×W/×H 解析归一化框)。
+                    # 原代码直接传像素框 → 几乎全部 crop_candidate 返 None、负样本塌成 1 个 → 模型学成恒正。
+                    bx0, by0, bx1, by1 = c["box"]
+                    box_norm = (bx0 / W, by0 / H, bx1 / W, by1 / H)
+                    crop = crop_candidate(frame, box_norm)
                     if crop is None:
                         continue
                     item = (tf(crop), 0.0)
                     if no_light:
                         neg_b.append(item)
                     elif use_negative_a and gov_boxes:
-                        bi = tuple(c["box"])
-                        if all(iou(bi, gb) < 0.3 for gb in gov_boxes):
+                        if all(iou(box_norm, gb) < 0.3 for gb in gov_boxes):
                             neg_a.append(item)
     return pos, neg_b, neg_a
 
@@ -179,7 +184,7 @@ def fit_temperature(model: GoverningDiscNet, val_items: List,
     """A3 温度缩放: T 在 val 校准集(来自训练视频, 不碰测试折 R3)上 grid 选最小 BCE。
     让 τ 跨折可比。val_items 为空则 T=1.0。"""
     if not val_items:
-        model.temperature = 1.0
+        model.temperature.fill_(1.0)
         return
     model.eval()
     with torch.no_grad():
@@ -191,7 +196,7 @@ def fit_temperature(model: GoverningDiscNet, val_items: List,
         loss = float(F.binary_cross_entropy(p, y).item())
         if loss < best_loss:
             best_loss, best_T = loss, T
-    model.temperature = best_T
+    model.temperature.copy_(torch.tensor(float(best_T)))
 
 
 def train_model(pos_items, neg_items, seed: int = 0, epochs: int = 60,
@@ -210,20 +215,21 @@ def train_model(pos_items, neg_items, seed: int = 0, epochs: int = 60,
     val_dl = DataLoader(val_ds, batch_size=batch, shuffle=False)
     model = GoverningDiscNet()
     opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=wd)
-    crit = nn.BCELoss()
+    # cc step2: BCEWithLogitsLoss(喂 logits, 数值稳定; 原 BCELoss(sigmoid) 在 logit 飙 +50 时欠稳)
+    crit = nn.BCEWithLogitsLoss()
     best_loss, best_state, waits = float("inf"), None, 0
     for ep in range(epochs):
         model.train()
         for xb, yb in tr_dl:
             opt.zero_grad()
-            loss = crit(model(xb).squeeze(1), yb)
+            loss = crit(model.forward_logits(xb).squeeze(1), yb)
             loss.backward()
             opt.step()
         model.eval()
         vl, n = 0.0, 0
         with torch.no_grad():
             for xb, yb in val_dl:
-                p = model(xb).squeeze(1)
+                p = model.forward_logits(xb).squeeze(1)
                 vl += crit(p, yb).item() * len(yb)
                 n += len(yb)
         vl /= max(1, n)

@@ -123,3 +123,10 @@ select_gtfree(candidates, ped_prior, temporal_scores=None, temporal_weight=0.4,
 - **多 seed 聚合（原 `main` 只取 `seeds[0]` 训练，worst-seed(min) 未实现 → 已补）**：`main` 现遍历所有 seed，每 seed 跑完整 LOVO（11 折训练→训练折 median τ→eval 11 视频），输出 **mean±std + worst-video + worst-seed(min)** + 03 单列/06·11 N/A + τ 敏感性(S1 诚实)。
 - **断点续跑**：`_load_or_train`/`_tau_for_fold`/`_eval_cached` 把每折模型/τ/评测行按 `(V,seed,gw)` 缓存到 `models/governing_disc/`，防 macOS 长任务 SIGKILL 后白跑（重跑自动续）。
 - 全量报告口径：`docs/reports/2026-07-31-wb-selection-quality.md`。
+
+### 6.4 全量 LOVO 结果 + 判别器塌缩根因(已修, 待重训复核)
+- **全量 LOVO(commit 后跑)结论**：判别器塌缩 → best_conf 全 399 帧=1.0、gate 永不触发、误绿持平 2.19%（零增益）→ cc 裁定 gate 不过、净回退(base 2.19% 维持)、权重不入库、不接线。cc 独立复现根因(`docs/handoff/2026-07-31-cc-rootcause-discriminator-collapse.md`)。
+- **根因(cc 推翻"类不均"假设, 实测否掉; wb 独立定位代码 bug)**：`build_crop_dataset` 把 `build_candidates` 返回的**像素** `c["box"]` 直接当归一化喂 `crop_candidate`(后者按 ×W/×H 解析) → 像素坐标×W 爆成百万级 → `px[2]<=px[0]` → **几乎全部负样本 crop 返 None 被丢弃** → 单折只留 **1 个负样本**(692 正 vs 1 负) → 模型学成恒正函数(logit +50、噪声 +68>真灯 +35)。评测侧 `eval_video` 早已正确转 `box_norm`(行103-104)，故评测 crop 对、训练 crop 错，坐标口径不对称。cc 测的"负样本 1659"是**候选框提案数(crop 前)**，非成功 crop 张量数，恰好掩盖真塌缩。
+- **修复(governing_disc.py 三处, 待 commit)**：①坐标 bug → 负样本先 `box_norm=(bx0/W,by0/H,bx1/W,by1/H)` 再裁; ②cc step2 `BCELoss(sigmoid)`→`BCEWithLogitsLoss`(喂 logits, 数值稳); ③cc step5 温度缓存 bug → `temperature` 由普通浮点属性改 `register_buffer`, 随 state_dict 存/取, 续跑(reload)不丢 T。
+- **debug 实测(§2 四步全走)**：neg_b 1→964(修复); 10正10负单 batch 过拟合 pos_logit→+19 / neg_logit→−15(能分离, 证非任务不可学); 单折仪表化 train_BCE→0.001、pos_logit→+15 / neg_logit→−17 / val_logit→−3(健康); 温度 buffer 存/取 OK。→ 根因消除, 模型能分正负。
+- **下一步**：清旧坏缓存(全量 LOVO 须修复后重训)→ 重跑 ≥5 seed 全量 LOVO(报 mean±std + worst-video + worst-seed(min) + 03单列/06·11 N/A + τ敏感性) → 数字交 cc 复核, 再交 Jacob 拍是否进接线讨论。红线不变。
