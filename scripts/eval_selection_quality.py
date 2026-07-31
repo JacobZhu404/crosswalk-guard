@@ -77,7 +77,7 @@ def _empty_row(video, fi, g):
             "best_cand": None, "best_conf": 0.0, "best_color": None, "had_cands": False}
 
 
-def eval_video(video, frames, model, det, yolo, governing_weight=0.3, tau=0.5):
+def eval_video(video, frames, model, det, yolo, governing_weight=0.3):
     """在单视频 GT 帧上评: 走生产上线路径 select_gtfree(B1 修复)。LOVO 模型已训好(锚模式 model=None)。
 
     三趟: ①逐 GT 帧建候选(与 canonical 同口径: YOLO cls=9 + HSV 兜底);
@@ -126,9 +126,12 @@ def eval_video(video, frames, model, det, yolo, governing_weight=0.3, tau=0.5):
         if use_gov:
             gov_scores = {j: gd.score_crop(model, tf(gd.crop_candidate(frame, tuple(c["box_norm"]))))
                           for j, c in enumerate(cands)}
+        # S1: 内部不弃权(governing_threshold=0.0), 照记 best_cand+best_conf;
+        #     弃权门交 metrics_for_tau 按每个扫描 τ 施加(已用 best_conf>=tau 判)。
+        #     选灯赢家只由 governing_weight 决定、与 gate τ 无关 → headline 不变、敏感性曲线全段诚实。
         best = select_gtfree(cands, PED_PRIOR, temporal_scores=temp_map[fi],
                              governing_scores=gov_scores, governing_weight=governing_weight,
-                             governing_threshold=tau)
+                             governing_threshold=0.0)
         if best is None:
             best_conf, best_color = 0.0, None
         else:
@@ -175,20 +178,74 @@ def metrics_for_tau(rows, tau, exclude_video=None):
             "fg": fg, "n_eval": n_eval, "fg_rate": fg_rate, "miss": miss, "n_green": len(green_frames)}
 
 
-def _global_tau(gt, models, videos):
-    """R3: 每折用训练视频定 τ(recommend_tau), 取 median 作单一全局 τ 施于测试折。"""
+CACHE = ROOT / "models" / "governing_disc"
+
+
+def _fold_sub(gt, V):
+    return {"schema": gt.get("schema"), "frames": [f for f in gt["frames"] if f["video"] != V]}
+
+
+def _load_or_train(V, sub, seed):
+    """LOVO 单折模型: 缓存到磁盘, 断点续跑(SIGKILL 安全)。"""
+    CACHE.mkdir(parents=True, exist_ok=True)
+    path = CACHE / f"fold_{V}_seed{seed}.pt"
+    if path.exists():
+        m = gd.GoverningDiscNet()
+        m.load_state_dict(torch.load(path, map_location="cpu"))
+        return m
+    pos, neg_b, _ = gd.build_crop_dataset(sub, use_negative_a=False)
+    m = gd.train_model(pos, neg_b, seed=seed)
+    torch.save(m.state_dict(), path)
+    return m
+
+
+def _tau_for_fold(model, gt, train_videos, V, seed):
+    """R3: 单折 τ 由训练视频 recommend_tau 定, 缓存。"""
+    path = CACHE / f"tau_{V}_seed{seed}.json"
+    if path.exists():
+        return float(json.load(open(path, encoding="utf-8"))["tau"])
+    t, _ = recommend_tau(model, gt, train_videos)
+    path.write_text(json.dumps({"tau": float(t)}), encoding="utf-8")
+    return float(t)
+
+
+def _eval_cached(V, frames, model, det, yolo, gw, seed):
+    """评测行缓存(按 V+seed+gw), 断点续跑。S1: 内部不弃权, 门交 metrics 按 τ 施加。"""
+    gwi = int(round(gw * 10))
+    path = CACHE / f"rows_{V}_seed{seed}_gw{gwi}_s1.jsonl"
+    if path.exists():
+        return [json.loads(l) for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+    rows = eval_video(V, frames, model, det, yolo, governing_weight=gw)
+    with open(path, "w", encoding="utf-8") as f:
+        for r in rows:
+            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+    return rows
+
+
+def _global_tau(gt, models, videos, seed):
+    """R3: 每折用训练视频定 τ(recommend_tau, 带缓存), 取 median 作单一全局 τ 施于测试折。"""
     tau_per = []
     for V in videos:
         train_videos = [v for v in videos if v != V]
-        tV, _ = recommend_tau(models[V], gt, train_videos)
-        tau_per.append(tV)
+        tau_per.append(_tau_for_fold(models[V], gt, train_videos, V, seed))
     return float(np.median(tau_per))
+
+
+def _f(x):
+    return x if x is not None else 0.0
+
+
+def _fmt_ms(vals):
+    vals = [v for v in vals if v is not None]
+    if not vals:
+        return "N/A"
+    return f"{float(np.mean(vals))*100:.1f}%±{float(np.std(vals))*100:.1f}pp"
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--videos", default=None, help="逗号分隔限制视频(冒烟用); 空=全部")
-    ap.add_argument("--seeds", default="0")
+    ap.add_argument("--seeds", default="0", help="逗号分隔 seed 列表(≥5 全量)")
     ap.add_argument("--governing-weight", type=float, default=0.3,
                     help="A1: 显式定值>0(重排功能不再空转); 锚模式强制0")
     ap.add_argument("--tau", type=float, default=None,
@@ -207,7 +264,7 @@ def main():
     if args.anchor:
         all_rows = []
         for V in videos:
-            rows = eval_video(V, by_video[V], None, det, yolo, governing_weight=0.0, tau=0.0)
+            rows = eval_video(V, by_video[V], None, det, yolo, governing_weight=0.0)
             all_rows.extend(rows)
         mg = metrics_for_tau(all_rows, 0.0, exclude_video="违章05")
         print("\n=== A2 基线锚(纯 base 路径, τ=0, 无判别器) ===")
@@ -217,73 +274,102 @@ def main():
         print(f"锚判定: {'PASS ✅ 评测台与 canonical 基线吻合' if ok else 'FAIL ❌ 评测台与基线脱钩, 数字不可信'}")
         return
 
-    # ===== 方法: LOVO 训练 + 训练折全局 τ (B2) =====
-    models = {}
-    for V in videos:
-        sub = {"schema": gt.get("schema"), "frames": [f for f in gt["frames"] if f["video"] != V]}
-        pos, neg_b, neg_a = gd.build_crop_dataset(sub, use_negative_a=False)
-        models[V] = gd.train_model(pos, neg_b, seed=seeds[0])
-
-    global_tau = args.tau if args.tau is not None else _global_tau(gt, models, videos)
+    # ===== 方法: 多 seed LOVO 训练 + 训练折全局 τ (B2) =====
     gw = args.governing_weight
-    print(f"\n[τ] 全局(训练折 median, R3)= {global_tau:.2f}  | GW={gw}")
+    per_seed = {}
+    for seed in seeds:
+        models = {}
+        for V in videos:
+            models[V] = _load_or_train(V, _fold_sub(gt, V), seed)
+        gtau = args.tau if args.tau is not None else _global_tau(gt, models, videos, seed)
+        print(f"[seed {seed}] global_tau={gtau:.2f} GW={gw}", flush=True)
+        rows_per_fold = {}
+        all_rows = []
+        for V in videos:
+            rows = _eval_cached(V, by_video[V], models[V], det, yolo, gw, seed)
+            rows_per_fold[V] = rows
+            all_rows.extend(rows)
+            print(f"  [seed {seed}][{V}] GT帧={len(rows)}", flush=True)
+        mg = metrics_for_tau(all_rows, gtau, exclude_video="违章05")
+        per_seed[seed] = {"tau": gtau, "rows_per_fold": rows_per_fold,
+                          "all_rows": all_rows, "mg": mg}
+        print(f"[seed {seed}] 误绿(扣05)={mg['fg_rate']*100:.2f}% 漏绿={mg['miss']} "
+              f"sel_prec={_f(mg['sel_prec'])*100:.1f}% gate={'PASS' if mg['miss']<=80 else 'FAIL'}",
+              flush=True)
 
-    all_rows = []
-    rows_per_fold = {}
-    for V in videos:
-        rows_V = eval_video(V, by_video[V], models[V], det, yolo,
-                            governing_weight=gw, tau=global_tau)
-        rows_per_fold[V] = rows_V
-        all_rows.extend(rows_V)
-        print(f"  [{V}] GT帧={len(rows_V)}")
-
-    # τ 敏感性(信息展示; 报告口径仍用 global_tau, 非测试集 argmin, B2)
-    print("\n=== τ 敏感性(信息展示; 报告口径=训练折全局 τ=%.2f) ===" % global_tau)
-    print(f"{'τ':>4} {'选灯精度':>8} {'弃权率':>8} {'误绿(扣05)':>11} {'漏绿':>5}")
-    for tau in TAU_GRID:
-        m = metrics_for_tau(all_rows, tau, exclude_video="违章05")
-        print(f"{tau:>4.1f} {(_f(m['sel_prec'])*100):>7.1f}% {(_f(m['rej_rate'])*100):>7.1f}% "
-              f"{m['fg_rate']*100:>10.2f}% {m['miss']:>5}")
-
-    mg = metrics_for_tau(all_rows, global_tau, exclude_video="违章05")
-    gate = "PASS" if mg["miss"] <= 80 else "FAIL"
-    print(f"\n=== 主标尺(τ={global_tau:.2f}, GW={gw}, 扣05) ===")
-    print(f"误绿(扣05): {mg['fg']}/{mg['n_eval']} = {mg['fg_rate']*100:.2f}%")
-    print(f"漏绿: {mg['miss']} (硬约束≤80 → {gate})")
-
-    # R2: 03 单列 + 06/11 N/A
-    print("\n=== 无灯帧处理(R2) ===")
-    v03 = rows_per_fold.get("违章03", [])
-    if v03:
-        m03 = metrics_for_tau(v03, global_tau)
-        print(f"03(单列, 不混 mean): 无灯帧={m03['n_nol']} 正确弃权率={_f(m03['rej_rate'])*100:.1f}%")
-    for v in ("违章06", "违章11"):
-        nol = [r for r in all_rows if r["video"] == v and r["no_light"]]
-        print(f"{v}: 正确弃权率 = N/A (零无灯帧)" if not nol else f"{v}: 无灯帧={len(nol)}")
-
-    _write_report(rows_per_fold, global_tau, gw, mg, gate)
+    _write_report(per_seed, gw, seeds, videos)
     print(f"\n[out] {REPORT}")
 
 
-def _f(x):
-    return x if x is not None else 0.0
-
-
-def _write_report(rows_per_fold, global_tau, gw, mg, gate):
-    L = ["# 选灯质量评分(§3.3, cc 复核修订后)\n",
-         f"> headline τ = 训练折全局(median, R3) = **{global_tau:.2f}**; GW={gw}。评测台驱动 `select_gtfree` 上线路径(B1)。\n",
-         "## 主标尺(扣05)\n",
-         f"- 误绿(扣05): {mg['fg']}/{mg['n_eval']} = **{mg['fg_rate']*100:.2f}%**",
-         f"- 漏绿: {mg['miss']} (硬约束≤80 → **{gate}**)\n",
-         "## 11 视频分解(选灯精度 / 正确弃权率 / 误绿(扣05) / 漏绿)\n",
-         "| 视频 | 选灯精度 | 正确弃权率 | 误绿(扣05) | 漏绿 |", "|---|---|---|---|---|"]
-    for V in sorted(rows_per_fold):
-        m = metrics_for_tau(rows_per_fold[V], global_tau, exclude_video="违章05")
-        rej = "N/A" if m["rej_rate"] is None else f"{m['rej_rate']*100:.1f}%"
-        sp = "N/A" if m["sel_prec"] is None else f"{m['sel_prec']*100:.1f}%"
-        L.append(f"| {V} | {sp} | {rej} | {m['fg_rate']*100:.2f}% | {m['miss']} |")
-    L.append("\n- 03 单列不混 mean; 06/11 零无灯帧, 正确弃权率记 N/A(不充 0/100,R2)。")
-    L.append("- 漏绿>80 判 gate FAIL, 净回退不接线(红线)。")
+def _write_report(per_seed, gw, seeds, videos):
+    L = ["# 选灯质量评分(§3.3, cc 复核修订后, ≥%d seed 全量 LOVO)\n" % len(seeds),
+         f"> 评测台驱动 `select_gtfree` 上线路径(B1); headline τ = 训练折全局(median, R3); GW={gw}。\n",
+         "> **S1 已修**: `eval_video` 内部不弃权(governing_threshold=0.0), 弃权门交 `metrics_for_tau` 按每个扫描 τ 施加 → τ 敏感性曲线全段诚实, headline 不变。\n",
+         "> **S2 注明**: τ 由 `recommend_tau` 在**训练折 in-sample** 重打分、以 crop 级 pos/neg **F1** 作代理选取(非下游漏绿/误绿目标); R3 核心(测试视频不碰 τ)已满足, 解读 LOVO 泛化数字时请对 τ 乐观度打折。\n"]
+    # 种子级 headline 聚合
+    fg_rates = [per_seed[s]["mg"]["fg_rate"] for s in seeds]
+    misses = [per_seed[s]["mg"]["miss"] for s in seeds]
+    sps = [_f(per_seed[s]["mg"]["sel_prec"]) for s in seeds]
+    rejs = []
+    for s in seeds:
+        allr = per_seed[s]["all_rows"]
+        rej = sum(1 for r in allr if r["best_cand"] is None or r["best_conf"] < per_seed[s]["tau"])
+        nol = sum(1 for r in allr if r["no_light"])
+        rejs.append(rej / nol if nol else None)
+    L.append("## 主标尺(全399帧, 扣05, ≥%d seed 聚合 mean±std + worst-seed)\n" % len(seeds))
+    L.append(f"- 误绿(扣05): **{np.mean(fg_rates)*100:.2f}%** ±{np.std(fg_rates)*100:.2f}pp "
+             f"(worst-seed最差={max(fg_rates)*100:.2f}%)")
+    L.append(f"- 漏绿: **{np.mean(misses):.0f}** ±{np.std(misses):.1f} (worst-seed={max(misses)}) "
+             f"硬约束≤80 → **{'PASS' if max(misses)<=80 else 'FAIL'}**")
+    L.append(f"- 选灯精度: {np.mean(sps)*100:.1f}% ±{np.std(sps)*100:.1f}pp")
+    L.append(f"- 正确弃权率(整体): {_fmt_ms(rejs)}")
+    # worst-seed(min)
+    ws_fg = max(seeds, key=lambda s: per_seed[s]["mg"]["fg_rate"])
+    ws_miss = max(seeds, key=lambda s: per_seed[s]["mg"]["miss"])
+    L.append(f"\n## worst-seed(min) — 最差种子")
+    L.append(f"- 按误绿最差: seed **{ws_fg}** → 误绿={per_seed[ws_fg]['mg']['fg_rate']*100:.2f}%")
+    L.append(f"- 按漏绿最差: seed **{ws_miss}** → 漏绿={per_seed[ws_miss]['mg']['miss']} "
+             f"(gate={'PASS' if per_seed[ws_miss]['mg']['miss']<=80 else 'FAIL'})")
+    L.append(f"- 各 seed 全局 τ: " + ", ".join(f"{s}={per_seed[s]['tau']:.2f}" for s in seeds))
+    # 11 视频分解 mean±std
+    L.append("\n## 11 视频分解(扣05 误绿 / 漏绿 / 选灯精度, mean±std across seeds)\n")
+    L.append("| 视频 | 误绿(扣05) mean±std | 漏绿 mean±std | 选灯精度 mean±std |")
+    L.append("|---|---|---|---|")
+    for V in videos:
+        fgs, ms, spv = [], [], []
+        for s in seeds:
+            m = metrics_for_tau(per_seed[s]["rows_per_fold"][V], per_seed[s]["tau"], exclude_video="违章05")
+            fgs.append(m["fg_rate"]); ms.append(m["miss"]); spv.append(_f(m["sel_prec"]))
+        L.append(f"| {V} | {_fmt_ms(fgs)} | {np.mean(ms):.0f}±{np.std(ms):.1f} | {_fmt_ms(spv)} |")
+    # worst-video
+    def _vp(V, key):
+        return np.mean([metrics_for_tau(per_seed[s]["rows_per_fold"][V], per_seed[s]["tau"],
+                                         exclude_video="违章05")[key] for s in seeds])
+    wv_fg = max(videos, key=lambda V: _vp(V, "fg_rate"))
+    wv_miss = max(videos, key=lambda V: _vp(V, "miss"))
+    L.append(f"\n## worst-video — 最差视频")
+    L.append(f"- 按误绿最差: **{wv_fg}** → 误绿 mean={_vp(wv_fg, 'fg_rate')*100:.2f}%")
+    L.append(f"- 按漏绿最差: **{wv_miss}** → 漏绿 mean={_vp(wv_miss, 'miss'):.0f}")
+    # R2: 03 单列 + 06/11 N/A
+    L.append("\n## 无灯帧处理(R2)")
+    v03 = per_seed[seeds[0]]["rows_per_fold"].get("违章03", [])
+    if v03:
+        m03 = metrics_for_tau(v03, per_seed[seeds[0]]["tau"])
+        L.append(f"- 03(单列, 不混 mean): 无灯帧={m03['n_nol']} 正确弃权率={_f(m03['rej_rate'])*100:.1f}%")
+    for v in ("违章06", "违章11"):
+        nol = [r for s in seeds for r in per_seed[s]["all_rows"] if r["video"] == v and r["no_light"]]
+        L.append(f"- {v}: 正确弃权率 = N/A (零无灯帧)" if not nol else f"- {v}: 无灯帧={len(nol)}")
+    # τ 敏感性(S1-honest)
+    all_pool = [r for s in seeds for r in per_seed[s]["all_rows"]]
+    L.append("\n## τ 敏感性(S1 修复后, 内部不弃权, 门按扫描 τ 施加; 仅展示)\n")
+    L.append(f"{'τ':>4} {'选灯精度':>8} {'弃权率':>8} {'误绿(扣05)':>11} {'漏绿':>5}")
+    for tau in TAU_GRID:
+        m = metrics_for_tau(all_pool, tau, exclude_video="违章05")
+        L.append(f"{tau:>4.1f} {(_f(m['sel_prec'])*100):>7.1f}% {(_f(m['rej_rate'])*100):>7.1f}% "
+                 f"{m['fg_rate']*100:>10.2f}% {m['miss']:>5}")
+    L.append("\n- 漏绿>80 判 gate FAIL, 净回退不接线(红线)。")
+    L.append("- 03 单列不混 mean; 06/11 零无灯帧, 正确弃权率记 N/A(不充 0/100, R2)。")
+    L.append("- S2: τ 为训练折 in-sample F1 代理, 报告口径 τ 点不取测试集 argmin(B2/R3)。")
     REPORT.write_text("\n".join(L), encoding="utf-8")
 
 

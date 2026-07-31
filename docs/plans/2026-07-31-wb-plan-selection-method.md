@@ -115,3 +115,11 @@ select_gtfree(candidates, ped_prior, temporal_scores=None, temporal_weight=0.4,
 ### 6.2 红线坚守
 - gate 不过净回退不接线（未跑全量 LOVO 前不评 gate）；GT 不进推理·LOVO 去循环；多 seed 报 worst（全量待 cc 放行后跑）；权重不进库；不碰 `enforce_transition_limit`。
 - 本轮只跑 **锚冒烟(PASS)** + 单视频单 seed 代码路径 sanity(无崩溃)；**未跑 ≥5 seed 全量 LOVO**（依 cc 流程：修订+锚 PASS → cc 复核 → 放全量）。
+
+### 6.3 cc 复核修订版(7d201a0)裁定 + S1/S2 + 多 seed 全量 LOVO（commit 7d201a0 后修订, 待提交）
+- cc 裁定 `docs/handoff/2026-07-31-cc-verify-selection-code-revision.md`：B1/B2/A1/A2/A3 逐条落地通过，A2 锚 cc 亲复现 2.19%/80，23/23 复跑绿；**放行 ≥5 seed 全量 LOVO**，前置只修 S1（便宜）。
+- **S1（已修）**：`eval_video` 传 `governing_threshold=0.0`（内部不弃权）、照记 `best_cand`+`best_conf`；弃权门交 `metrics_for_tau` 按每个扫描 τ 施加（其本就用 `best_conf>=tau` 判）→ 敏感性曲线 τ<global_τ 段不再失真，headline 不变。
+- **S2（报告注明即可，不修）**：τ 由 `recommend_tau` 在**训练折 in-sample** 重打分、以 crop 级 pos/neg **F1** 作代理选取（非下游漏绿/误绿目标）；R3 核心(测试视频不碰)已满足，报告注明解读时打折。
+- **多 seed 聚合（原 `main` 只取 `seeds[0]` 训练，worst-seed(min) 未实现 → 已补）**：`main` 现遍历所有 seed，每 seed 跑完整 LOVO（11 折训练→训练折 median τ→eval 11 视频），输出 **mean±std + worst-video + worst-seed(min)** + 03 单列/06·11 N/A + τ 敏感性(S1 诚实)。
+- **断点续跑**：`_load_or_train`/`_tau_for_fold`/`_eval_cached` 把每折模型/τ/评测行按 `(V,seed,gw)` 缓存到 `models/governing_disc/`，防 macOS 长任务 SIGKILL 后白跑（重跑自动续）。
+- 全量报告口径：`docs/reports/2026-07-31-wb-selection-quality.md`。
