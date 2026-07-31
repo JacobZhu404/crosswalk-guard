@@ -55,12 +55,18 @@ def test_selector_never_reads_gt_in_production():
     assert "gt" not in sig.parameters, "select_gtfree 不得接收 GT 参数(护栏1)"
     assert set(sig.parameters.keys()) == {"candidates", "ped_prior",
                                           "temporal_scores", "temporal_weight",
-                                          "l3_scores", "l3_weight"}
+                                          "l3_scores", "l3_weight",
+                                          "governing_scores", "governing_weight",
+                                          "governing_threshold"}
     # 新增参数必须是可选(有默认), 旧调用 select_gtfree(cands, prior) 行为不变
     assert sig.parameters["temporal_scores"].default is None
     assert sig.parameters["temporal_weight"].default is not None
     assert sig.parameters["l3_scores"].default is None
     assert sig.parameters["l3_weight"].default is not None
+    # 弃权门参数: 默认不启用以保持生产行为不变(向后兼容, 红线)
+    assert sig.parameters["governing_scores"].default is None
+    assert sig.parameters["governing_weight"].default == 0.0
+    assert sig.parameters["governing_threshold"].default == 0.5
     # 即便帧里恰好有个候选等于某 GT 框, 选择也只由 prior 几何决定, 不看 GT
     prior = derive_ped_priors([(0.02, 0.06)])
     # 构造: 一个"像车灯"的宽框恰好中心落在 GT 位置, 一个"像 ped"的竖框在别处
@@ -199,6 +205,76 @@ def test_select_gtfree_backward_compat_no_l3():
     assert r_default is A  # 这里 A 仍赢, 但关键是 r_none==r_l2(生产默认不改行为)
 
 
+# ---- §3.1 弃权门 + governing 判别器接入(TDD) ----
+def test_select_gtfree_backward_compat_no_governing():
+    """向后兼容(R1): governing_scores=None 时(生产默认/未放行)行为与原 L1+L2+L3 完全一致,
+    弃权门完全不触发(即便"想弃权"也不返 None)。"""
+    prior = derive_ped_priors([(0.10, 0.30)])
+    A = _cand((0.40, 0.20, 0.50, 0.50), "yolo")    # L1 高
+    B = _cand((0.10, 0.10, 0.20, 0.15), "hsv")     # L1 低
+    cands = [A, B]
+    ts = {0: 0.8, 1: 0.0}
+    # 无 governing: 等同 L1+L2(+l3) 行为, 必返回候选(永不 None)
+    r_none = select_gtfree(cands, prior, temporal_scores=ts)
+    r_explicit = select_gtfree(cands, prior, temporal_scores=ts, governing_scores=None)
+    assert r_none is r_explicit is A
+    # 即便传了全低 governing 分数(但非 None 才触发门)——None 时不触发
+    r_zero_gov = select_gtfree(cands, prior, temporal_scores=ts,
+                               governing_scores={0: 0.0, 1: 0.0}, governing_weight=1.0)
+    # 注意: 这里 governing_scores 非 None, 会触发门; 该测试仅验证 None 路径不触发门
+    assert r_none is A  # None 路径结果
+
+
+def test_select_gtfree_governing_abstain_returns_none():
+    """弃权门(R1): 无灯帧所有候选 conf 都低于阈值 -> 返 None(不输出绿)。
+    这是 5/8 主导类(无灯干扰自发绿)的结构性修复。"""
+    prior = derive_ped_priors([(0.10, 0.30)])
+    # 两个候选都长得像灯(高 L1), 但都不是有效行人灯(conf 低)
+    X = _cand((0.40, 0.20, 0.50, 0.50), "yolo")
+    Y = _cand((0.60, 0.20, 0.70, 0.50), "yolo")
+    cands = [X, Y]
+    ts = {0: 1.0, 1: 1.0}  # 时序平局
+    # 不传 governing: 旧行为必返一个(误绿来源)
+    old = select_gtfree(cands, prior, temporal_scores=ts)
+    assert old is not None
+    # 传 governing 且都低: 弃权返 None
+    sel = select_gtfree(cands, prior, temporal_scores=ts,
+                        governing_scores={0: 0.10, 1: 0.20},
+                        governing_weight=1.0, governing_threshold=0.5)
+    assert sel is None
+
+
+def test_select_gtfree_governing_reranks_valid_light():
+    """弃权门 + 重排(R1): 干扰(高L1/低conf)被压低, 有效行人灯(低L1/高conf)排上来。
+    治 2/8 排序错(背面/反射被当灯)。"""
+    prior = derive_ped_priors([(0.10, 0.30)])
+    # 干扰: 极像灯(aspect≈3.0, area≈0.03 → 高 L1≈1.0)但 conf=0.1
+    interference = _cand((0.45, 0.25, 0.55, 0.55), "yolo")
+    # 有效灯: 同样 aspect 但面积偏小(area≈0.011 → L1≈0.7)的候选, conf=0.9
+    valid = _cand((0.27, 0.31, 0.33, 0.49), "yolo")
+    cands = [interference, valid]
+    ts = {0: 0.0, 1: 0.0}  # 无时序差异
+    # 不传 governing(或 weight=0): 按 L1 选干扰(几何更像灯)
+    sel_l1 = select_gtfree(cands, prior, temporal_scores=ts)
+    assert sel_l1 is interference
+    # 传 governing(weight=1.0): 按 conf 选有效灯, 且 conf>=阈值不弃权
+    sel_gov = select_gtfree(cands, prior, temporal_scores=ts,
+                            governing_scores={0: 0.1, 1: 0.9},
+                            governing_weight=1.0, governing_threshold=0.5)
+    assert sel_gov is valid
+
+
+def test_select_gtfree_abstain_inactive_without_governing():
+    """弃权门是 opt-in(R1): 不传 governing_scores 时绝不返 None(生产默认行为不变)。"""
+    prior = derive_ped_priors([(0.10, 0.30)])
+    X = _cand((0.40, 0.20, 0.50, 0.50), "yolo")
+    cands = [X]
+    # 无 governing_scores: 即便我们"想"弃权, 也必须返回候选
+    assert select_gtfree(cands, prior) is X
+    # 阈值再高也不影响 None 路径(门未启用)
+    assert select_gtfree(cands, prior, governing_threshold=0.999) is X
+
+
 if __name__ == "__main__":
     test_seed_with_gt_picks_ped_not_vehicle()
     test_selector_gtfree_picks_ped_by_geometry()
@@ -211,4 +287,8 @@ if __name__ == "__main__":
     test_select_gtfree_backward_compat_no_temporal()
     test_select_gtfree_l3_flips_tie()
     test_select_gtfree_backward_compat_no_l3()
+    test_select_gtfree_backward_compat_no_governing()
+    test_select_gtfree_governing_abstain_returns_none()
+    test_select_gtfree_governing_reranks_valid_light()
+    test_select_gtfree_abstain_inactive_without_governing()
     print("all ped_light_selector unit tests passed")

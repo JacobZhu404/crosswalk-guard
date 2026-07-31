@@ -100,7 +100,10 @@ def select_gtfree(candidates: List[Dict], ped_prior: Dict,
                  temporal_scores: Optional[Dict[int, float]] = None,
                  temporal_weight: float = 0.4,
                  l3_scores: Optional[Dict[int, float]] = None,
-                 l3_weight: float = 0.3) -> Optional[Dict]:
+                 l3_weight: float = 0.3,
+                 governing_scores: Optional[Dict[int, float]] = None,
+                 governing_weight: float = 0.0,
+                 governing_threshold: float = 0.5) -> Optional[Dict]:
     """M2b: 生产 GT-free 选灯。**不接收任何逐帧 GT**(护栏1)。
     candidates: list of {"box_norm":..., "source":...}。返回选中候选或 None。
     L1 几何判别(峰值高斯)为主; **YOLO cls=9 候选优先**(检测器类别=交通灯, 合法信号,
@@ -109,10 +112,17 @@ def select_gtfree(candidates: List[Dict], ped_prior: Dict,
     瞬时亮斑/车灯得低分, temporal_scores={候选索引: 0~1}。temporal_scores=None 时退化为纯 L1。
     L3 学习式判别(Jacob 标样本训的 ped-vs-vehicle 头, 可选): l3_scores={候选索引: P(ped)∈[0,1]}。
     组合: final = (1-l3_weight)*base + l3_weight*l3_ped; l3_scores=None 时完全忽略(向后兼容,
-    旧行为/单帧生产兜底不变, 且生产接线默认不传 l3 直到 cc 放行)。"""
+    旧行为/单帧生产兜底不变, 且生产接线默认不传 l3 直到 cc 放行)。
+    **governing 判别器接入(§3.1, 弃权门, R1)**:
+    - governing_scores={候选索引: P(有效行人灯)∈[0,1]}(新判别器 "有效行人灯 vs 干扰" 输出);
+    - final = (1-governing_weight)*base + governing_weight*governing_conf
+      (此路令 l3_weight=0 即不叠加有害 L3); governing_scores=None 时完全忽略(向后兼容)。
+    - **弃权门**: 仅当启用 governing(governing_scores 非 None)且最佳候选 conf < governing_threshold
+      → 返回 None(该帧不输出绿), 治 5/8 无灯干扰自发绿 + 2/8 排序错。governing_scores=None 时
+      门不触发(生产默认行为不变, 红线)。"""
     yolo_idx = [i for i, c in enumerate(candidates) if c.get("source") == "yolo"]
     use_idx = yolo_idx if yolo_idx else list(range(len(candidates)))
-    best, best_score = None, -1e9
+    best, best_score, best_conf = None, -1e9, 0.0
     for i in use_idx:
         c = candidates[i]
         b = c.get("box_norm")
@@ -125,8 +135,16 @@ def select_gtfree(candidates: List[Dict], ped_prior: Dict,
             s += temporal_weight * temporal_scores.get(i, 0.0)
         if l3_scores is not None:
             s = (1.0 - l3_weight) * s + l3_weight * l3_scores.get(i, 0.0)
+        gconf = 0.0
+        if governing_scores is not None:
+            gconf = governing_scores.get(i, 0.0)
+            s = (1.0 - governing_weight) * s + governing_weight * gconf
         if s > best_score:
-            best_score, best = s, c
+            best_score, best, best_conf = s, c, gconf
+    # 弃权门(R1): 仅启用 governing 且最佳候选非"有效行人灯"时返 None
+    if governing_scores is not None and best is not None:
+        if best_conf < governing_threshold:
+            return None
     return best
 
 
