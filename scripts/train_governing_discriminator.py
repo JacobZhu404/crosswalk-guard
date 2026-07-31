@@ -80,8 +80,11 @@ def recommend_tau(model, gt, train_videos):
                         crop = gd.crop_candidate(frame, tuple(b["box_norm"]))
                         if crop:
                             pos_scores.append(gd.score_crop(model, tf(crop)))
-    pos_scores = np.array(pos_scores + [1.0] * len(pos))  # 正样本本身 crop 已含, 这里补 GT 正框
-    neg_scores = np.array(neg_scores + [0.0] * len(neg_b))
+    # A3: 只用**真预测分**(GT gov 框裁图 + 无灯帧候选裁图), 不混合成完美分/零分(否则 τ 乐观偏置)
+    if len(pos_scores) == 0 or len(neg_scores) == 0:
+        return 0.5, []  # 单侧无样本, 退回默认 τ
+    pos_scores = np.array(pos_scores)
+    neg_scores = np.array(neg_scores)
     sens = []
     best_tau, best_f1 = 0.5, -1
     for t in TAU_GRID:

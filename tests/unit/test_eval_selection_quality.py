@@ -14,7 +14,7 @@ def _row(video, gov_boxes, best_box, best_conf, best_color, no_light=False, gt_g
     best_cand = {"box_norm": tuple(best_box), "source": "yolo"} if best_box else None
     return {"video": video, "gov_boxes": [tuple(b) for b in gov_boxes],
             "best_cand": best_cand, "best_conf": best_conf, "best_color": best_color,
-            "no_light": no_light, "gt_green": gt_green}
+            "no_light": no_light, "gt_green": gt_green, "had_cands": best_box is not None}
 
 
 def test_selection_precision_iou_threshold():

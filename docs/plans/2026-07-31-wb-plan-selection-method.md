@@ -98,3 +98,20 @@ select_gtfree(candidates, ped_prior, temporal_scores=None, temporal_weight=0.4,
 ---
 
 **交付（本轮）**：本计划 doc，交 cc review。**批准后**才进入 §3 代码+训练+评测，产出 `governing_discriminator.pt` + 评测报告交复核。不擅自改 `select_gtfree` 生产行为、不接线、不训模型，直到 cc 放行 §3。
+
+---
+
+## 6. 实施状态（2026-07-31 cc 复核 fa90c20 修订后，commit 待 wb 提交）
+
+§3.1 通过（§3.2/§3.3 初版有 2 blocking，已修，待 cc 复核修订版 + 锚冒烟）。
+
+### 6.1 已落实的修订
+- **B1（评测台走 `select_gtfree` 上线路径）**：`eval_video` 改为三趟——①逐 GT 帧建候选(YOLO cls=9 + HSV 兜底，canonical 同口径) ②全视频 GT 帧间算 L2 时序(`compute_temporal_scores`) ③逐帧调 `select_gtfree(cands, PED_PRIOR, temporal_scores=ts, governing_scores=gov, governing_weight=GW, governing_threshold=τ)` 拿选中框。不再按判别器分纯 argmax。判别器只驱动 gate(拒识)，选灯交 L1+YOLO+0.4·L2（R1 守）。
+- **B2（τ 不泄漏到测试集）**：`main` 每折训模型后调 `recommend_tau(模型, gt, 训练视频)` 定该折 τ，取 **median 作单一全局 τ** 施于测试折；评测脚本不再在 `all_rows`(=测试集) argmin 选 τ。τ 敏感性曲线照登但只作展示，报告口径 τ 点取训练折 median。
+- **A1（weight 不再空转）**：`--governing-weight` 默认 0.3(>0)，评测/训练显式定值；`--anchor` 模式强制 0 复现基线。
+- **A2（基线锚）**：`--anchor`(无模型, 纯 base 路径 τ=0) 须复现 canonical R1 扣05=2.19% 与 漏绿=80。冒烟 **PASS**(8/365=2.19%, 漏绿=80)，评测台与基线吻合。
+- **A3（温度缩放 + 早停，原"计划声明代码没有"已闭合）**：`governing_disc.train_model` 现为 15% val **早停**(保最优 ckpt) + `fit_temperature`(val 校准集 grid 选最小 BCE 定 T，校准集来自训练视频不碰测试折 R3)；`recommend_tau` 删除合成完美分/零分，只用**真预测分**算 F1。
+
+### 6.2 红线坚守
+- gate 不过净回退不接线（未跑全量 LOVO 前不评 gate）；GT 不进推理·LOVO 去循环；多 seed 报 worst（全量待 cc 放行后跑）；权重不进库；不碰 `enforce_transition_limit`。
+- 本轮只跑 **锚冒烟(PASS)** + 单视频单 seed 代码路径 sanity(无崩溃)；**未跑 ≥5 seed 全量 LOVO**（依 cc 流程：修订+锚 PASS → cc 复核 → 放全量）。

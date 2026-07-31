@@ -11,7 +11,7 @@ R4: τ 选取含 漏绿 ≤ 80 硬约束(由调用方在选灯评测里施加, �
 
 本模块只定义模型 + 数据 + 单折训练, LOVO 编排在 scripts/train_governing_discriminator.py。不接线生产(红线)。
 """
-import math, random
+import math, random, copy
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 
@@ -40,7 +40,11 @@ def _cfg_tl():
 
 
 class GoverningDiscNet(nn.Module):
-    """tiny-CNN, 64×64 RGB -> 1 (sigmoid: P(有效行人灯))。约 36KB 量级, 不堆容量(PhaseB 教训)。"""
+    """tiny-CNN, 64×64 RGB -> 1。约 36KB 量级, 不堆容量(PhaseB 教训)。
+
+    A3: 输出经温度缩放 sigmoid(logit/T), T 在 val 校准集(来自训练视频, 不碰测试折 R3)
+    grid 选最小 BCE 拟合, 使 τ 跨折可比。训练时 T=1.0(裸 logit 训练稳定), 训后 fit_temperature 定 T。
+    """
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Conv2d(3, 16, 3, padding=1)
@@ -50,14 +54,18 @@ class GoverningDiscNet(nn.Module):
         self.drop = nn.Dropout(0.3)
         self.fc1 = nn.Linear(48 * (CROP // 8) * (CROP // 8), 64)
         self.fc2 = nn.Linear(64, 1)
+        self.temperature = 1.0
 
-    def forward(self, x):
+    def forward_logits(self, x):
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
         x = self.pool(F.relu(self.conv3(x)))
         x = x.flatten(1)
         x = self.drop(F.relu(self.fc1(x)))
-        return torch.sigmoid(self.fc2(x))
+        return self.fc2(x)
+
+    def forward(self, x):
+        return torch.sigmoid(self.forward_logits(x) / self.temperature)
 
 
 _TRANSFORM = None
@@ -166,9 +174,32 @@ class _CropDS(Dataset):
         return img, torch.tensor(label, dtype=torch.float32)
 
 
-def train_model(pos_items, neg_items, seed: int = 0, epochs: int = 30,
-                wd: float = 1e-4, batch: int = 32) -> GoverningDiscNet:
-    """在给定正负样本上训练单折模型。LOVO 折外由 CLI 脚本切分。"""
+def fit_temperature(model: GoverningDiscNet, val_items: List,
+                    grid: Tuple[float, ...] = (0.3, 0.5, 0.75, 1.0, 1.5, 2.0, 3.0, 5.0)) -> None:
+    """A3 温度缩放: T 在 val 校准集(来自训练视频, 不碰测试折 R3)上 grid 选最小 BCE。
+    让 τ 跨折可比。val_items 为空则 T=1.0。"""
+    if not val_items:
+        model.temperature = 1.0
+        return
+    model.eval()
+    with torch.no_grad():
+        logits = torch.cat([model.forward_logits(it[0].unsqueeze(0)) for it in val_items])
+        y = torch.cat([torch.tensor(it[1], dtype=torch.float32).unsqueeze(0) for it in val_items])
+    best_T, best_loss = 1.0, float("inf")
+    for T in grid:
+        p = torch.sigmoid(logits / T).squeeze(-1)
+        loss = float(F.binary_cross_entropy(p, y).item())
+        if loss < best_loss:
+            best_loss, best_T = loss, T
+    model.temperature = best_T
+
+
+def train_model(pos_items, neg_items, seed: int = 0, epochs: int = 60,
+                wd: float = 1e-4, batch: int = 32, patience: int = 10) -> GoverningDiscNet:
+    """在给定正负样本上训练单折模型。LOVO 折外由 CLI 脚本切分。
+
+    A3: 切 15% val 做早停(保最优 ckpt, 防过拟合); 训后 fit_temperature 校准(让 τ 跨折可比)。
+    """
     random.seed(seed); np.random.seed(seed); torch.manual_seed(seed)
     data = pos_items + neg_items
     random.shuffle(data)
@@ -180,17 +211,36 @@ def train_model(pos_items, neg_items, seed: int = 0, epochs: int = 30,
     model = GoverningDiscNet()
     opt = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=wd)
     crit = nn.BCELoss()
-    model.train()
+    best_loss, best_state, waits = float("inf"), None, 0
     for ep in range(epochs):
+        model.train()
         for xb, yb in tr_dl:
             opt.zero_grad()
             loss = crit(model(xb).squeeze(1), yb)
             loss.backward()
             opt.step()
+        model.eval()
+        vl, n = 0.0, 0
+        with torch.no_grad():
+            for xb, yb in val_dl:
+                p = model(xb).squeeze(1)
+                vl += crit(p, yb).item() * len(yb)
+                n += len(yb)
+        vl /= max(1, n)
+        if vl < best_loss:
+            best_loss, best_state, waits = vl, copy.deepcopy(model.state_dict()), 0
+        else:
+            waits += 1
+            if waits >= patience:
+                break
+    if best_state is not None:
+        model.load_state_dict(best_state)
+    fit_temperature(model, val)  # A3 校准(val 来自训练视频, 不碰测试折 R3)
     return model
 
 
 def score_crop(model: GoverningDiscNet, img_tensor: torch.Tensor) -> float:
+    """返回 P(有效行人灯); 经 fit_temperature 校准的 T 缩放(使 τ 跨折可比)。"""
     model.eval()
     with torch.no_grad():
         return float(model(img_tensor.unsqueeze(0)).item())
