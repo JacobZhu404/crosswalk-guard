@@ -26,6 +26,7 @@
 | `senior-dev` | Senior Developer（高级开发工程师） | 检测算法 / 评测基建 / 文档 | 默认 main；大功能拉 `feat/<topic>` | `data/output/senior-dev/` | active |
 | `eval-agent` | 并行测评 Agent | 红绿灯 / 事件级评测 | 默认 main；大功能拉 `feat/<topic>` | `data/output/eval-agent/` | active（确切名待用户确认） |
 | `plate-agent` | Plate Recognition Agent（车牌识别 Agent） | 车牌识别优化 / 评测集 / 标注画廊 | 默认 main；大功能拉 `feat/<topic>` | `data/output/plate-agent/` | active |
+| `qw` | 千问办公（Qwen） | 只读诊断 / 评测辅助（cc 派活） | 默认 main | `data/output/qw/` | active |
 | _（新 agent 在此追加）_ | | | 默认 main；大功能拉 `feat/<topic>` | `data/output/<id>/` | |
 
 **署名邮箱约定**：`<agent-id>@crosswalk-guard.agents`（虚拟域，仅用于 commit trailer 标识，不收发邮件）。
