@@ -310,12 +310,9 @@ def _write_report(per_seed, gw, seeds, videos):
     fg_rates = [per_seed[s]["mg"]["fg_rate"] for s in seeds]
     misses = [per_seed[s]["mg"]["miss"] for s in seeds]
     sps = [_f(per_seed[s]["mg"]["sel_prec"]) for s in seeds]
-    rejs = []
-    for s in seeds:
-        allr = per_seed[s]["all_rows"]
-        rej = sum(1 for r in allr if r["best_cand"] is None or r["best_conf"] < per_seed[s]["tau"])
-        nol = sum(1 for r in allr if r["no_light"])
-        rejs.append(rej / nol if nol else None)
+    # 正确弃权率: 复用 metrics_for_tau 的 no_light 帧正确口径(分子分母均锁无灯帧),
+    # 不自行用全帧弃权数 / 无灯帧数(会 >100%, 失实)。
+    rejs = [per_seed[s]["mg"]["rej_rate"] for s in seeds]
     L.append("## 主标尺(全399帧, 扣05, ≥%d seed 聚合 mean±std + worst-seed)\n" % len(seeds))
     L.append(f"- 误绿(扣05): **{np.mean(fg_rates)*100:.2f}%** ±{np.std(fg_rates)*100:.2f}pp "
              f"(worst-seed最差={max(fg_rates)*100:.2f}%)")
@@ -359,8 +356,8 @@ def _write_report(per_seed, gw, seeds, videos):
     for v in ("违章06", "违章11"):
         nol = [r for s in seeds for r in per_seed[s]["all_rows"] if r["video"] == v and r["no_light"]]
         L.append(f"- {v}: 正确弃权率 = N/A (零无灯帧)" if not nol else f"- {v}: 无灯帧={len(nol)}")
-    # τ 敏感性(S1-honest)
-    all_pool = [r for s in seeds for r in per_seed[s]["all_rows"]]
+    # τ 敏感性(S1-honest): 用单 seed 口径(与主标尺一致, 非 5×seed 拼接), 否则漏绿被放大 5× 误导 gate 判定
+    all_pool = per_seed[seeds[0]]["all_rows"]
     L.append("\n## τ 敏感性(S1 修复后, 内部不弃权, 门按扫描 τ 施加; 仅展示)\n")
     L.append(f"{'τ':>4} {'选灯精度':>8} {'弃权率':>8} {'误绿(扣05)':>11} {'漏绿':>5}")
     for tau in TAU_GRID:
