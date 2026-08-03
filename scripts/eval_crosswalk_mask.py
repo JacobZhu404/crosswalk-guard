@@ -4,8 +4,8 @@
 主指标: CrosswalkDetector.detect(frame) **不带 vehicle_boxes**(本征掩膜质量, 与 cc 裁定一致)。
 GT = datasets/gt/crosswalk/{video}.json 里的逐关键帧 polygon(Jacob 标; 像素坐标)。
 
-v2 --temporal 模式(B1 方案): v2 走完整视频时序聚合(running-max), 镜像生产节奏
-(8fps × interval4), 在 GT anchor 帧记录当前聚合 mask。这才是 v2 在生产中的真实表现。
+v2 --temporal 模式(B1 方案): v2 走完整视频时序聚合(running-max), 镜像生产采样节奏
+(interval=round(fps/cfg.inference.fps), 默认 ~4 帧取 1), 在 GT anchor 帧记录当前聚合 mask。
 
 用法:
   python scripts/eval_crosswalk_mask.py                           # v11 全部已标视频
