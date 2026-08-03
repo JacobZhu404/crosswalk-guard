@@ -84,7 +84,7 @@ def main():
         for v in all_videos:
             preds = results.get(v, [])
             gts = gt_violations.get(v, [])
-            is_neg = not video_meta.get(v, {}).get("has_violation", False)
+            is_neg = not video_meta.get(v, False)
             m = match_violation_events(preds, gts, min_overlap_s=0.5)
             tp = len(m["matches"])
             fp = m["fp"]
@@ -110,7 +110,7 @@ def main():
         for v in all_videos:
             preds = sweep_results[bo].get(v, [])
             gts = gt_violations.get(v, [])
-            is_neg = not video_meta.get(v, {}).get("has_violation", False)
+            is_neg = not video_meta.get(v, False)
             m = match_violation_events(preds, gts, min_overlap_s=0.5)
             all_tp += len(m["matches"])
             all_fp += m["fp"]
@@ -148,7 +148,7 @@ def _write_report(sweep_results, all_videos, gt_violations, video_meta, best_bo,
         for v in all_videos:
             preds = sweep_results[bo].get(v, [])
             gts = gt_violations.get(v, [])
-            is_neg = not video_meta.get(v, {}).get("has_violation", False)
+            is_neg = not video_meta.get(v, False)
             m = match_violation_events(preds, gts, min_overlap_s=0.5)
             all_tp += len(m["matches"])
             all_fp += m["fp"]
