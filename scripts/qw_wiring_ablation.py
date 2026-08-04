@@ -68,7 +68,7 @@ def main():
         "v11+mask(基线)": {v: os.path.join(args.wiring_pre, f"run_{v}", "violations.csv") for v in VIDEOS},
         "v2+mask":        {v: os.path.join(args.abl_v2mask, f"run_{v}", "violations.csv") for v in VIDEOS},
         "v11+box":        {v: os.path.join(args.abl_v11box, f"run_{v}", "violations.csv") for v in VIDEOS},
-        "v2+box(0.20)":   {v: os.path.join(args.sweep_root, f"sweep_{v}_bo0.20", "violations.csv") for v in VIDEOS},
+        "v2+box(0.20)":   {v: os.path.join(args.sweep_root, f"sweep_{v}_bo0.2", "violations.csv") for v in VIDEOS},
     }
 
     summary = {}

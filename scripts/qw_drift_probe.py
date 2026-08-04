@@ -43,13 +43,15 @@ def affine_jitter(w, h, rng, seed_base):
     return M
 
 
-def affine_pan(frame_idx, w, h, total_steps):
-    """单向 pan: 每帧平移增量使累计净漂移达帧宽的 12%(约 0.12*w/total_steps 每步)。
-    加 0.25% 每步的单向缩放(镜头缓慢推进), 模拟持续漂移。"""
-    step_frac = 0.12 / max(total_steps, 1)
-    dx = step_frac * w * frame_idx
-    dy = step_frac * 0.4 * h * frame_idx
-    s = 1.0 + 0.0025 * frame_idx
+def affine_pan(frame_idx, w, h, total_steps, px_per_step=2.0):
+    """单向 pan: 每采样帧平移 px_per_step 像素(连续可跨亚像素, warpAffine 插值),
+    累计净漂移可达帧宽的 60-100%(远超真实监控微漂移), 触发 running-max 拖影失效模式。
+    px_per_step=2.0 @ 1600px 宽: 820 采样帧 -> 累计 ~1640px(整幅扫过)。
+    另加 0.001/帧 的单向缩放(镜头缓慢推进)。
+    """
+    dx = px_per_step * frame_idx
+    dy = 0.35 * px_per_step * frame_idx
+    s = 1.0 + 0.001 * frame_idx
     M = cv2.getRotationMatrix2D((w / 2, h / 2), 0.0, s)
     M[0, 2] += dx
     M[1, 2] += dy
@@ -89,9 +91,11 @@ def probe_video(video, mode, cfg, seed=42):
             if mode == "jitter":
                 M = affine_jitter(W, H, rng, seed)
                 fw = cv2.warpAffine(frame, M, (W, H))
-            elif mode == "pan":
-                total_steps = max(1, int(detect_count + 1))
-                M = affine_pan(frame_idx // interval, W, H, total_steps)
+            elif mode in ("pan", "pan_fast"):
+                # pan: 每采样帧 0.5px(累计 ~25% 帧宽, 接近真实监控微漂移上限)
+                # pan_fast: 每采样帧 2.0px(累计整幅扫过, 必触发拖影的失效模式档)
+                step = 2.0 if mode == "pan_fast" else 0.5
+                M = affine_pan(frame_idx // interval, W, H, 0, px_per_step=step)
                 fw = cv2.warpAffine(frame, M, (W, H))
             else:
                 fw = frame
@@ -128,7 +132,7 @@ def summarize(r, verbose=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--videos", nargs="+", default=DEFAULT_VIDEOS)
-    ap.add_argument("--modes", nargs="+", default=["static", "jitter", "pan"])
+    ap.add_argument("--modes", nargs="+", default=["static", "jitter", "pan", "pan_fast"])
     ap.add_argument("--config", default=os.path.join(ROOT, "configs", "config.yaml"))
     ap.add_argument("--verbose", action="store_true")
     args = ap.parse_args()
