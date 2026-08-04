@@ -1,7 +1,7 @@
 # 斑马线 v2 时序聚合 before/after 报告(qw, B1 实现验证)
 
 > B1 方案(`docs/plans/2026-08-03-qw-crosswalk-fix-plan.md`)实现后的 mask-IoU before/after 对比。
-> 核心改动: `eval_crosswalk_mask.py` 加 `--temporal` 模式, v2 走完整视频 running-max 时序聚合(镜像生产节奏 8fps×interval4)。
+> 核心改动: `eval_crosswalk_mask.py` 加 `--temporal` 模式, v2 走完整视频 running-max 时序聚合(每 8fps 采样帧喂一次 detect; `interval=round(fps/cfg.inference.fps)` 是**降采样步长**, 比生产 `crosswalk_interval` 密 4× —— 措辞修正见 C1, cc 053d1c4 已证密喂不刷分)。
 > cc 裁定条件 C1(镜像生产节奏)、C2(纯加性)、C4(mask-IoU 升) 验证。
 
 ## before/after 对比
@@ -37,7 +37,7 @@
 
 ## cc 验收对照(C1–C4)
 
-- **C1 镜像生产节奏**: ✅ `--temporal` 模式按 `cfg.inference.fps`(8fps)×`interval`(round(fps/8)=4) 采样, 与 DAG `n_crosswalk` 每 4 帧调一次 `detect` 完全一致
+- **C1 镜像生产节奏**: ✅(措辞修正, cc 053d1c4) `--temporal` 是**每 8fps 采样帧喂一次 detect**(每 0.125s), `interval=round(fps/cfg.inference.fps)` 为**降采样步长**, 非 `crosswalk_interval` → 比生产(crosswalk_interval 每 4 帧调一次, 每 0.5s)密 **4×**。**不是"与 DAG 完全一致"**。cc 亲跑对拍(4 视频, qw 8fps vs 生产 2fps)证实 running-max 饱和 → 密喂不刷分, 生产聚合 0.452 ≥ 密喂 0.445, 故 0.441 结论成立(略保守)。
 - **C2 纯加性**: ✅ v11 路径(无 `--temporal`)每帧独立实例, 口径不变; v2 单帧模式也保持原口径; `box_overlap` 已在 `tracker.py`/`violation_engine.py` 落地, 默认 denom=mask 路径用 `overlap` 阈值(不变), 仅 denom=box 时用 `box_overlap`
 - **C3 不接线**: ✅ v2 走注入(`cli.run(crosswalk_detector=CrosswalkDetectorV2(cfg), occ_denom="box")`), 默认仍 v11; Jacob 拍板才接线
 - **C4 mask-IoU 升**: ✅ 0.249→0.441(+77%), recall 0.385→0.818(+113%), 3/9 视频≥0.5; 触顶 ~0.4 与 v6 改定 1 预测吻合

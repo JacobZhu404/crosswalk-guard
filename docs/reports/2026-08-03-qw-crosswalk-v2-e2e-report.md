@@ -3,6 +3,7 @@
 > B1 方案(`docs/plans/2026-08-03-qw-crosswalk-fix-plan.md`)实现后的端到端验证。
 > 检测器: v2(时序聚合 running-max) + denom=box + box_overlap=0.20。
 > 承 cc 近端验收(`docs/handoff/2026-08-03-cc-verify-qw-crosswalk-recall-ceiling.md` 相关 + `053d1c4`)放行跑端到端。
+> **cc C4 终验 PASS(`docs/handoff/2026-08-04-cc-verify-qw-crosswalk-b1-c4-final.md`, 773dff4)**: 五项 gate 全过; 基线口径更正见 §2(同 harness 0.609, 非 0.636)。
 
 ## 1. box_overlap 阈值扫描(9正+2负 × 5档)
 
@@ -18,14 +19,14 @@
 
 ## 2. 端到端 F1 vs 基线
 
-| 指标 | 基线 v11+mask | v2+box(0.20) | 变化 |
+| 指标 | 基线 v11+mask(同口径, cc 亲跑) | v2+box(0.20) | 变化 |
 |---|---|---|---|
-| 事件级 F1 | **0.636** | **0.889** | **+0.253 (+40%)** |
-| P | 0.538 | 0.889 | +0.351 |
+| 事件级 F1 | **0.609** | **0.889** | **+0.280 (+46%)** |
+| P | 0.500 | 0.889 | +0.389 |
 | R | 0.778 | 0.889 | +0.111 |
 | mask-IoU | 0.011 | 0.441 | +0.430 |
 
-> 基线 0.636 引自 v6 计划(`docs/history/plans/2026-07-17-wb-plan-v6-crosswalk-detector-upgrade.md` §0, `diag_gt_crosswalk_ceiling.py` 口径)。
+> **口径更正(cc 773dff4 独立复核)**: 本版原报基线 0.636, 引自 v6 计划(`docs/history/plans/2026-07-17-wb-plan-v6-crosswalk-detector-upgrade.md` §0, `diag_gt_crosswalk_ceiling.py` 口径)——**与 v2+box 的度量 harness 不同, 是异口径**。cc 亲跑 v11+mask 走 `cli.run`+`match_violation_events`(同 harness), 得**真同口径基线 0.609**(TP=7/FP=7/FN=2, P=0.500/R=0.778)。同口径 **0.609→0.889 = +46%**, 比原报 +40% 更强; 结论不变(v2 两口径都赢, 且同口径赢更多)。基线逐视频(cc 亲跑)见 773dff4 §0(B): 02/05/07/09 各有 1-2 个碎片 FP 被 v2 清除, 违章11 由 FN 救回。
 
 ## 3. 逐视频明细(v2+box, box_overlap=0.20)
 
@@ -46,7 +47,7 @@
 ## 4. C4 效果 gate 对照
 
 - **✅ mask-IoU 升**: 0.011(v11) → 0.441(v2 时序), +77%(cc 亲测 0.445 已确认)
-- **✅ 端到端 F1 升**: 0.636 → 0.889, +40%, 不回退且大幅升
+- **✅ 端到端 F1 升**: 同口径 0.609 → 0.889(cc 亲跑同 harness 复核), +46%, 不回退且大幅升
 - **✅ 负例 01/10 零新误报**: 
   - 违章01 的 FP=[48.4-61.3] **基线 v11+mask 同样存在**(cc 可独立复跑验证)——**非 v2 引入的新误报**
   - 违章10 零 FP ✓
@@ -61,7 +62,7 @@ v6 改定 1 预测 train-free 触顶 mask-IoU ~0.4。实测 0.441 略超预期(�
 
 ## 6. 结论与后续
 
-- v2 时序聚合 + denom=box 是**净收益**: F1 0.636→0.889(+40%), 负例零新误报, 7 好视频不回退, flicker 根除
+- v2 时序聚合 + denom=box 是**净收益**: F1 同口径 0.609→0.889(+46%), 负例零新误报, 7 好视频不回退(FP 反降), flicker 根除
 - **是否触顶**: 端到端 F1 距 0.941 天花板仅 0.052, 继续抠 mask-IoU(0.441→0.5+)的边际收益有限; 若 cc 认为需要, 记 **Phase 2 seg 微调**为独立立项交 Jacob
 - **接线**: 仍待 Jacob 拍板(C3)——qw 只交证据, 不 merge 进默认
 - 交付物: `sweep_box_overlap.py` + 本报告 + `data/output/qw/sweep_*/`(55 份 violations.csv 供 cc bit-for-bit 复核)
