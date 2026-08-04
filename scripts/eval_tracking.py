@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 from redlight.infrastructure.config import load_config
 from redlight.app import cli
+from redlight.models.crosswalk import CrosswalkDetector
 from redlight.evaluation.module_metrics import (
     attribution_union, stationary_accuracy, iou_box,
 )
@@ -31,8 +32,12 @@ def eval_video(video, gt_anchors, cfg, preset, T=0.5):
         print(f"  [跳过] 找不到视频 {video_path}")
         return None
     out_dir = os.path.join(ROOT, "data", "output", f"run_{video}_{preset}")
+    # 显式钉死 v11+mask(cc gate 2026-08-04): 跟踪评测口径(b2 baseline)在 v11+mask 下测得,
+    # 接线后 cli.run 默认已翻 v2+box, 不钉死会让本工具在脚下被换检测器, 破坏度量同口径红线。
     events, track_samples = cli.run(cfg, video_path, out_dir, preset=preset,
-                                     return_track_samples=True)
+                                     return_track_samples=True,
+                                     crosswalk_detector=CrosswalkDetector(cfg),
+                                     occ_denom="mask")
     per_anchor = []
     for a in gt_anchors:
         window = tuple(a["window"])

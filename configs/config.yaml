@@ -34,8 +34,15 @@ models:
 # 参与违规判定的车种 (按 COCO 类别名)
 vehicle_classes: ["car", "bus", "truck"]
 
+# 斑马线检测/占道语义 (2026-08-04 接线, Jacob 拍板 C3):
+#   version 词表与 eval_violations.py --detector 对齐: v11(现状/回退) | v2(时序聚合, 接线默认)
+#   version 与 method(auto/segment/cv) 正交: method 管"走模型还是 CV 兜底", version 管"检测器版本"
+#   occ_denom: mask = 占斑马线 mask 面积比例(D2 旧语义); box = 车 footprint 压线比例(接线默认, 用 box_overlap 阈值)
+#   回退: 两字段改回 version: "v11" + occ_denom: "mask" 即恢复接线前行为(护栏① bit-identical 已验证)
 crosswalk:
   method: "auto"        # auto(优先模型,无则CV) | segment | cv
+  version: "v2"         # 斑马线检测器: v11 | v2(时序聚合, running-max)
+  occ_denom: "box"      # 占道分母: mask | box
   overlap_ratio: 0.30   # 车辆面积落入斑马线比例 >= 此值 判为"压线" (可视化/参考用)
   cv_min_area: 3000     # CV 兜底时最小条纹面积阈值
 

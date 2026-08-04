@@ -17,6 +17,7 @@ import cv2
 from ..infrastructure.config import load_config, ensure_dir, project_root
 from ..models.vehicle import VehicleDetector
 from ..models.crosswalk import CrosswalkDetector
+from ..models.crosswalk_v2 import CrosswalkDetectorV2
 from ..models.traffic_light import TrafficLightDetector
 from ..models.plate import PlateRecognizer
 from ..pipeline.tracker import TrackStateManagerV2
@@ -60,24 +61,28 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
         "flicker_toggle": int(getattr(tl_cfg, "flicker_toggle_count", 4)),
         "unknown_hold": int(getattr(tl_cfg, "anchor_hold", 30)),
     }
-    # 诊断注入(加法, 默认不变): crosswalk_detector 可替换斑马线检测器(如 GT 掩膜天花板);
-    # occ_denom 可切占道分母("mask"/"box"), None 时用引擎默认("mask")。
+    # 接线(C3, Jacob 拍板 2026-08-04): 默认 occ_denom 从 config 读(接线后默认 "box");
+    # 显式传参仍优先(诊断/评测注入路径不变, 见 eval_violations/sweep/diag 显式传参)。
+    _occ_denom = occ_denom if occ_denom is not None else getattr(cfg.crosswalk, "occ_denom", "mask")
     _engine_kwargs = dict(
         preset=preset,
         sample_fps=cfg.inference.fps,
         unknown_to_review=cfg.output.unknown_light_to_review,
         fuse_kwargs=fuse_kwargs,
+        occ_denom=_occ_denom,
     )
-    if occ_denom is not None:
-        _engine_kwargs["occ_denom"] = occ_denom
+    # 接线(C3): 默认检测器从 config 读(接线后默认 "v2"); 显式传参优先。
+    _cw_version = getattr(cfg.crosswalk, "version", "v11")
+    _crosswalk_det = crosswalk_detector if crosswalk_detector is not None else (
+        CrosswalkDetectorV2(cfg) if _cw_version == "v2" else CrosswalkDetector(cfg))
     comp = {
         "vehicle": VehicleDetector(cfg),
-        "crosswalk": crosswalk_detector if crosswalk_detector is not None else CrosswalkDetector(cfg),
+        "crosswalk": _crosswalk_det,
         "light": TrafficLightDetector(cfg),
         "plate": PlateRecognizer(cfg),
         "trackstate": TrackStateManagerV2(preset),
         "engine": BatchViolationEngine(**_engine_kwargs),
-        "viz": Visualizer(cfg, preset=preset, occ_denom=occ_denom or "mask"),
+        "viz": Visualizer(cfg, preset=preset, occ_denom=_occ_denom),
         "plate_consensus": PlateConsensus(keep_history=180),
     }
     # 按 video 名加载 per-video 行人信号位置先验 (light_priors.json), 接入 observe() prior 直采。

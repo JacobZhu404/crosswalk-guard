@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from redlight.infrastructure.config import load_config
 from redlight.app import cli
+from redlight.models.crosswalk import CrosswalkDetector
 from redlight.evaluation.module_metrics import iou_box
 
 REPORT = ROOT / "docs" / "reports" / "2026-08-03-qw-vehicle-track-fragmentation.md"
@@ -171,9 +172,13 @@ def run_video(video, cfg, preset):
         return [], []
 
     out_dir = str(OUT_DIR / f"run_{video}_{preset}")
+    # 显式钉死 v11+mask(cc gate 2026-08-04): b2 碎片化 baseline 在 v11+mask 下测得,
+    # 接线后 cli.run 默认已翻 v2+box, 不钉死会让碎片化口径在脚下被换检测器而漂移。
     events, track_samples = cli.run(
         cfg, video_path, out_dir, preset=preset,
         return_track_samples=True,
+        crosswalk_detector=CrosswalkDetector(cfg),
+        occ_denom="mask",
     )
 
     fps_inference = cfg.inference.fps
