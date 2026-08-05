@@ -125,13 +125,16 @@ def build_default_dag(cfg, comp):
                             best_iou = iou
                             best_tid = tid
                 if best_tid is not None:
-                    consensus.update(best_tid, p["text"], p.get("conf", 0.0), ctx["ts"])
+                    # box 随读取记录(纯加性, 供回填时间/空间约束; 投票逻辑不变)
+                    consensus.update(best_tid, p["text"], p.get("conf", 0.0), ctx["ts"],
+                                     p.get("xyxy"))
                 else:
                     for tid, st in states.items():
                         if st.get("active") and st.get("box"):
                             bx1, by1, bx2, by2 = st["box"]
                             if bx1 <= p_center[0] <= bx2 and by1 <= p_center[1] <= by2:
-                                consensus.update(tid, p["text"], p.get("conf", 0.0), ctx["ts"])
+                                consensus.update(tid, p["text"], p.get("conf", 0.0), ctx["ts"],
+                                                 p.get("xyxy"))
                                 break
             ctx["consensus_plates"] = consensus.get_all()
 

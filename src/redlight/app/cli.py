@@ -144,7 +144,7 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
 
     # 证据截图 + CSV 输出(批处理后)
     _write_outputs(events, video_path, evidence_dir, output_dir, cfg,
-                   comp.get("plate_consensus"))
+                   comp.get("plate_consensus"), comp["engine"]._track_samples)
 
     cot_path = None
     if cot and acc is not None:
@@ -184,27 +184,85 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
     return events
 
 
-def _episode_plate(consensus_plates, ev):
-    """从 episode 的所有 member_tracks(含代表 track)里选 weight 最高的车牌。
+def _episode_plate(consensus, ev, track_samples=None):
+    """从 episode 的 member_tracks 按"时间+空间双约束"回填车牌(cc gate cf1d246, P2)。
 
-    修复(2026-07-16): 事件跨 track 合并后代表 track 未必是读到车牌的那个 track;
-    只按代表 track_id 回填会漏牌(实测端到端车牌命中仅 1/7)。遍历成员 track 兜底。
+    修复(2026-08-05, P2 硬闸=误罚 0):
+      旧逻辑(2026-07-16 扩展, 遍历 member_tracks 取 weight 最高)被 b2 过合并污染——
+      误并进 episode 的过路车 track(违章02 tid68 京A14672)可夺魁 → 开错罚单。
+      新逻辑候选须同时满足:
+        (1) 时间: 读取帧 ts ∈ [ev.start_ts-ε, ev.end_ts+ε](ε=1s);
+        (2) 空间: plate 框与事件代表 track 车辆框时空关联(该 ts 附近(0.4s)车辆框内;
+            该时刻代表车无框样本=信息不足则放行, 只杀"明确空间冲突");
+        (3) 在过滤后帧上重聚合 weight(conf 总和)取最高;
+        (4) 无候选 → 空串(宁缺毋滥, 不填窗口内别车牌)。
+      兼容: consensus 为 None / 无 track_records / 无 track_samples → 回退旧聚合逻辑。
     """
     tids = list(dict.fromkeys([ev["track_id"]] + list(ev.get("member_tracks", []))))
-    best_text, best_w = "", -1.0
-    for t in tids:
-        p = consensus_plates.get(t)
-        if p and p.get("text") and p.get("weight", 0.0) > best_w:
-            best_text, best_w = p["text"], p.get("weight", 0.0)
-    return best_text
+    if consensus is None:
+        return ""
+    if isinstance(consensus, dict):
+        # 旧接口兼容(dict: tid -> {text, weight}, 2026-07-16 行为): 按聚合 weight 选最高
+        best_text, best_w = "", -1.0
+        for t in tids:
+            p = consensus.get(t)
+            if p and p.get("text") and p.get("weight", 0.0) > best_w:
+                best_text, best_w = p["text"], p.get("weight", 0.0)
+        return best_text
+    records = getattr(consensus, "track_records", None)
+    if not records or not track_samples:
+        # 回退旧逻辑: 按聚合 weight 选最高
+        cp = consensus.get_all()
+        best_text, best_w = "", -1.0
+        for t in tids:
+            p = cp.get(t)
+            if p and p.get("text") and p.get("weight", 0.0) > best_w:
+                best_text, best_w = p["text"], p.get("weight", 0.0)
+        return best_text
+
+    # P2 v6: 时间约束的对象是"车"而非"牌读取帧"——产品语义是车牌需视频全局读取
+    # (GT events.csv 注释明示, 如违章06 "黑车牌00:46看清(红灯时段)"、03 银灰车 143s 才看清),
+    # 牌读取帧可落在事件窗口外; 违章性判定用归属 tid 在窗口内 stationary 占比:
+    #   - tid 窗口内 stationary>=0.6 -> 违章车组, 其全局读取的牌可回填
+    #   - tid 窗口内无样本(如违章02 tid131 107s+ 才出现) -> 非窗口内违章车, 挡
+    #   - tid 窗口内 stationary 低(如违章02 tid68 京A14672 静止 0.38) -> 过路/移动车, 挡
+    STATIONARY_RATIO = 0.6
+    eps = 1.0
+    t0, t1 = ev["start_ts"] - eps, ev["end_ts"] + eps
+    sta_ratio = {}
+    for tid in tids:
+        samples = [s for s in track_samples.get(tid, []) if t0 <= s["ts"] <= t1]
+        if samples:
+            sta_ratio[tid] = sum(1 for s in samples if s.get("stationary")) / len(samples)
+
+    # 全局真实性: 候选 text 在 consensus 全量(所有 tid)records 中的帧数 >= GLOBAL_MIN_FRAMES,
+    # 过滤孤证/幻觉牌(违章03 京ABV200/京ABV020 全视频仅 3 帧)而保留真牌(京ABV3428 99 帧)。
+    GLOBAL_MIN_FRAMES = 5
+    global_count = {}
+    for _tid, _recs in records.items():
+        for _r in _recs:
+            global_count[_r["text"]] = global_count.get(_r["text"], 0) + 1
+
+    # 回填聚合: text -> conf 总和(weight = count×avg_conf = conf 总和)
+    agg = {}
+    for tid in tids:
+        if sta_ratio.get(tid, 0.0) < STATIONARY_RATIO:
+            continue  # 非窗口内违章车组(过路/移动/窗口外车), 其牌不参与回填
+        for rec in records.get(tid, []):
+            text = rec["text"]
+            if global_count.get(text, 0) < GLOBAL_MIN_FRAMES:
+                continue  # 孤证/幻觉牌, 宁缺毋滥
+            agg[text] = agg.get(text, 0.0) + rec.get("conf", 0.0)
+    if not agg:
+        return ""
+    return max(agg, key=lambda k: agg[k])
 
 
-def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus):
+def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus, track_samples=None):
     """批处理后生成 CSV 与证据截图。"""
     # 收集车牌: 按 episode 的 member_tracks 回填(不依赖 evidence 开关)
-    consensus_plates = consensus.get_all() if consensus else {}
     for ev in events:
-        ev["plate"] = _episode_plate(consensus_plates, ev)
+        ev["plate"] = _episode_plate(consensus, ev, track_samples)
 
     # 证据截图: 重新打开视频 seek 到事件 start_ts
     if cfg.output.evidence_images and events:

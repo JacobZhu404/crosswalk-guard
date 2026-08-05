@@ -23,13 +23,16 @@ class PlateConsensus:
         self.track_records = defaultdict(list)
         self.track_summary = defaultdict(dict)
 
-    def update(self, track_id, plate_text, confidence, timestamp):
+    def update(self, track_id, plate_text, confidence, timestamp, box=None):
+        """记录一次车牌读取。box=[x1,y1,x2,y2] 为可选 plate 框(纯加性, 供回填约束用,
+        不影响投票/去重逻辑——track_summary 聚合逐 bit 不变)。"""
         if not plate_text:
             return
         self.track_records[track_id].append({
             "text": plate_text,
             "conf": confidence,
             "ts": timestamp,
+            "box": box,
         })
         if len(self.track_records[track_id]) > self.keep_history:
             self.track_records[track_id] = self.track_records[track_id][-self.keep_history:]
