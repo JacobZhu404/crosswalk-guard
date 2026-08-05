@@ -74,32 +74,37 @@ def collect(video_path, cfg, sample_fps=8):
 
 
 def bucketize(gt_plates, recs):
-    """对每 GT 车牌分桶。"""
+    """对每 GT 车牌分桶。
+
+    cc plan-gate 修正(2026-08-05): 跨车串味修复 —— 原逻辑取"全局 best-ED 帧"判桶质量,
+    会把**别车**的高质量框(如违章07 京EJQ505 被京Q5D2N8 的框"串味")当成该车证据,
+    误判 b_ocr_wrong。现改为:
+      - 存在 ED<=1 帧 -> ok / c(读到过)
+      - 否则存在 ED<=2 帧 -> 用这些**与 GT 文本接近**的帧判 b/d(框质量)
+      - 否则(全视频无 ED<=2) -> a(从未接近读到; 别车 ED 高不算该车证据)
+    """
     out = {}
-    # 全视频所有文本与 box
-    all_texts = [r[1] for r in recs]
     for gp in sorted(gt_plates):
-        # 单帧最好 ED 与对应帧
-        best = None  # (ed, text, conf, w, h, frame)
-        for r in recs:
-            ed = levenshtein(r[1], gp)
-            if best is None or ed < best[0]:
-                best = (ed, r[1], r[2], r[3], r[4], r[0])
-        if best is None:
-            out[gp] = {"bucket": "a_no_detect", "detail": "全视频无任何 plate box"}
+        near = [r for r in recs if levenshtein(r[1], gp) <= 2]  # 文本关联帧(排除别车串味)
+        if not near:
+            out[gp] = {"bucket": "a_no_detect",
+                       "detail": "全视频无 ED<=2 读数(别车框不算该车证据)"}
             continue
-        ed, text, conf, w, h, fr = best
+        best = min(near, key=lambda r: levenshtein(r[1], gp))
+        ed = levenshtein(best[1], gp)
+        text, conf, w, h, fr = best[1], best[2], best[3], best[4], best[0]
         if ed <= 1:
-            # 读到过正确/近正确文本 -> 是否进最终输出?
-            out[gp] = {"bucket": "read_ok_single_frame", "detail": f"ED={ed} {text} conf={conf:.2f} box={w}x{h} @f{fr}",
+            out[gp] = {"bucket": "read_ok_single_frame",
+                       "detail": f"ED={ed} {text} conf={conf:.2f} box={w}x{h} @f{fr}",
                        "ed": ed, "w": w, "h": h, "conf": conf}
         else:
-            # 从未读对 -> b/d 看 box 质量
             if w < 80 or h < 24 or conf < 0.5:
-                out[gp] = {"bucket": "d_image_quality", "detail": f"最接近 ED={ed} {text} conf={conf:.2f} box={w}x{h} @f{fr}",
+                out[gp] = {"bucket": "d_image_quality",
+                           "detail": f"最接近 ED={ed} {text} conf={conf:.2f} box={w}x{h} @f{fr}",
                            "ed": ed, "w": w, "h": h, "conf": conf}
             else:
-                out[gp] = {"bucket": "b_ocr_wrong", "detail": f"最接近 ED={ed} {text} conf={conf:.2f} box={w}x{h} @f{fr}",
+                out[gp] = {"bucket": "b_ocr_wrong",
+                           "detail": f"最接近 ED={ed} {text} conf={conf:.2f} box={w}x{h} @f{fr}",
                            "ed": ed, "w": w, "h": h, "conf": conf}
     return out
 
