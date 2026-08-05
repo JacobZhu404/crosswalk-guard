@@ -26,6 +26,7 @@ from ..pipeline.visualizer import Visualizer
 from ..pipeline.dag import build_default_dag
 from ..pipeline.plate_consensus import PlateConsensus
 from ..pipeline.analysis import AnalysisAccumulator, CotReporter
+from ..evaluation.metrics import levenshtein
 
 
 def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_samples=False,
@@ -185,18 +186,21 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
 
 
 def _episode_plate(consensus, ev, track_samples=None):
-    """从 episode 的 member_tracks 按"时间+空间双约束"回填车牌(cc gate cf1d246, P2)。
+    """从 episode 的 member_tracks 按"违章车组+全局真实性+空间聚集"三重约束回填车牌。
 
-    修复(2026-08-05, P2 硬闸=误罚 0):
+    修复(2026-08-05, cc 效果 gate 送回 f26c91f 后 v7):
       旧逻辑(2026-07-16 扩展, 遍历 member_tracks 取 weight 最高)被 b2 过合并污染——
-      误并进 episode 的过路车 track(违章02 tid68 京A14672)可夺魁 → 开错罚单。
+      误并进 episode 的过路/别车 track 可夺魁 → 开错罚单(违章02 京A14672 / 违章05 京N541E6)。
       新逻辑候选须同时满足:
-        (1) 时间: 读取帧 ts ∈ [ev.start_ts-ε, ev.end_ts+ε](ε=1s);
-        (2) 空间: plate 框与事件代表 track 车辆框时空关联(该 ts 附近(0.4s)车辆框内;
-            该时刻代表车无框样本=信息不足则放行, 只杀"明确空间冲突");
-        (3) 在过滤后帧上重聚合 weight(conf 总和)取最高;
-        (4) 无候选 → 空串(宁缺毋滥, 不填窗口内别车牌)。
-      兼容: consensus 为 None / 无 track_records / 无 track_samples → 回退旧聚合逻辑。
+        (1) 违章车组: 候选归属 tid 在事件窗口内 stationary 占比 >= 0.6(挡过路/移动车);
+        (2) 全局真实性: 候选 text 全视频读取帧数 >= 5(挡孤证/幻觉牌);
+        (3) 空间聚集: 候选归属 tid(窗口内)的质心 x 范围 <= 0.25×帧宽(挡跨车关联污染——
+            真牌归属同车碎片质心聚集(07 京Q5D2N8 69px / 09 京AC63971 221px),
+            污染牌跨车质心分散(05 京N541E6 607px));
+        (4) weight(conf 总和)取最高; 无候选 → 空串(宁缺毋滥)。
+      时间语义: 牌读取帧可落在事件窗口外(产品语义"车牌需视频全局读取",
+      GT events.csv 注释明示: 违章06 黑车 46s 红灯时段才看清 / 03 银灰车 143s 才看清)。
+      兼容: consensus 为 None / dict 旧接口 / 无 track_records / 无 track_samples → 回退旧聚合逻辑。
     """
     tids = list(dict.fromkeys([ev["track_id"]] + list(ev.get("member_tracks", []))))
     if consensus is None:
@@ -220,24 +224,24 @@ def _episode_plate(consensus, ev, track_samples=None):
                 best_text, best_w = p["text"], p.get("weight", 0.0)
         return best_text
 
-    # P2 v6: 时间约束的对象是"车"而非"牌读取帧"——产品语义是车牌需视频全局读取
-    # (GT events.csv 注释明示, 如违章06 "黑车牌00:46看清(红灯时段)"、03 银灰车 143s 才看清),
-    # 牌读取帧可落在事件窗口外; 违章性判定用归属 tid 在窗口内 stationary 占比:
-    #   - tid 窗口内 stationary>=0.6 -> 违章车组, 其全局读取的牌可回填
-    #   - tid 窗口内无样本(如违章02 tid131 107s+ 才出现) -> 非窗口内违章车, 挡
-    #   - tid 窗口内 stationary 低(如违章02 tid68 京A14672 静止 0.38) -> 过路/移动车, 挡
     STATIONARY_RATIO = 0.6
+    GLOBAL_MIN_FRAMES = 5
+    SPAN_RATIO = 0.25  # 质心 x 范围占帧宽比例上限
     eps = 1.0
     t0, t1 = ev["start_ts"] - eps, ev["end_ts"] + eps
-    sta_ratio = {}
+
+    # 帧宽: 从 track_samples 全量 box 推(统一 1920 场景; 防 0 除)
+    frame_w = max((s["box"][2] for _tid in track_samples for s in track_samples[_tid]), default=1920) or 1920
+
+    # 窗口内各 tid 的 stationary 占比 + 质心
+    sta_ratio, tid_cx = {}, {}
     for tid in tids:
         samples = [s for s in track_samples.get(tid, []) if t0 <= s["ts"] <= t1]
         if samples:
             sta_ratio[tid] = sum(1 for s in samples if s.get("stationary")) / len(samples)
+            tid_cx[tid] = sum((s["box"][0] + s["box"][2]) / 2 for s in samples) / len(samples)
 
-    # 全局真实性: 候选 text 在 consensus 全量(所有 tid)records 中的帧数 >= GLOBAL_MIN_FRAMES,
-    # 过滤孤证/幻觉牌(违章03 京ABV200/京ABV020 全视频仅 3 帧)而保留真牌(京ABV3428 99 帧)。
-    GLOBAL_MIN_FRAMES = 5
+    # 全局真实性: 候选 text 在 consensus 全量(所有 tid)records 中的帧数
     global_count = {}
     for _tid, _recs in records.items():
         for _r in _recs:
@@ -253,6 +257,19 @@ def _episode_plate(consensus, ev, track_samples=None):
             if global_count.get(text, 0) < GLOBAL_MIN_FRAMES:
                 continue  # 孤证/幻觉牌, 宁缺毋滥
             agg[text] = agg.get(text, 0.0) + rec.get("conf", 0.0)
+
+    # 空间聚集: 牌的"ED<=1 变体系"归属 tid(窗口内)质心 x 范围 <= 0.25×帧宽,
+    # 否则判为跨车关联污染(真牌同车碎片聚集: 07 京Q5D2N8 69px / 09 京AC63971 221px;
+    # 污染系跨车分散: 05 京N541E6 系 607px, 含变体 京N541E61 等 —— 按系合并挡, 防变体绕过)。
+    text_tid_span = {}
+    for text in agg:
+        tset = {tid for tid, _recs in records.items()
+                if any(levenshtein(r["text"], text) <= 1 for r in _recs)}
+        cxs = [tid_cx[t] for t in tset if t in tid_cx]
+        if cxs:
+            text_tid_span[text] = max(cxs) - min(cxs)
+    agg = {t: w for t, w in agg.items()
+           if t not in text_tid_span or text_tid_span[t] <= SPAN_RATIO * frame_w}
     if not agg:
         return ""
     return max(agg, key=lambda k: agg[k])
