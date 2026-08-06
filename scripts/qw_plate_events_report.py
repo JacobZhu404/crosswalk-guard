@@ -53,36 +53,36 @@ def main():
 
     videos = args.videos or [f"违章{i:02d}" for i in range(1, 12)]
     tot_hit = tot_wrong = tot_gt = 0
-    print(f"{'视频':<6} {'hv':<4} {'回填牌':<10} {'violating_GT':<22} {'判定'}")
+    print(f"{'视频':<6} {'hv':<4} {'回填牌(多牌)':<26} {'violating_GT':<22} {'判定'}")
     rows = []
     for v in videos:
         events = cli.run(cfg, os.path.join(ROOT, "input_video", f"{v}.mp4"),
                          os.path.join(ROOT, "data", "output", "qw", f"evrep_{v}"), preset="balanced")
         vgt = violating.get(v, set())
-        oth = other.get(v, set())
         hv = meta.get(v, "1")
         tot_gt += len(vgt)
         for e in events:
             if e["status"] != "confirmed":
                 continue
-            p = e.get("plate", "")
-            if p and vgt and any(levenshtein(p, g) <= 1 for g in vgt):
-                verdict = "命中"
-                tot_hit += 1
-            elif p and hv == "0":
-                verdict = "误罚(负例FP,事件层灯态线所致)"
-                tot_wrong += 1
-            elif p and p in oth:
-                verdict = "误罚(other牌!)"
-                tot_wrong += 1
-            elif p:
-                verdict = "误罚" if vgt else "盲区(无GT牌,无法判定)"
-                if vgt:
-                    tot_wrong += 1
-            else:
+            plates = e.get("plates") or ([e["plate"]] if e.get("plate") else [])
+            # 逐牌判定(P1 多牌): 命中=GT 被 plates 覆盖; 误罚=plates 中非 GT 牌
+            hit_n = sum(1 for g in vgt if any(levenshtein(p, g) <= 1 for p in plates))
+            wrong = [p for p in plates if p and not any(levenshtein(p, g) <= 1 for g in vgt)]
+            tot_hit += hit_n
+            if wrong:
+                if hv == "0":
+                    verdict = f"误罚(负例FP事件层){wrong}"
+                elif vgt:
+                    verdict = f"误罚{wrong}"
+                else:
+                    verdict = f"盲区(无GT牌){wrong}"
+                tot_wrong += len(wrong)
+            elif not plates:
                 verdict = "空(宁缺毋滥)"
-            rows.append((v, hv, p, vgt, verdict))
-            print(f"{v:<6} {hv:<4} {p!r:<10} {','.join(sorted(vgt)):<22} {verdict}")
+            else:
+                verdict = f"命中{hit_n}/{len(vgt)}"
+            rows.append((v, hv, "|".join(plates), ",".join(sorted(vgt)), verdict))
+            print(f"{v:<6} {hv:<4} {'|'.join(plates):<26} {','.join(sorted(vgt)):<22} {verdict}")
     print(f"\n汇总: 命中={tot_hit}/{tot_gt} 误罚={tot_wrong} (负例/盲区标注见逐行)")
     # 落盘 CSV
     out = os.path.join(ROOT, "data", "output", "qw", "plate_events_report.csv")

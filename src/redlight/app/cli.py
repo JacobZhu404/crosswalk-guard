@@ -145,7 +145,8 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
 
     # 证据截图 + CSV 输出(批处理后)
     _write_outputs(events, video_path, evidence_dir, output_dir, cfg,
-                   comp.get("plate_consensus"), comp["engine"]._track_samples)
+                   comp.get("plate_consensus"), comp["engine"]._track_samples,
+                   plate_recog=comp["plate"])
 
     cot_path = None
     if cot and acc is not None:
@@ -186,25 +187,36 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
 
 
 def _episode_plate(consensus, ev, track_samples=None):
-    """从 episode 的 member_tracks 按"违章车组+全局真实性+空间聚集"三重约束回填车牌。
+    """从 episode 的 member_tracks 按"违章车组+全局真实性+空间聚集"三重约束回填主车牌。
 
     修复(2026-08-05, cc 效果 gate 送回 f26c91f 后 v7):
       旧逻辑(2026-07-16 扩展, 遍历 member_tracks 取 weight 最高)被 b2 过合并污染——
       误并进 episode 的过路/别车 track 可夺魁 → 开错罚单(违章02 京A14672 / 违章05 京N541E6)。
-      新逻辑候选须同时满足:
-        (1) 违章车组: 候选归属 tid 在事件窗口内 stationary 占比 >= 0.6(挡过路/移动车);
-        (2) 全局真实性: 候选 text 全视频读取帧数 >= 5(挡孤证/幻觉牌);
-        (3) 空间聚集: 候选归属 tid(窗口内)的质心 x 范围 <= 0.25×帧宽(挡跨车关联污染——
-            真牌归属同车碎片质心聚集(07 京Q5D2N8 69px / 09 京AC63971 221px),
-            污染牌跨车质心分散(05 京N541E6 607px));
-        (4) weight(conf 总和)取最高; 无候选 → 空串(宁缺毋滥)。
-      时间语义: 牌读取帧可落在事件窗口外(产品语义"车牌需视频全局读取",
-      GT events.csv 注释明示: 违章06 黑车 46s 红灯时段才看清 / 03 银灰车 143s 才看清)。
+      约束见 _constrained_agg; 主牌 = 约束后 weight 最高, 无候选 → 空串(宁缺毋滥)。
+    """
+    main, _ = _episode_plate_all(consensus, ev, track_samples)
+    return main
+
+
+def _episode_plates(consensus, ev, track_samples=None):
+    """P1: 事件多车牌列表(同 _episode_plate 约束, 返回 (主牌, [多牌...]))。"""
+    return _episode_plate_all(consensus, ev, track_samples)
+
+
+def _episode_plate_all(consensus, ev, track_samples=None):
+    """三重约束回填(共享内层): 返回 (主牌, 多牌列表[ED<=1 变体系去重, weight 降序])。
+
+    约束:
+      (1) 违章车组: 候选归属 tid 在事件窗口内 stationary 占比 >= 0.6(挡过路/移动车);
+      (2) 全局真实性: 候选 text 全视频读取帧数 >= 5(挡孤证/幻觉牌);
+      (3) 空间聚集: 候选"ED<=1 变体系"归属 tid(窗口内)质心 x 范围 <= 0.25×帧宽
+          (挡跨车关联污染: 05 京N541E6 系 607px; 真牌同车碎片 07 京Q5D2N8 69px)。
+      时间语义: 牌读取帧可落在事件窗口外(产品语义"车牌需视频全局读取")。
       兼容: consensus 为 None / dict 旧接口 / 无 track_records / 无 track_samples → 回退旧聚合逻辑。
     """
     tids = list(dict.fromkeys([ev["track_id"]] + list(ev.get("member_tracks", []))))
     if consensus is None:
-        return ""
+        return "", []
     if isinstance(consensus, dict):
         # 旧接口兼容(dict: tid -> {text, weight}, 2026-07-16 行为): 按聚合 weight 选最高
         best_text, best_w = "", -1.0
@@ -212,7 +224,7 @@ def _episode_plate(consensus, ev, track_samples=None):
             p = consensus.get(t)
             if p and p.get("text") and p.get("weight", 0.0) > best_w:
                 best_text, best_w = p["text"], p.get("weight", 0.0)
-        return best_text
+        return best_text, ([best_text] if best_text else [])
     records = getattr(consensus, "track_records", None)
     if not records or not track_samples:
         # 回退旧逻辑: 按聚合 weight 选最高
@@ -222,7 +234,7 @@ def _episode_plate(consensus, ev, track_samples=None):
             p = cp.get(t)
             if p and p.get("text") and p.get("weight", 0.0) > best_w:
                 best_text, best_w = p["text"], p.get("weight", 0.0)
-        return best_text
+        return best_text, ([best_text] if best_text else [])
 
     STATIONARY_RATIO = 0.6
     GLOBAL_MIN_FRAMES = 5
@@ -248,15 +260,21 @@ def _episode_plate(consensus, ev, track_samples=None):
             global_count[_r["text"]] = global_count.get(_r["text"], 0) + 1
 
     # 回填聚合: text -> conf 总和(weight = count×avg_conf = conf 总和)
+    # P1: 同 tid(同一车)只取 weight 最高 text(一车一牌, 挡同车误读变体,
+    # 如违章08 tid92 上 京ACW6553(13帧) vs 京J00542(误读) 互斥取前者)。
     agg = {}
     for tid in tids:
         if sta_ratio.get(tid, 0.0) < STATIONARY_RATIO:
             continue  # 非窗口内违章车组(过路/移动/窗口外车), 其牌不参与回填
+        tid_agg = {}
         for rec in records.get(tid, []):
             text = rec["text"]
             if global_count.get(text, 0) < GLOBAL_MIN_FRAMES:
                 continue  # 孤证/幻觉牌, 宁缺毋滥
-            agg[text] = agg.get(text, 0.0) + rec.get("conf", 0.0)
+            tid_agg[text] = tid_agg.get(text, 0.0) + rec.get("conf", 0.0)
+        if tid_agg:
+            best_text = max(tid_agg, key=tid_agg.get)  # 一车一牌: tid 内取 weight 最高
+            agg[best_text] = agg.get(best_text, 0.0) + tid_agg[best_text]
 
     # 空间聚集: 牌的"ED<=1 变体系"归属 tid(窗口内)质心 x 范围 <= 0.25×帧宽,
     # 否则判为跨车关联污染(真牌同车碎片聚集: 07 京Q5D2N8 69px / 09 京AC63971 221px;
@@ -270,16 +288,100 @@ def _episode_plate(consensus, ev, track_samples=None):
             text_tid_span[text] = max(cxs) - min(cxs)
     agg = {t: w for t, w in agg.items()
            if t not in text_tid_span or text_tid_span[t] <= SPAN_RATIO * frame_w}
+    return _pick_plates(agg, global_count, ev["track_id"], records)
+
+
+def _pick_plates(agg, global_count=None, rep_tid=None, records=None):
+    """从 P2 约束后的候选(agg: text->weight)选主牌与多牌列表(P1)。
+
+    主牌 = weight 最高(兼容 ev["plate"]); 次牌须同时满足:
+      - 全局帧数 >= 10(挡低帧过路车: 08 京PK9B77 6帧 / 06 京WPM966 6帧);
+      - 与主牌 ED > 1(非主牌变体);
+      - 归属 tid 不含代表 track(代表车的牌应为主牌; 挂在代表 track 上的其他牌=
+        代表车误读/污染, 如 03 京FJQ279 挂代表 tid103 → 挡; 而多车事件第二违章车
+        08 京ACW6553 tid92 / 09 京NNM526 tid99 均非代表 → 保留)。
+      至多 2 个次牌。空 -> ("", [])。
+    """
     if not agg:
+        return "", []
+    main_text = max(agg, key=lambda k: agg[k])
+    plates = [main_text]
+    if global_count and records is not None:
+        for t in sorted(agg, key=lambda k: -agg[k]):
+            if t == main_text or levenshtein(t, main_text) <= 1:
+                continue
+            if global_count.get(t, 0) < 10:
+                continue
+            t_tids = {tid for tid, _recs in records.items()
+                      if any(r["text"] == t for r in _recs)}
+            if rep_tid in t_tids:
+                continue  # 代表车上的其他牌 = 误读/污染, 不作次牌
+            plates.append(t)
+            if len(plates) >= 3:
+                break
+    return main_text, plates
+
+
+def _episode_plates(consensus, ev, track_samples=None):
+    """P1: 事件多车牌列表(与 _episode_plate 同约束, 返回 (主牌, [多牌...]))。"""
+    return _episode_plate_all(consensus, ev, track_samples)
+
+
+def _p3_roi_retry(video_path, ev, track_samples, plate_recog):
+    """P3: 代表车全图读牌为空时, 事件窗口内车框 ROI 放大 2x 重试 HyperLPR3。
+
+    目标: 低曝光违章车牌(违章02 京LNE560 / 违章05 京ADH9206, 全图检测读不出)。
+    安全: ROI 限定代表 track 车框(读的是代表车自己的牌, 非别车), conf>=0.6 + 格式校验。
+    返回 text 或 ""。
+    """
+    if plate_recog is None or not getattr(plate_recog, "use_hl", False):
         return ""
-    return max(agg, key=lambda k: agg[k])
+    rep = ev["track_id"]
+    samples = [s for s in (track_samples or {}).get(rep, [])
+               if ev["start_ts"] <= s["ts"] <= ev["end_ts"]]
+    if not samples:
+        return ""
+    from ..models.plate import _is_valid_plate
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        return ""
+    best_text, best_conf = "", 0.0
+    mid = (ev["start_ts"] + ev["end_ts"]) / 2.0
+    for dt in (-3.0, 0.0, 3.0):
+        ts = max(0.0, mid + dt)
+        cap.set(cv2.CAP_PROP_POS_MSEC, int(ts * 1000))
+        ret, frame = cap.read()
+        if not ret:
+            continue
+        nb = min(samples, key=lambda s: abs(s["ts"] - ts))["box"]
+        x1, y1, x2, y2 = [int(v) for v in nb]
+        H, W = frame.shape[:2]
+        bw, bh = x2 - x1, y2 - y1
+        cx1, cy1 = max(0, int(x1 - 0.2 * bw)), max(0, int(y1 - 0.2 * bh))
+        cx2, cy2 = min(W, int(x2 + 0.2 * bw)), min(H, int(y2 + 0.2 * bh))
+        roi = frame[cy1:cy2, cx1:cx2]
+        if roi.size == 0:
+            continue
+        roi2 = cv2.resize(roi, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
+        for p in plate_recog.detect(roi2):
+            t, c = p.get("text", ""), p.get("conf", 0.0)
+            if t and _is_valid_plate(t) and c >= 0.6 and c > best_conf:
+                best_text, best_conf = t, c
+    cap.release()
+    return best_text
 
 
-def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus, track_samples=None):
+def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus,
+                   track_samples=None, plate_recog=None):
     """批处理后生成 CSV 与证据截图。"""
     # 收集车牌: 按 episode 的 member_tracks 回填(不依赖 evidence 开关)
     for ev in events:
-        ev["plate"] = _episode_plate(consensus, ev, track_samples)
+        ev["plate"], ev["plates"] = _episode_plate_all(consensus, ev, track_samples)
+        if not ev["plate"]:
+            # P3: 代表车全图读牌为空 -> 事件窗口内 ROI 放大重试(低曝光车牌)
+            retry = _p3_roi_retry(video_path, ev, track_samples, plate_recog)
+            if retry:
+                ev["plate"], ev["plates"] = retry, [retry]
 
     # 证据截图: 重新打开视频 seek 到事件 start_ts
     if cfg.output.evidence_images and events:
