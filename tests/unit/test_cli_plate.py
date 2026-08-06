@@ -51,7 +51,7 @@ def _consensus_with(records):
     pc = PlateConsensus(keep_history=1000)
     for tid, recs in records.items():
         for text, conf, ts, box in recs:
-            pc.update(tid, text, conf, ts, box)
+            pc.update(tid, text, conf, ts)
     return pc
 
 
