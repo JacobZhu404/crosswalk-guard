@@ -76,6 +76,7 @@ traffic_light:
   reanchor_need: 150          # 重锚所需新位置持久帧数(极大, 防瞬态红车/衣服/远树劫持)
   anchor_hold: 30             # 锚丢失后保持旧色的最大帧数(超出 -> unknown, 契合遮挡交复核)
   flicker_toggle_count: 4     # 窗口内绿亮灭序列跳变 >= 此值(且红也出现) -> flashing
+  min_persistent_green_run_s: 10.0  # #3 时序门控阈值(plan-gate #5, 6124470/a9c48a8): 绿段内最长 raw 绿 run < 此值 -> 降级 review(非 confirmed)。落在 01 假绿(3.10s)与真绿最短(26.8s)两群 GAP, 非拟合单点。
 
 # 静止判定由 Tracker V2 的 SENSITIVITY_PRESETS 控制 (src/redlight/pipeline/tracker.py)
 # 不再由本配置单独驱动逻辑, 此处仅作说明

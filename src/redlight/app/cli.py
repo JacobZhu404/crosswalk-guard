@@ -29,7 +29,7 @@ from ..pipeline.analysis import AnalysisAccumulator, CotReporter
 
 
 def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_samples=False,
-        crosswalk_detector=None, occ_denom=None):
+        crosswalk_detector=None, occ_denom=None, min_persistent_green_run_s=None):
     ensure_dir(output_dir)
     evidence_dir = os.path.join(output_dir, "evidence")
     ensure_dir(evidence_dir)
@@ -61,6 +61,10 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
         "flicker_toggle": int(getattr(tl_cfg, "flicker_toggle_count", 4)),
         "unknown_hold": int(getattr(tl_cfg, "anchor_hold", 30)),
     }
+    # #3 时序门控 (plan-gate #5): 持久绿阈值, 段内最长 raw 绿 run < 此值 -> 降级 review(非 confirmed)
+    # 显式传参(诊断/评测注入, 如 G1-G4 门验证)优先于 config 默认值
+    _cfg_min_run = float(getattr(tl_cfg, "min_persistent_green_run_s", 10.0))
+    _min_run = float(min_persistent_green_run_s) if min_persistent_green_run_s is not None else _cfg_min_run
     # 接线(C3, Jacob 拍板 2026-08-04): 默认 occ_denom 从 config 读(接线后默认 "box");
     # 显式传参仍优先(诊断/评测注入路径不变, 见 eval_violations/sweep/diag 显式传参)。
     _occ_denom = occ_denom if occ_denom is not None else getattr(cfg.crosswalk, "occ_denom", "mask")
@@ -70,6 +74,7 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
         unknown_to_review=cfg.output.unknown_light_to_review,
         fuse_kwargs=fuse_kwargs,
         occ_denom=_occ_denom,
+        min_persistent_green_run_s=_min_run,
     )
     # 接线(C3): 默认检测器从 config 读(接线后默认 "v2"); 显式传参优先。
     _cw_version = getattr(cfg.crosswalk, "version", "v11")

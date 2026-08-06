@@ -7,8 +7,29 @@
 from .temporal_fusion import interval_intersect
 
 
-def _go_intervals(segs):
-    return [[s["start_s"], s["end_s"]] for s in segs if s["state"] in ("green", "flashing")]
+def _go_intervals(segs, min_run=10.0):
+    # #3 时序门控 (plan-gate #5, 6124470/a9c48a8): 仅保留「段内最长 raw 绿 run >= min_run」
+    # 的持久绿 -> confirmed。瞬态绿(过路车/反光瞬态误绿, 段内最长 raw run < min_run)排除,
+    # 改走 _transient_green_intervals -> review(非 confirmed)。缺省 max_raw_green_run_s=1e9
+    # (旧段/未标注)视为持久, 不门控(向后兼容)。
+    out = []
+    for s in segs:
+        if s["state"] in ("green", "flashing"):
+            if s.get("max_raw_green_run_s", 1e9) >= min_run:
+                out.append([s["start_s"], s["end_s"]])
+    return out
+
+
+def _transient_green_intervals(segs, min_run):
+    """#3 时序门控: 绿/闪烁段但其段内最长 raw 绿 run < min_run(瞬态) -> review(非 confirmed)。
+    瞬态=过路车/反光瞬态误绿; 降级 review 而非硬杀, 最坏进人工队列不静默丢绿。"""
+    out = []
+    for s in segs:
+        if s["state"] in ("green", "flashing"):
+            mr = s.get("max_raw_green_run_s", 1e9)
+            if mr < min_run:
+                out.append([s["start_s"], s["end_s"]])
+    return out
 
 
 def _review_light_intervals(segs):
@@ -32,20 +53,27 @@ def _peak_overlap(track, s, e):
     return round(peak, 3)
 
 
-def decide_violations(state, overlap_thr, min_duration_s):
-    """intermediate_state -> [event]. event: {track_id,status,start_s,end_s,light_state,max_overlap}。"""
+def decide_violations(state, overlap_thr, min_duration_s, min_persistent_green_run_s=10.0):
+    """intermediate_state -> [event]. event: {track_id,status,start_s,end_s,light_state,max_overlap}。
+
+    时序门控 (#3, plan-gate #5): 绿段按段内最长 raw 绿 run 分桶 ——
+      持久(>=min_persistent_green_run_s) -> confirmed; 瞬态(<T) -> review。
+    瞬态降级 review 而非硬杀: 最坏进人工队列, 不静默丢绿(防 ped_signal.pt 屠真绿重演)。
+    """
     segs = state.get("light_segments", [])
-    go = _go_intervals(segs)
+    go = _go_intervals(segs, min_persistent_green_run_s)
     review_light = _review_light_intervals(segs)
+    transient_green = _transient_green_intervals(segs, min_persistent_green_run_s)
     events = []
     for tr in state.get("tracks", []):
         stat = tr.get("stationary_intervals", [])
         occ = [[o["start_s"], o["end_s"]] for o in tr.get("occupancy_intervals", [])
-               if o["max_overlap"] >= overlap_thr]
+                if o["max_overlap"] >= overlap_thr]
         if not stat or not occ:
             continue
         base = interval_intersect(stat, occ)              # 静止 ∩ 压线(达阈)
-        for light_ivs, status in ((go, "confirmed"), (review_light, "review")):
+        for light_ivs, status in ((go, "confirmed"), (review_light, "review"),
+                                  (transient_green, "review")):
             for s, e in interval_intersect(light_ivs, base):
                 if e - s >= min_duration_s:
                     events.append({
