@@ -198,11 +198,6 @@ def _episode_plate(consensus, ev, track_samples=None):
     return main
 
 
-def _episode_plates(consensus, ev, track_samples=None):
-    """P1: 事件多车牌列表(同 _episode_plate 约束, 返回 (主牌, [多牌...]))。"""
-    return _episode_plate_all(consensus, ev, track_samples)
-
-
 def _episode_plate_all(consensus, ev, track_samples=None):
     """三重约束回填(共享内层): 返回 (主牌, 多牌列表[ED<=1 变体系去重, weight 降序])。
 
@@ -320,11 +315,6 @@ def _pick_plates(agg, global_count=None, rep_tid=None, records=None):
             if len(plates) >= 3:
                 break
     return main_text, plates
-
-
-def _episode_plates(consensus, ev, track_samples=None):
-    """P1: 事件多车牌列表(与 _episode_plate 同约束, 返回 (主牌, [多牌...]))。"""
-    return _episode_plate_all(consensus, ev, track_samples)
 
 
 def _p3_roi_retry(video_path, ev, track_samples, plate_recog):

@@ -87,3 +87,53 @@ def test_p2_backfills_stationary_vehicle_plate():
     ts = _tracks({1: True})
     ev = {"track_id": 1, "member_tracks": [1], "start_ts": 4.0, "end_ts": 10.0}
     assert _episode_plate(pc, ev, ts) == "京LNE560"
+
+
+# ================= P1 多牌 / P3 ROI 重试(2026-08-05, cc 记账③补测) =================
+def _mk_records():
+    # records: tid -> [{text, conf, ts}]
+    return {
+        1: [{"text": "京LNE560", "conf": 1.0, "ts": 5.0}] * 20,       # 代表 track, 主牌(weight最高)
+        2: [{"text": "京A22222", "conf": 1.0, "ts": 5.0}] * 15,       # 非代表, 次牌候选(全局15>=10)
+        3: [{"text": "京B33333", "conf": 1.0, "ts": 5.0}] * 6,        # 非代表, 低帧(全局6)
+    }
+
+
+def test_p1_secondary_plate_ok():
+    from redlight.app.cli import _pick_plates
+    recs = _mk_records()
+    agg = {"京LNE560": 20.0, "京A22222": 15.0, "京B33333": 6.0}
+    gc = {t: len([r for tid in recs for r in recs[tid] if r["text"] == t]) for t in agg}
+    main, plates = _pick_plates(agg, gc, rep_tid=1, records=recs)
+    assert main == "京LNE560" and plates == ["京LNE560", "京A22222"]
+
+
+def test_p1_secondary_plate_low_frames_blocked():
+    from redlight.app.cli import _pick_plates
+    recs = _mk_records()
+    agg = {"京LNE560": 20.0, "京B33333": 6.0}  # 京B33333 全局 6 < 10 -> 不作次牌
+    gc = {"京LNE560": 20, "京B33333": 6}
+    main, plates = _pick_plates(agg, gc, rep_tid=1, records=recs)
+    assert plates == ["京LNE560"]
+
+
+def test_p1_secondary_plate_rep_track_blocked():
+    from redlight.app.cli import _pick_plates
+    # 次牌挂在代表 track 上(代表车误读/污染) -> 挡
+    recs = {1: [{"text": "京LNE560", "conf": 1.0, "ts": 5.0}] * 12 +
+               [{"text": "京FJQ279", "conf": 0.9, "ts": 5.0}] * 12}
+    agg = {"京LNE560": 12.0, "京FJQ279": 10.8}
+    gc = {"京LNE560": 12, "京FJQ279": 12}
+    main, plates = _pick_plates(agg, gc, rep_tid=1, records=recs)
+    assert plates == ["京LNE560"]
+
+
+def test_p3_retry_no_recognizer_or_samples():
+    from redlight.app.cli import _p3_roi_retry
+    ev = {"track_id": 1, "start_ts": 0.0, "end_ts": 10.0}
+    assert _p3_roi_retry("no.mp4", ev, {}, None) == ""          # 无识别器
+    assert _p3_roi_retry("no.mp4", ev, {1: [{"ts": 5.0, "box": [0, 0, 10, 10]}]}, None) == ""
+    # 有识别器但窗口内无样本 -> ""
+    class FakeRecog:
+        use_hl = True
+    assert _p3_roi_retry("no.mp4", ev, {}, FakeRecog()) == ""
