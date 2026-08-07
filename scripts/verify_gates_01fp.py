@@ -198,7 +198,7 @@ def main():
     print("=== G2 真绿视频 TP 不回退 ===")
     for v, d in gate["G2_no_regression"].items():
         print(f"  {v}: base_true={d['baseline_true_green_segs']} fixed_true={d['fixed_true_green_segs']} no_regress={d['no_regression']}")
-    print("=== G4 对抗式公交/遮挡真绿段 min max_run (阈值10s) ===")
+    print(f"=== G4 对抗式公交/遮挡真绿段 min max_run (阈值{args.min_run}s) ===")
     for v, d in gate["G4_bus_occlusion"].items():
         print(f"  {v}: min_max_run={d['min_max_run']} safe={d['safe']} segs={d['true_green_segs']}")
     print(f"=== review 增量: base_rev={tot_b_rev} fixed_rev={tot_f_rev} (+{tot_f_rev-tot_b_rev}) ; confirmed {tot_b_conf}->{tot_f_conf} ===")
