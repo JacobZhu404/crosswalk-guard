@@ -30,6 +30,36 @@ def _window_state(win, flicker_toggle):
     return "unknown", round(max(gr, rr), 3)
 
 
+def _raw_green_runs(observations):
+    """从逐帧 obs 序列提取连续 green run [(start_ts, end_ts), ...] (含单帧 run, 时长0)。
+    口径对齐 diag_temporal_separability._axis_a_green_runs 的 max_green_run_s:
+    run 时长 = 末帧 ts - 首帧 ts。#3 时序门控(plan-gate #5, 6124470/a9c48a8)据此判瞬态。"""
+    runs = []
+    i, n = 0, len(observations)
+    while i < n:
+        ts, obs, _c = observations[i]
+        if obs == "green":
+            j = i
+            while j < n and observations[j][1] == "green":
+                j += 1
+            runs.append((observations[i][0], observations[j - 1][0]))
+            i = j
+        else:
+            i += 1
+    return runs
+
+
+def _max_run_in_segment(runs, s, e):
+    """返回与 [s,e] 相交的 raw 绿 run 中, 落在段内的最长时长(秒)。无则 0.0。"""
+    best = 0.0
+    for rs, re in runs:
+        if re >= s and rs <= e:        # 与段相交
+            ov = min(re, e) - max(rs, s)
+            if ov > best:
+                best = ov
+    return round(best, 3)
+
+
 def fuse_light(observations, window=24, hysteresis=0.68, flicker_toggle=4, unknown_hold=8,
                max_transitions=2, transition_min_dur=3.0):
     """observations: 有序 [(ts, obs, conf)], obs ∈ green|red|off|None。返回 light_segments。
@@ -68,6 +98,15 @@ def fuse_light(observations, window=24, hysteresis=0.68, flicker_toggle=4, unkno
     if max_transitions is not None and max_transitions > 0:
         segs = enforce_transition_limit(segs, max_transitions=max_transitions,
                                         min_seg_dur=transition_min_dur)
+    # #3 时序门控标注 (plan-gate #5, 6124470/a9c48a8): 给绿/闪烁段标注段内最长连续 raw 绿 run
+    # (融合前逐帧 obs, 非融合后总时长)。decide_violations 据此对瞬态绿(< min_persistent_green_run_s)
+    # 降级 review。判别量口径与 diag_temporal_separability 一致: run 时长 = 末帧ts - 首帧ts。
+    green_runs = _raw_green_runs(observations)
+    for seg in segs:
+        if seg["state"] in ("green", "flashing"):
+            seg["max_raw_green_run_s"] = _max_run_in_segment(green_runs, seg["start_s"], seg["end_s"])
+        else:
+            seg["max_raw_green_run_s"] = 0.0
     return segs
 
 

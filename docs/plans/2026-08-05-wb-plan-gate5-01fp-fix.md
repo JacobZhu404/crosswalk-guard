@@ -15,7 +15,7 @@
 ## 1. 根因复述(一句话)
 01 observe prior 直采 `_sample_roi`(traffic_light.py:626) 在遮挡期采环境绿 → 产出 **8 段碎绿 (raw 最长绿 run 仅 3.10s)** → `fuse_light`(temporal_fusion.py:33) 经 window=24 / hysteresis=0.68 / unknown_hold=8 + `enforce_transition_limit(max_transitions=2)` 把 8 段瞬态绿**桥接成 13s 单 green 段** → `decide_violations`(decision.py:35) 把该 green∩静止∩压线判为 **confirmed** → FP。
 
-**关键洞察(轴A 实证)**: 判别量不是"融合后总时长"(01=13s 会骗人), 而是"段内**最长连续 raw 绿 run**"——真绿 ≥ 26.8s(07), 假绿 ≤ 3.10s, **8.6× margin**, 过 06 低饱和石(31.22s ≫ 3.10s)。
+**关键洞察(轴A 实证)**: 判别量不是"融合后总时长"(01=13s 会骗人), 而是"段内**最长连续 raw 绿 run**"——**全 11 视频实测**真绿最短 = **10.27s(@违章11)**, 假绿 ≤ 3.10s(01)。早期 6 视频子集(漏测11)曾误报 26.8s, 该子集口径低估了风险; retune (cc brief 791158e) 据此把 T 从 10.0 移到 6.0(落 GAP 中部, 11 距阈 +71% / 01 距阈 −48%)。
 
 ---
 
@@ -27,10 +27,10 @@
 
 ### 2.2 不改的(红线)
 - 不动 `_sample_roi` 外观 / 面积投票 / ROI 尺寸; 不动 `sat_min`; 不碰 `light_priors.json` 坐标与 `ped_signal.pt`; 不引入 per-video 灯参。
-- 仅新增一个时序判据 + 一个 config 项 `traffic_light.min_persistent_green_run_s`(默认 10.0)。
+- 仅新增一个时序判据 + 一个 config 项 `traffic_light.min_persistent_green_run_s`(默认 6.0, retune cc brief 791158e; 原 10.0 紧贴 11 的 10.27s 悬崖边, 已下移)。
 
 ### 2.3 阈值 T 与防过拟合
-- 初值 **T=10.0s**: 落在 01 最长 3.10s(3.2× above)与真绿最短 26.8s(2.7× below)之间的 **GAP**, **不是拟合 01 单点**而是拟合两群间距。
+- 阈值 **T=6.0s(retune, cc brief 791158e)**: 落 01 最长 3.10s 与真绿最短 10.27s(@违章11)两群 **GAP 中部**, 01 距阈 −48% / 11 距阈 +71%, 两侧 margin>30%, 非拟合 01 单点而是拟合两群间距。(原 T=10.0 紧贴 11 的 10.27s 悬崖边, +2.7% margin 过薄, 已下移。)
 - **中间态(raw 绿 run 5–10s)→ 降级 review, 非硬杀**: 即使 T 误设, 最坏结果是进 review 人工队列, 不静默丢绿 → 把"过拟合误杀真绿"的代价压到最低。
 - T 最终以 G1(视频10 负例回归)+ G2(全 11 视频回归)后定稿, **不预锁**。
 
@@ -60,7 +60,7 @@
 
 ## 5. 改动文件与回归清单
 - 文件: `src/redlight/pipeline/temporal_fusion.py`(`fuse_light` 加 `max_raw_green_run_s` 标注) + `src/redlight/pipeline/decision.py`(`decide_violations`/`_go_intervals` 加门控)。**单点两处**。
-- 配置: `configs/config.yaml` 新增 `traffic_light.min_persistent_green_run_s: 10.0`(不改既有项)。
+- 配置: `configs/config.yaml` 新增 `traffic_light.min_persistent_green_run_s: 6.0`(retune cc brief 791158e; 不改既有项)。
 - 回归: 复用 `cli.run` 逐视频(前台 ≤3/批)或现有回归脚本, 产 violations.csv 比对。
 
 ---

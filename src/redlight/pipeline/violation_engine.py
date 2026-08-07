@@ -135,7 +135,8 @@ class BatchViolationEngine:
     """
 
     def __init__(self, preset="balanced", sample_fps=8.0, unknown_to_review=True,
-                 min_event_gap_sec=5.0, fuse_kwargs=None, occ_denom="mask"):
+                 min_event_gap_sec=5.0, fuse_kwargs=None, occ_denom="mask",
+                 min_persistent_green_run_s=6.0):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset
@@ -148,6 +149,7 @@ class BatchViolationEngine:
         self.min_duration_s = p["duration"] / max(sample_fps, 1e-3)
         self.gap = min_event_gap_sec
         self.unknown_to_review = unknown_to_review
+        self.min_persistent_green_run_s = min_persistent_green_run_s
         self.fuse_kwargs = dict(fuse_kwargs) if fuse_kwargs else {}
         self._light_obs = []       # [(ts, obs, conf), ...]
         self._occ_samples = []     # [(ts, occluded_bool), ...] 供 evidence 打标(review, D1)
@@ -222,7 +224,8 @@ class BatchViolationEngine:
 
         # ③层: 区间代数判定
         raw_events = decide_violations(
-            intermediate_state, self.overlap_thr, self.min_duration_s
+            intermediate_state, self.overlap_thr, self.min_duration_s,
+            self.min_persistent_green_run_s,
         )
 
         # 同 track 事件去重: 间隔 < gap 的合并 (复刻 V2 行为)
