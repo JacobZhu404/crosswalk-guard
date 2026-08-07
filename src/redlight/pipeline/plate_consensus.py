@@ -24,6 +24,7 @@ class PlateConsensus:
         self.track_summary = defaultdict(dict)
 
     def update(self, track_id, plate_text, confidence, timestamp):
+        """记录一次车牌读取。"""
         if not plate_text:
             return
         self.track_records[track_id].append({
