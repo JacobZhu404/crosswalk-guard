@@ -91,8 +91,23 @@ def main():
     gt_segs = _load_gt_segments(args.gt)
     os.makedirs(args.output, exist_ok=True)
     out_path = os.path.join(args.output, "gate_evidence.json")
+    # 断点续跑: 已有 JSON 里跑过的视频直接跳过, 只对缺失/未完成的补跑
     results = {}
+    if os.path.exists(out_path):
+        try:
+            old = json.load(open(out_path))
+            prev = old.get("per_video", {})
+            for v, rec in prev.items():
+                if rec.get("baseline") and rec.get("fixed"):
+                    results[v] = rec
+            if results:
+                print(f"[resume] 复用已跑 {len(results)} 个视频, 跳过")
+        except Exception as e:
+            print(f"[resume] 读取旧 JSON 失败, 从头跑: {e}")
     for v in videos:
+        if v in results and results[v].get("baseline") and results[v].get("fixed"):
+            print(f"[skip] {v} 已完成")
+            continue
         base = _run_one(cfg, v, args.output, 0.0, args.input_dir)
         fixed = _run_one(cfg, v, args.output, 10.0, args.input_dir)
         results[v] = {"baseline": base, "fixed": fixed}
@@ -172,10 +187,10 @@ def main():
         print(f"  {v}: baseline_confirmed={d['baseline_confirmed']} fixed_confirmed={d['fixed_confirmed']} eliminated={d['eliminated']}")
     print("=== G2 真绿视频 TP 不回退 ===")
     for v, d in gate["G2_no_regression"].items():
-        print(f"  {v}: base={d['baseline_confirmed']} fixed={d['fixed_confirmed']} no_regress={d['no_regression']}")
+        print(f"  {v}: base_true={d['baseline_true_green_segs']} fixed_true={d['fixed_true_green_segs']} no_regress={d['no_regression']}")
     print("=== G4 对抗式公交/遮挡真绿段 min max_run (阈值10s) ===")
     for v, d in gate["G4_bus_occlusion"].items():
-        print(f"  {v}: min_max_run={d['min_max_run']} safe={d['safe']} segs={d['green_segs']}")
+        print(f"  {v}: min_max_run={d['min_max_run']} safe={d['safe']} segs={d['true_green_segs']}")
     print(f"=== review 增量: base_rev={tot_b_rev} fixed_rev={tot_f_rev} (+{tot_f_rev-tot_b_rev}) ; confirmed {tot_b_conf}->{tot_f_conf} ===")
     print(f"=== VERDICT: G1={g1_ok} G2={g2_ok} G4={g4_ok} ALL_PASS={gate['verdict']['ALL_PASS']} ===")
     print(f"[json] {out_path}")
