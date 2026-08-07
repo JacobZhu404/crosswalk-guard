@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # verify_gates_01fp.py — #3 时序门控四道证据门 (plan-gate #5 放行后)
-# 只读消费生产管线: 跑 baseline(min_run=0, 等价未修) 与 fixed(min_run=10) 两轮,
+# 只读消费生产管线: 跑 baseline(min_run=0, 等价未修) 与 fixed(min_run=6.0, retune cc brief 791158e) 两轮,
 # 复用 cli.run 零循环复制。monkeypatch fuse_light 抓带 max_raw_green_run_s 的灯段。
 # 红线: 不写生产码 / 禁 select_gtfree / 不碰 light_priors.json·ped_signal.pt。
 import os, sys, json, argparse
@@ -84,6 +84,7 @@ def main():
     ap.add_argument("--input-dir", default=os.path.join(project_root(), "input_video"))
     ap.add_argument("--gt", default=os.path.join(project_root(), "datasets", "gt", "events.csv"))
     ap.add_argument("--config", default=os.path.join(project_root(), "configs", "config.yaml"))
+    ap.add_argument("--min-run", type=float, default=6.0, help="#3 时序门控阈值 T(fixed 轮); 默认 6.0 (retune, cc brief 791158e)")
     args = ap.parse_args()
     cfg = load_config(args.config)
     videos = [v for v in args.videos.split(",") if v]
@@ -91,25 +92,34 @@ def main():
     gt_segs = _load_gt_segments(args.gt)
     os.makedirs(args.output, exist_ok=True)
     out_path = os.path.join(args.output, "gate_evidence.json")
-    # 断点续跑: 已有 JSON 里跑过的视频直接跳过, 只对缺失/未完成的补跑
+    # 断点续跑: 复用 baseline; fixed 仅当 min_run 与当前 --min-run 一致才复用, 否则重跑
     results = {}
     if os.path.exists(out_path):
         try:
             old = json.load(open(out_path))
             prev = old.get("per_video", {})
             for v, rec in prev.items():
-                if rec.get("baseline") and rec.get("fixed"):
+                b = rec.get("baseline"); f = rec.get("fixed")
+                if b and (f and f.get("min_run") == args.min_run):
                     results[v] = rec
+                elif b:
+                    results[v] = {"baseline": b, "fixed": None}
+            reused = sum(1 for r in results.values() if r.get("fixed"))
             if results:
-                print(f"[resume] 复用已跑 {len(results)} 个视频, 跳过")
+                print(f"[resume] 复用 baseline {len(results)} 个, 其中 fixed(T={args.min_run} 匹配) {reused} 个, 其余 fixed 重跑")
         except Exception as e:
             print(f"[resume] 读取旧 JSON 失败, 从头跑: {e}")
     for v in videos:
-        if v in results and results[v].get("baseline") and results[v].get("fixed"):
-            print(f"[skip] {v} 已完成")
-            continue
-        base = _run_one(cfg, v, args.output, 0.0, args.input_dir)
-        fixed = _run_one(cfg, v, args.output, 10.0, args.input_dir)
+        rec = results.get(v, {})
+        base = rec.get("baseline")
+        fixed_rec = rec.get("fixed")
+        need_fixed = (fixed_rec is None) or (fixed_rec.get("min_run") != args.min_run)
+        if base is None:
+            base = _run_one(cfg, v, args.output, 0.0, args.input_dir)
+        if need_fixed:
+            fixed = _run_one(cfg, v, args.output, args.min_run, args.input_dir)
+        else:
+            fixed = fixed_rec
         results[v] = {"baseline": base, "fixed": fixed}
         # 增量落盘(防长任务 SIGKILL 丢中间结果)
         with open(out_path, "w") as f:
@@ -154,7 +164,7 @@ def main():
         gate["G4_bus_occlusion"][v] = {
             "true_green_segs": true_segs,
             "min_max_run": min_run,
-            "safe": (min_run is None) or (min_run >= 10.0),
+            "safe": (min_run is None) or (min_run >= args.min_run),
         }
     # review 增量: fixed review - baseline review(全局)
     tot_b_rev = sum(results[v]["baseline"]["by_status"].get("review", 0) for v in results if results[v]["baseline"])

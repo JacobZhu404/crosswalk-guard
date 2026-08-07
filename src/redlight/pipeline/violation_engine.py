@@ -136,7 +136,7 @@ class BatchViolationEngine:
 
     def __init__(self, preset="balanced", sample_fps=8.0, unknown_to_review=True,
                  min_event_gap_sec=5.0, fuse_kwargs=None, occ_denom="mask",
-                 min_persistent_green_run_s=10.0):
+                 min_persistent_green_run_s=6.0):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset

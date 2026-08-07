@@ -7,7 +7,7 @@
 from .temporal_fusion import interval_intersect
 
 
-def _go_intervals(segs, min_run=10.0):
+def _go_intervals(segs, min_run=6.0):
     # #3 时序门控 (plan-gate #5, 6124470/a9c48a8): 仅保留「段内最长 raw 绿 run >= min_run」
     # 的持久绿 -> confirmed。瞬态绿(过路车/反光瞬态误绿, 段内最长 raw run < min_run)排除,
     # 改走 _transient_green_intervals -> review(非 confirmed)。缺省 max_raw_green_run_s=1e9
@@ -53,7 +53,7 @@ def _peak_overlap(track, s, e):
     return round(peak, 3)
 
 
-def decide_violations(state, overlap_thr, min_duration_s, min_persistent_green_run_s=10.0):
+def decide_violations(state, overlap_thr, min_duration_s, min_persistent_green_run_s=6.0):
     """intermediate_state -> [event]. event: {track_id,status,start_s,end_s,light_state,max_overlap}。
 
     时序门控 (#3, plan-gate #5): 绿段按段内最长 raw 绿 run 分桶 ——

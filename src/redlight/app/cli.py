@@ -63,7 +63,7 @@ def run(cfg, video_path, output_dir, preset="balanced", cot=False, return_track_
     }
     # #3 时序门控 (plan-gate #5): 持久绿阈值, 段内最长 raw 绿 run < 此值 -> 降级 review(非 confirmed)
     # 显式传参(诊断/评测注入, 如 G1-G4 门验证)优先于 config 默认值
-    _cfg_min_run = float(getattr(tl_cfg, "min_persistent_green_run_s", 10.0))
+    _cfg_min_run = float(getattr(tl_cfg, "min_persistent_green_run_s", 6.0))
     _min_run = float(min_persistent_green_run_s) if min_persistent_green_run_s is not None else _cfg_min_run
     # 接线(C3, Jacob 拍板 2026-08-04): 默认 occ_denom 从 config 读(接线后默认 "box");
     # 显式传参仍优先(诊断/评测注入路径不变, 见 eval_violations/sweep/diag 显式传参)。
