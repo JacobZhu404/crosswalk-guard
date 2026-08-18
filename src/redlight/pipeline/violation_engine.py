@@ -296,6 +296,14 @@ class BatchViolationEngine:
             cur["track_id"] = e["track_id"]
             cur["light_state"] = e["light_state"]
         cur["max_overlap"] = max(cur.get("max_overlap", 0.0), e.get("max_overlap", 0.0))
-        # review 优先级高于 confirmed(安全侧交人复核)
-        if e["status"] == "review" or cur["status"] == "review":
+        # #3 dedup 交互修复(Plan A, cc brief 4329e78 / cc ruling cf2e94e):
+        # transient_green review(#3 瞬态绿)不得毒化同 episode 内证据充分的 confirmed 核;
+        # 仅非瞬态(=D1 light_uncertain 或 legacy 未标注)review 保留 review 优先安全语义。
+        # 否则 confirmed 核胜出(瞬态 review 被吸收)。
+        e_poisons = (e["status"] == "review" and e.get("review_reason") != "transient_green")
+        cur_poisons = (cur["status"] == "review" and cur.get("review_reason") != "transient_green")
+        if e_poisons or cur_poisons:
             cur["status"] = "review"
+        elif e["status"] == "confirmed" or cur["status"] == "confirmed":
+            cur["status"] = "confirmed"
+        # else: 两成员皆 transient_green review(无 confirmed 核) -> episode 保持 review(默认)

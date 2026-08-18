@@ -72,8 +72,14 @@ def decide_violations(state, overlap_thr, min_duration_s, min_persistent_green_r
         if not stat or not occ:
             continue
         base = interval_intersect(stat, occ)              # 静止 ∩ 压线(达阈)
-        for light_ivs, status in ((go, "confirmed"), (review_light, "review"),
-                                  (transient_green, "review")):
+        # #3 dedup 交互修复(Plan A, cc brief 4329e78 / cc ruling cf2e94e): review 事件打
+        # 来源标签, 使 transient_green(#3 瞬态绿)不得毒化同 episode 内的 confirmed 核,
+        # 而 light_uncertain(D1 真不确定)仍保留 review 优先安全语义。
+        for light_ivs, status, reason in (
+            (go, "confirmed", None),
+            (review_light, "review", "light_uncertain"),     # D1 真不确定, 保留 review 优先
+            (transient_green, "review", "transient_green"),  # #3 瞬态, 不得压 confirmed
+        ):
             for s, e in interval_intersect(light_ivs, base):
                 if e - s >= min_duration_s:
                     events.append({
@@ -81,5 +87,6 @@ def decide_violations(state, overlap_thr, min_duration_s, min_persistent_green_r
                         "start_s": s, "end_s": e,
                         "light_state": _state_at(segs, s),
                         "max_overlap": _peak_overlap(tr, s, e),
+                        "review_reason": reason,
                     })
     return events
