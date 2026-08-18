@@ -39,11 +39,15 @@ confirmed **全拖成 review** → 09 从 TP 掉成 FN。这是 #3↔dedup 交�
 - **独立 worktree**,不 push、不 merge,球回 cc 验收。
 - 自测锚:01 仍 0 FP(纯瞬态 3.10s 无 confirmed 核,不得复活)。
 
-## 5. 语义警示(记账,非阻断,待 Jacob 拍)
+## 5. 语义警示(记账 —— Jacob 已拍板:走简单版)
 
-Fix A 全局反转「待复核安全优先」。当前 11 视频**无**「D1 遮挡子窗 + confirmed 子窗共存」被误升的 case
-(正例均已是 confirmed,04 无 confirmed,负例 0 confirmed 成员),cc 判可接受。
-若 Jacob 要严守 D1 遮挡的人工复核 → 保守替代:给 review 打来源标签(occluded/unknown 仍优先;仅 #3 transient_green 被 confirmed 吸收),更稳但更多码。cc 推荐先上 2 行 Fix A,真出问题再加固。
+**【2026-08-18 Jacob 拍板:采用简单版 Fix A(2 行全局反转),不做 D1 来源标签保守版。】**
+理由:当前 11 视频**无**「D1 遮挡子窗 + confirmed 子窗共存」被误升的 case(正例均已是 confirmed,
+04 无 confirmed,负例 0 confirmed 成员),可接受;来源标签是过度设计,真出问题再加固。
+
+记账(非阻断):Fix A 全局反转「待复核安全优先」——将来若出现「D1 遮挡子窗 + confirmed 子窗共存」的
+episode 会判 confirmed(不再交人复核)。届时若被实证误升,再上来源标签(occluded/unknown 仍优先;
+仅 #3 transient_green 被 confirmed 吸收)。**当前不实现。**
 
 ## 6. cc 验收口径(全 11 视频,不再子集漏测)
 
