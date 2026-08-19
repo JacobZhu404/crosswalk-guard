@@ -61,3 +61,6 @@ Thumbs.db
 
 # Phase 2 GT 重建快照（本地，不入库）
 _snapshot_pre_build/
+
+# qw b2 worktree venv symlink(本地便利, 不入库)
+.venv

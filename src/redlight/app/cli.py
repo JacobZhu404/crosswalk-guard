@@ -214,7 +214,11 @@ def _episode_plate_all(consensus, ev, track_samples=None):
       时间语义: 牌读取帧可落在事件窗口外(产品语义"车牌需视频全局读取")。
       兼容: consensus 为 None / dict 旧接口 / 无 track_records / 无 track_samples → 回退旧聚合逻辑。
     """
-    tids = list(dict.fromkeys([ev["track_id"]] + list(ev.get("member_tracks", []))))
+    # b2(2026-08-19): episode.member_tracks 被收窄为车组代表(事件成形/碎片化指标);
+    # 车牌回填优先用 member_tracks_all(原始全 member)——b2 车组归组会消解"跨车污染"特征
+    # (05 京N541E6 归黑车组后 span 变小致 span 绕行失效), 车牌线维持原 member + span 绕行。
+    tids = list(dict.fromkeys([ev["track_id"]] + list(
+        ev.get("member_tracks_all", ev.get("member_tracks", [])))))
     if consensus is None:
         return "", []
     if isinstance(consensus, dict):
