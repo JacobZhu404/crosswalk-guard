@@ -136,7 +136,8 @@ class BatchViolationEngine:
 
     def __init__(self, preset="balanced", sample_fps=8.0, unknown_to_review=True,
                  min_event_gap_sec=5.0, fuse_kwargs=None, occ_denom="mask",
-                 min_persistent_green_run_s=6.0):
+                 min_persistent_green_run_s=6.0,
+                 b2_centroid_d=200.0, b2_gap_merge=3.0):
         if preset not in SENSITIVITY_PRESETS:
             preset = "balanced"
         self.preset_name = preset
@@ -150,6 +151,11 @@ class BatchViolationEngine:
         self.gap = min_event_gap_sec
         self.unknown_to_review = unknown_to_review
         self.min_persistent_green_run_s = min_persistent_green_run_s
+        # b2 脏袋收窄(2026-08-19): member 归组阈值 —— 同车碎片=质心距<b2_centroid_d
+        # 且时序重叠/相邻(|A.end-B.start|<b2_gap_merge); 过路车组从 member 移除
+        # (episode 窗口/状态判定不变, 只收窄 member_tracks 供车牌回填, 零新增 FP)。
+        self.b2_centroid_d = b2_centroid_d
+        self.b2_gap_merge = b2_gap_merge
         self.fuse_kwargs = dict(fuse_kwargs) if fuse_kwargs else {}
         self._light_obs = []       # [(ts, obs, conf), ...]
         self._occ_samples = []     # [(ts, occluded_bool), ...] 供 evidence 打标(review, D1)
@@ -231,6 +237,10 @@ class BatchViolationEngine:
         # 同 track 事件去重: 间隔 < gap 的合并 (复刻 V2 行为)
         raw_events = self._dedup(raw_events)
 
+        # b2 脏袋收窄(2026-08-19): episode 窗口/状态判定不变(Fix A 语义保留, 零新增 FP),
+        # 只收窄 member_tracks = 代表 track + 时空连续同车碎片(过路车组移除, 供车牌回填)。
+        raw_events = self._narrow_members(raw_events)
+
         # 映射回 CLI 期望的事件格式
         self.events = []
         for ev in raw_events:
@@ -250,7 +260,12 @@ class BatchViolationEngine:
                 "evidence_image": "",
                 "plate": "",
                 "max_overlap": ev.get("max_overlap", 0.0),
+                # b2(2026-08-19): member_tracks 已被收窄为车组代表(碎片化/事件成形指标);
+                # member_tracks_all = _dedup 原始全 member, 专供车牌回填(_episode_plate_all),
+                # 必须随事件透传 —— 否则车牌线回退到收窄集合, 会复活 05 京N541E6/08 京PK9B77
+                # 等跨车污染误罚(收窄后质心 span 变小, 车牌线空间聚集约束失效)。
                 "member_tracks": ev.get("member_tracks", [tid]),
+                "member_tracks_all": ev.get("member_tracks_all", ev.get("member_tracks", [tid])),
             })
         return self.events
 
@@ -307,3 +322,85 @@ class BatchViolationEngine:
         elif e["status"] == "confirmed" or cur["status"] == "confirmed":
             cur["status"] = "confirmed"
         # else: 两成员皆 transient_green review(无 confirmed 核) -> episode 保持 review(默认)
+    def _narrow_members(self, episodes):
+        """b2 脏袋收窄(2026-08-19, cc 任务单 2026-08-18-cc-task-qw-b2):
+        把 episode 的 member_tracks 从"全部并入 track"收窄为"车组代表"。
+
+        设计(cc 五条硬条件 + 车牌线信号互斥分析):
+          - episode 窗口/状态判定不变(Fix A 保留), 不拆 episode(零新增 FP);
+          - 车组归组: member tracks 按"互相时空连续"(质心距<b2_centroid_d ∧
+            时序重叠/相邻 |A.end-B.start|<b2_gap_merge, union-find 传递闭包)聚成车组
+            (物理同车碎片合并, 如 05 白车链 tid1→11→19→25/26);
+          - 过路/漂移车组移除: 车组在事件窗口内 stationary 占比 < 0.6(非违章车);
+          - member_tracks = 各保留车组的代表 track(max overlap);
+          - **原始全 member 保留在 member_tracks_all**: 车牌回填(_episode_plate_all)
+            用原始 member —— 因 b2 车组归组会消解"跨车关联污染"特征(05 京N541E6 归黑车组后
+            质心 span 变小, 车牌线 span 绕行失效), 车牌线与 b2 收窄信号互斥, 故车牌线
+            维持原 member + span 绕行不变(硬条件: 车牌误罚仍 0)。
+        """
+        for ep in episodes:
+            members = ep.get("member_tracks", [])
+            rep = ep["track_id"]
+            ep["member_tracks_all"] = list(members)  # 原始全 member(车牌回填用)
+            if len(members) <= 1:
+                continue
+            w0, w1 = ep["start_s"], ep["end_s"]
+            # 每个 member track: 质心 + 全时跨度 + 窗口内 stationary 占比
+            info = {}
+            for tid in members:
+                samples = self._track_samples.get(tid, [])
+                if not samples:
+                    continue
+                cx = sum((s["box"][0] + s["box"][2]) / 2 for s in samples) / len(samples)
+                cy = sum((s["box"][1] + s["box"][3]) / 2 for s in samples) / len(samples)
+                win = [s for s in samples if w0 <= s["ts"] <= w1]
+                sta = (sum(1 for s in win if s.get("stationary")) / len(win)) if win else 0.0
+                ov = max((s.get("overlap", 0.0) for s in win), default=0.0)
+                info[tid] = {"cx": cx, "cy": cy, "t0": samples[0]["ts"],
+                             "t1": samples[-1]["ts"], "sta": sta, "ov": ov,
+                             "n": len(samples)}
+            if rep not in info:
+                continue
+            # union-find 车组归组(互相时空连续)
+            parent = {tid: tid for tid in members if tid in info}
+            def find(x):
+                while parent[x] != x:
+                    parent[x] = parent[parent[x]]
+                    x = parent[x]
+                return x
+            def union(a, b):
+                ra, rb = find(a), find(b)
+                if ra != rb:
+                    parent[rb] = ra
+            tids = list(parent.keys())
+            for i in range(len(tids)):
+                for j in range(i + 1, len(tids)):
+                    a, b = info[tids[i]], info[tids[j]]
+                    dist = ((a["cx"] - b["cx"]) ** 2 + (a["cy"] - b["cy"]) ** 2) ** 0.5
+                    temporal_ok = not (a["t1"] + self.b2_gap_merge < b["t0"]
+                                       or b["t1"] + self.b2_gap_merge < a["t0"])
+                    if dist < self.b2_centroid_d and temporal_ok:
+                        union(tids[i], tids[j])
+            # 车组 -> 成员列表
+            groups = {}
+            for tid in tids:
+                groups.setdefault(find(tid), []).append(tid)
+            # 保留违章车组(方案 §3.1: 窗口内 stationary>=0.6 ∧ overlap>0.15),
+            # 代表 = max overlap; 代表车(=episode 代表 track)所在车组以其为代表(一车一代表);
+            # 代表车组即使不满足候选也强制保留(代表车=最显著违规车)。
+            kept_groups = []
+            for root, gtids in groups.items():
+                sta_max = max(info[t]["sta"] for t in gtids)
+                ov_max = max(info[t]["ov"] for t in gtids)
+                if (sta_max >= 0.6 and ov_max > 0.15) or rep in gtids:
+                    rep_tid = max(gtids, key=lambda t: (info[t]["ov"], info[t]["n"]))
+                    if rep in gtids:
+                        rep_tid = rep          # 代表车所在车组 -> 以代表车为组代表
+                    kept_groups.append((rep_tid, info[rep_tid]["ov"]))
+            # member_tracks = 车组代表(按 overlap 降序), 代表 track 恒在
+            kept_groups.sort(key=lambda x: -x[1])
+            narrowed = [t for t, _ in kept_groups]
+            if rep not in narrowed:
+                narrowed.insert(0, rep)
+            ep["member_tracks"] = narrowed
+        return episodes
