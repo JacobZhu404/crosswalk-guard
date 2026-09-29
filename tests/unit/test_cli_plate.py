@@ -137,3 +137,47 @@ def test_p3_retry_no_recognizer_or_samples():
     class FakeRecog:
         use_hl = True
     assert _p3_roi_retry("no.mp4", ev, {}, FakeRecog()) == ""
+
+
+# ============ P2 空间聚集约束(constraint 3, 防跨车关联污染误罚) ============
+# cc 2026-09-29: 补测缺口。此前 _tracks 助手对所有 tid 硬编码同框 [0,0,200,200] ->
+# 质心 span 恒 0, 空间聚集约束(cli.py:283-294)从未被单测触及。它是挡 05 京N541E6
+# 跨车误罚的关键闸门(见 memory qw-P2-plate-effectgate-fail / 01fp-falsegreen-fix1)。
+
+def _tracks_at(cx_map):
+    """cx_map: tid -> (center_x, stationary_bool)。生成窗口 [4,10] 内 3 样本,
+    box 宽 200 居中于 center_x(质心 x = center_x)。用于驱动空间聚集 span 约束。"""
+    out = {}
+    for tid, (cx, sta) in cx_map.items():
+        box = [cx - 100, 0, cx + 100, 200]
+        out[tid] = [{"ts": t, "stationary": sta, "box": box, "overlap": 0.5}
+                    for t in (5.0, 7.0, 9.0)]
+    return out
+
+
+def test_p2_span_rejects_cross_vehicle_pollution():
+    """复现 05 京N541E6 病理: 同一牌(及 ED<=1 变体)被读到**空间相离**的多辆静止车上
+    (白车碎片 cx~310 + 黑车 cx~943, 系跨度 633px > 0.25×帧宽) -> 判跨车污染, 不回填。
+    这是 0 误罚不变量的核心闸门, 拆掉它 05 就会开出错牌罚单。"""
+    pc = _consensus_with({
+        1: [("京N541E6", 1.0, 5.0, None)] * 20,   # 代表车(白车碎片), cx=310
+        2: [("京N541E61", 1.0, 5.0, None)] * 20,  # 黑车, ED<=1 变体, cx=943 -> 撑大系 span
+    })
+    ts = _tracks_at({1: (310, True), 2: (943, True)})
+    ev = {"track_id": 1, "member_tracks": [1, 2], "member_tracks_all": [1, 2],
+          "start_ts": 4.0, "end_ts": 10.0}
+    # 京N541E6 系 span=633 > 0.25×frame_w -> 整个变体系被挡 -> 无候选 -> 空
+    assert _episode_plate(pc, ev, ts) == ""
+
+
+def test_p2_span_keeps_same_car_fragments():
+    """对照 07 京Q5D2N8: 同一牌只落在**空间聚集**的同车碎片上(cx 相近, span 小)
+    -> 判真牌同车碎片, 正常回填。确保 span 约束不误伤真违章车的碎片链。"""
+    pc = _consensus_with({
+        1: [("京Q5D2N8", 1.0, 5.0, None)] * 20,   # 代表车, cx=300
+        2: [("京Q5D2N8", 1.0, 5.0, None)] * 20,   # 同车重编号碎片, cx=360 (span 仅 60)
+    })
+    ts = _tracks_at({1: (300, True), 2: (360, True)})
+    ev = {"track_id": 1, "member_tracks": [1, 2], "member_tracks_all": [1, 2],
+          "start_ts": 4.0, "end_ts": 10.0}
+    assert _episode_plate(pc, ev, ts) == "京Q5D2N8"

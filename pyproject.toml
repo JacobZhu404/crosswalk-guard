@@ -19,4 +19,7 @@ dev = ["pytest"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "-q"
+# importlib 模式: tests/ 与 tests/unit/ 存在同名文件(test_signal_state_classifier.py),
+# 无 __init__.py 时默认 prepend 模式会因 basename 撞车中断收集(整个 suite 挂)。
+# importlib 按完整路径导入, 消除撞车且不需给 tests/ 加包标记。
+addopts = "-q --import-mode=importlib"
