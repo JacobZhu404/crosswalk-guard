@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 from redlight.evaluation.violation_eval import (
     match_violation_events, aggregate,
     classify_false_positives,
+    match_cars, aggregate_car_level,
 )
 
 
@@ -94,3 +95,49 @@ def test_aggregate_breakdown_across_videos():
     assert abs(agg["p_only_true_fp"] - 2 / (2 + 2)) < 1e-6  # TP/(TP+真误报)
     # 头条口径未被 classify 改变
     assert abs(agg["precision"] - 2 / (2 + 3)) < 1e-6
+
+
+# ================= 车级评测(D2 = Jacob 拍板"按车辆算", cc 2026-09-29) =================
+def test_car_level_hit_and_miss():
+    """具名违章车: 命中 1 / 漏 1(08 双白车只回填到 1 张)。"""
+    car_gt = {"violating": {"京ACD5358", "京ACW6553"}, "non_violating": set()}
+    r = match_cars({"京ACD5358"}, car_gt)
+    assert r["car_tp"] == 1 and r["car_fn"] == 1
+    assert r["hit"] == ["京ACD5358"] and r["missed"] == ["京ACW6553"]
+    assert r["car_misfine"] == 0 and r["car_unknown"] == 0
+
+
+def test_car_level_misfine_flagged():
+    """预测到已知非违章车(05 京N541E6)= 误罚, 车级 P 死敌。"""
+    car_gt = {"violating": {"京ADH9206"}, "non_violating": {"京N541E6"}}
+    r = match_cars({"京N541E6"}, car_gt)
+    assert r["car_misfine"] == 1 and r["misfined"] == ["京N541E6"]
+    assert r["car_tp"] == 0 and r["car_fn"] == 1  # 真违章车京ADH9206 漏了
+
+
+def test_car_level_unknown_not_in_precision_denom():
+    """OCR 错读/未登记牌 -> unknown, 不进精度分母(无法判对错), 单列。"""
+    car_gt = {"violating": {"京Q5D2N8"}, "non_violating": set()}
+    r = match_cars({"京Q5D2N8", "京X00000"}, car_gt)
+    assert r["car_tp"] == 1 and r["car_unknown"] == 1 and r["car_misfine"] == 0
+    assert r["unknown"] == ["京X00000"]
+
+
+def test_car_level_empty_pred():
+    """空预测(02 京LNE560 OCR 地板): tp0/fn1, 无误罚。"""
+    car_gt = {"violating": {"京LNE560"}, "non_violating": set()}
+    r = match_cars(set(), car_gt)
+    assert r["car_tp"] == 0 and r["car_fn"] == 1 and r["car_misfine"] == 0
+
+
+def test_aggregate_car_level():
+    """聚合: recall=命中/(命中+漏); 具名精度=命中/(命中+误罚); unknown 不进分母。"""
+    rs = [
+        match_cars({"京ACD5358"}, {"violating": {"京ACD5358", "京ACW6553"}, "non_violating": set()}),  # tp1 fn1
+        match_cars({"京N541E6"}, {"violating": {"京ADH9206"}, "non_violating": {"京N541E6"}}),          # misfine1 fn1
+        match_cars({"京Q5D2N8", "京X00000"}, {"violating": {"京Q5D2N8"}, "non_violating": set()}),      # tp1 unk1
+    ]
+    a = aggregate_car_level(rs)
+    assert a["car_tp"] == 2 and a["car_fn"] == 2 and a["misfine_total"] == 1 and a["car_unknown"] == 1
+    assert a["car_recall_named"] == 0.5           # 2/(2+2)
+    assert a["car_precision_named"] == 0.667       # 2/(2+1), 3 位小数; unknown 不进分母

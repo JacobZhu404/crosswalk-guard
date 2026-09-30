@@ -48,6 +48,97 @@ def load_violation_gt(events_csv):
     return gt
 
 
+def load_car_level_gt(events_csv):
+    """车级 GT(D2 = Jacob 拍板"按车辆算"): 每视频 -> {violating, non_violating}。
+
+    - violating: 所有 is_violation==1 段的 violating_plates 并集(具名, 去 ?/无牌)——
+      每一个 = 该出一张罚单的违章车。是车级 recall 的分母(具名部分)。
+    - non_violating: 具名但**已知非违章**的车牌(在 is_violation==0 段具名, 或正例窗的
+      other_plates), 减去 violating 集 —— 预测到这些 = 误罚(misfine), 是车级 precision 的死敌。
+      典型: 05 京N541E6(黑车非违章, 被 b2 过合并拽进袋的头号误罚风险)。
+
+    返回 {video: {"violating": set[str], "non_violating": set[str]}}。
+    注: 匿名违章车(06/11 的 '?')不进具名集 —— 车级具名 recall 会低估真实召回,
+    这是诚实下界(具名可判, 匿名不可判身份)。窗级 recall 仍由 match_violation_events 给。
+    """
+    def _split(s):
+        return [t.strip() for t in (s or "").replace("；", ";").split(";")
+                if t.strip() and t.strip() not in ("?", "无牌")]
+    viol, other, nonviol = {}, {}, {}
+    if not os.path.exists(events_csv):
+        return {}
+    with open(events_csv, "r", encoding="utf-8-sig") as f:
+        for row in csv.DictReader(f):
+            v = (row.get("video") or "").strip()
+            if not v:
+                continue
+            viol.setdefault(v, set()); other.setdefault(v, set()); nonviol.setdefault(v, set())
+            is_v = (row.get("is_violation") or "").strip() == "1"
+            if is_v:
+                viol[v].update(_split(row.get("violating_plates")))
+                other[v].update(_split(row.get("other_plates")))
+            else:
+                nonviol[v].update(_split(row.get("violating_plates")))
+                nonviol[v].update(_split(row.get("other_plates")))
+    out = {}
+    for v in set(viol) | set(other) | set(nonviol):
+        vset = viol.get(v, set())
+        nonv = (other.get(v, set()) | nonviol.get(v, set())) - vset
+        out[v] = {"violating": vset, "non_violating": nonv}
+    return out
+
+
+def match_cars(pred_plates, car_gt):
+    """车级匹配(按车牌集合): 预测违章车牌集 vs GT 车级集。
+
+    pred_plates: set[str] — 本视频所有 confirmed 事件回填出的**具名**车牌(去空/去重)。
+    car_gt: {"violating": set, "non_violating": set} — load_car_level_gt 的单视频项。
+
+    返回 dict:
+      car_tp: 命中的具名违章车数(pred ∩ violating)
+      car_fn: 漏掉的具名违章车数(violating - pred)
+      car_misfine: 预测到已知非违章车数(pred ∩ non_violating)—— 误罚, 车级 P 死敌
+      car_unknown: 预测出但既不在 violating 也不在 non_violating 的具名牌(OCR 错读/未登记车)
+      hit / missed / misfined / unknown: 对应车牌列表(便于逐条审计)
+    """
+    pv = set(p.strip() for p in pred_plates if p and p.strip())
+    viol = set(car_gt.get("violating", set()))
+    nonv = set(car_gt.get("non_violating", set()))
+    hit = pv & viol
+    missed = viol - pv
+    misfined = pv & nonv
+    unknown = pv - viol - nonv
+    return {
+        "car_tp": len(hit), "car_fn": len(missed),
+        "car_misfine": len(misfined), "car_unknown": len(unknown),
+        "hit": sorted(hit), "missed": sorted(missed),
+        "misfined": sorted(misfined), "unknown": sorted(unknown),
+    }
+
+
+def aggregate_car_level(per_video_car):
+    """车级聚合: 具名违章车 recall + 误罚计数。
+
+    per_video_car: [match_cars 返回 dict, ...]
+    car_recall = Σcar_tp / (Σcar_tp + Σcar_fn) —— 具名违章车召回(下界, 匿名车不计)。
+    misfine_total = Σcar_misfine —— 预测到已知非违章车总次数(必须为 0)。
+    car_precision_named = Σcar_tp / (Σcar_tp + Σcar_misfine) —— 只对"能判身份"的预测算,
+      unknown(错读/未登记)不进分母(无法判对错, 单列)。
+    """
+    tp = sum(r["car_tp"] for r in per_video_car)
+    fn = sum(r["car_fn"] for r in per_video_car)
+    mis = sum(r["car_misfine"] for r in per_video_car)
+    unk = sum(r["car_unknown"] for r in per_video_car)
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    prec = tp / (tp + mis) if (tp + mis) > 0 else (1.0 if tp > 0 else 0.0)
+    return {
+        "car_tp": tp, "car_fn": fn, "car_misfine": mis, "car_unknown": unk,
+        "car_recall_named": round(recall, 3),
+        "car_precision_named": round(prec, 3),
+        "misfine_total": mis,
+    }
+
+
 def overlap_seconds(a, b):
     """两区间 [start,end] 的重叠秒数(无交=0)。a,b 均为 (start,end)。"""
     s, e = max(a[0], b[0]), min(a[1], b[1])

@@ -26,6 +26,7 @@ from redlight.pipeline.tracker import SENSITIVITY_PRESETS
 from redlight.evaluation.violation_eval import (
     load_violation_gt, match_violation_events, aggregate,
     load_video_metadata, classify_false_positives,
+    load_car_level_gt, match_cars, aggregate_car_level,
 )
 
 
@@ -42,12 +43,25 @@ def _read_violations_csv(path):
                     "start_ts": float(row["start_ts"]),
                     "end_ts": float(row["end_ts"]),
                     "plate": (row.get("plate") or "").strip(),
+                    "plates": [p.strip() for p in (row.get("plates") or "").split("|") if p.strip()],
                     "track_id": row.get("track_id", ""),
                     "light_state": (row.get("light_state") or "").strip(),
                 })
             except (KeyError, ValueError):
                 continue
     return events
+
+
+def _pred_plates(confirmed_events):
+    """从 confirmed 事件收集所有具名预测车牌(主牌 plate + 多牌 plates), 去空去重。"""
+    out = set()
+    for e in confirmed_events:
+        if e.get("plate"):
+            out.add(e["plate"].strip())
+        for p in (e.get("plates") or []):
+            if p and p.strip():
+                out.add(p.strip())
+    return out
 
 
 def _run_pipeline(cfg, video, preset, out_root, detector_name="v11", occ_denom="mask", box_overlap=None):
@@ -105,6 +119,7 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     cfg = load_config(args.config)
     gt = load_violation_gt(args.events)
+    car_gt = load_car_level_gt(args.events)
     meta = load_video_metadata(args.videos_csv)
 
     videos = args.videos or sorted(meta.keys())
@@ -113,7 +128,7 @@ def main():
           f"{(' box_overlap='+str(args.box_overlap)) if args.occ_denom=='box' and args.box_overlap is not None else ''} ===")
     print(f"视频(全 {len(meta)} 个, 含负例 {sum(1 for v in meta if not meta[v])} 个): {videos}\n")
 
-    results, rows = [], []
+    results, rows, car_results = [], [], []
     for v in videos:
         gt_v = gt.get(v, [])
         is_neg = not meta.get(v, True)  # 未列于 videos.csv 默认当正例
@@ -138,6 +153,10 @@ def main():
         r["oow_count"] = cls["oow_count"]
         r["fragment_count"] = cls["fragment_count"]
         r["_cls"] = cls
+        # 车级评测(D2 = Jacob 拍板"按车辆算"): 具名违章车 recall + 误罚
+        car_r = match_cars(_pred_plates(conf), car_gt.get(v, {"violating": set(), "non_violating": set()}))
+        r["_car"] = car_r
+        car_results.append(car_r)
         results.append(r)
         rows.append((v, r, cls, is_neg))
 
@@ -153,6 +172,14 @@ def main():
               f"车牌={r['plate_hits']}/{r['plate_total']} | 真误报={cls['neg_count']+cls['oow_count']} 碎片={cls['fragment_count']}")
         print(f"    预测confirmed: {pred_line}")
         print(f"    GT违章段:     {gt_line}")
+        # 车级明细(D2): 具名违章车命中/漏/误罚
+        cr = r["_car"]
+        car_bits = f"车级: 命中{cr['car_tp']} 漏{cr['car_fn']} 误罚{cr['car_misfine']} 未登记{cr['car_unknown']}"
+        if cr["hit"]:      car_bits += f" | ✓{cr['hit']}"
+        if cr["missed"]:   car_bits += f" | ✗漏{cr['missed']}"
+        if cr["misfined"]: car_bits += f" | ⚠误罚{cr['misfined']}"
+        if cr["unknown"]:  car_bits += f" | ?未登记{cr['unknown']}"
+        print(f"    {car_bits}")
         # FP 拆解明细
         for d in cls["detail"]:
             if d["category"] == "neg_true_fp":
@@ -173,6 +200,13 @@ def main():
           f"车牌命中={agg['plate_hits']}/{agg['plate_total']} ===")
     print(f"=== 拆解: 真误报={agg['true_fp_total']} (负例+窗外) | 碎片={agg['fragment_total']} "
           f"| 诊断 P(仅真误报)={agg['p_only_true_fp']:.3f} ===")
+
+    # 车级汇总(D2 = Jacob 拍板"按车辆算")
+    cagg = aggregate_car_level(car_results)
+    print(f"\n=== 车级(D2 按车辆算): 具名违章车召回={cagg['car_recall_named']:.3f} "
+          f"(命中{cagg['car_tp']}/漏{cagg['car_fn']}) | 具名精度={cagg['car_precision_named']:.3f} "
+          f"| 误罚={cagg['misfine_total']} | 未登记={cagg['car_unknown']} ===")
+    print("=== 车级口径: 分母=具名违章车(匿名'?'不计, 是召回下界); 误罚=预测到已知非违章车(必须0) ===")
 
 
 if __name__ == "__main__":

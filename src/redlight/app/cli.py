@@ -405,7 +405,7 @@ def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus,
         csv_path = os.path.join(output_dir, "violations.csv")
         cols = ["event_id", "track_id", "status", "start_ts", "end_ts",
                 "vehicle_class", "confidence", "light_state", "signal_assumption",
-                "plate", "evidence_image"]
+                "plate", "plates", "evidence_image"]
         with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:
             w = csv.DictWriter(f, fieldnames=cols)
             w.writeheader()
@@ -418,6 +418,8 @@ def _write_outputs(events, video_path, evidence_dir, output_dir, cfg, consensus,
                     "light_state": ev["light_state"],
                     "signal_assumption": cfg.output.signal_assumption,
                     "plate": ev.get("plate", ""),
+                    # 多牌(D2 车级评测用): '|' 连接, 兼容旧读者(新增列, DictReader 忽略未知列)
+                    "plates": "|".join(ev.get("plates", []) or ([ev["plate"]] if ev.get("plate") else [])),
                     "evidence_image": ev.get("evidence_image", ""),
                 })
 
