@@ -19,6 +19,25 @@ def _set_base_font(doc, font="微软雅黑", size=11):
     style.element.rPr.rFonts.set(qn("w:eastAsia"), font)
 
 
+FIG_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "docs", "manuals", "figs")
+
+
+def _fig(doc, filename, caption, width_in=5.8):
+    """插入配图 + 居中图注。图不存在则跳过(不报错)。"""
+    path = os.path.join(FIG_DIR, filename)
+    if not os.path.isfile(path):
+        return
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.add_run().add_picture(path, width=Inches(width_in))
+    cap = doc.add_paragraph()
+    cap.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = cap.add_run(caption)
+    r.italic = True
+    r.font.size = Pt(9)
+    r.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+
+
 def _title(doc, text, subtitle=None):
     h = doc.add_heading(text, level=0)
     h.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -112,6 +131,20 @@ def build(path):
     _plain(doc, "系统像一位交通协管，先看清“有哪些车、斑马线在哪、灯什么颜色、车牌是多少”，"
                 "再按一条铁规矩下结论：只有行人绿灯时、车还停在斑马线上不走，才算违章。")
 
+    _fig(doc, "fig_detect_06.jpg",
+         "图 1　系统实时标注的真实画面：红框=正在违章的车（静止+压斑马线+行人绿灯），"
+         "顶部横幅给出“违章确认”与回填车牌，画面上方可见行人绿灯，地面青黄色为识别出的斑马线区域。")
+
+    _p(doc, "系统识别的四类目标（各用不同标记）：", bold=True)
+    _fig(doc, "fig_light_green.jpg",
+         "图 2a　红绿灯定位 + 颜色：绿框框出“管这条路”的行人信号灯，判定为绿灯（可通行相位）。", width_in=3.0)
+    _fig(doc, "fig_light_red.jpg",
+         "图 2b　同一套方法在红灯相位：框住行人信号灯并判定为红灯（此时车停不算违章）。", width_in=3.0)
+    _fig(doc, "fig_plate_03.jpg",
+         "图 3　车牌识别：框出车牌并读出号码（此例为新能源绿牌，系统识别为 京ABV3428）。", width_in=3.6)
+    _plain(doc, "图 2、图 3 就是你问的“哪些是红绿灯的框、哪些是红绿灯颜色、哪些是车牌”——"
+                "系统用框标出位置，再判断颜色或读出号码。")
+
     _p(doc, "两个关键的“谨慎”设计：", bold=True)
     _bullet(doc, "没拍到红绿灯时，绝不瞎判违章，而是标“待复核”，交给人看。")
     _bullet(doc, "车牌读不清时，宁可留空，也不乱填一个号码去冤枉车主。")
@@ -135,6 +168,13 @@ def build(path):
                 "而不是只给一个最终分数。")
     _p(doc, "工程上，这由一个画廊基类（BaseGalleryBuilder）统一外壳，各能力子类"
             "（光灯/斑马线/车牌/跟踪画廊）只实现自己的标注逻辑。", size=10, color=(0x66, 0x66, 0x66))
+
+    _fig(doc, "fig_gallery_annotate.png",
+         "图 4　真实的红绿灯标注画廊界面。橙/蓝框=系统给出的候选（只是选项），绿框=人工选定的、"
+         "真正“管这条路”的行人信号灯（进入真值）；右侧可改颜色标签，顶部进度条逐视频显示标注进展。"
+         "人点一下候选框即选定、再点取消，候选里没有就直接在图上拖一个新框。", width_in=6.3)
+    _plain(doc, "这张图就是你问的“在画廊里怎么标注”：系统先把它猜的框（橙色）摆出来，"
+                "人只需确认或改成正确的（绿色），又快又不容易漏。")
 
     # 环节 2: 标注真值
     doc.add_heading("环节二：人工标注“真值”(标准答案)", level=2)
