@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>crosswalk-guard 脚本分类与临时脚本清理报告</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#1f2329; --sub:#5b6573; --line:#e3e7ee;
+    --blue:#2f6feb; --green:#1f9d55; --amber:#c77700; --red:#d23b3b; --soft:#eef2f8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.65;font-size:15px}
+  .wrap{max-width:1060px;margin:0 auto;padding:32px 24px 80px}
+  header.top{background:linear-gradient(135deg,#2f6feb,#1f4fb0);color:#fff;border-radius:14px;padding:28px 30px;margin-bottom:26px}
+  header.top h1{margin:0 0 6px;font-size:24px;letter-spacing:.3px}
+  header.top p{margin:0;opacity:.9;font-size:13.5px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:22px 0 8px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .stat .n{font-size:28px;font-weight:700;line-height:1}
+  .stat .l{color:var(--sub);font-size:13px;margin-top:6px}
+  .stat.blue .n{color:var(--blue)} .stat.green .n{color:var(--green)}
+  .stat.amber .n{color:var(--amber)} .stat.red .n{color:var(--red)}
+  section{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px;margin:18px 0}
+  h2{font-size:19px;margin:0 0 14px;padding-bottom:10px;border-bottom:2px solid var(--soft);display:flex;align-items:center;gap:10px}
+  h2 .tag{font-size:12px;font-weight:600;padding:2px 9px;border-radius:20px;color:#fff}
+  .t-keep{background:var(--green)} .t-tmp{background:var(--red)} .t-info{background:var(--blue)}
+  h3{font-size:15.5px;margin:20px 0 8px;color:var(--ink)}
+  p{margin:8px 0}
+  .muted{color:var(--sub);font-size:13.5px}
+  table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13.5px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:var(--soft);font-weight:600;color:var(--ink)}
+  tr:nth-child(even) td{background:#fafbfc}
+  code{background:var(--soft);padding:1px 6px;border-radius:5px;font-size:12.5px;font-family:"SF Mono",Menlo,Consolas,monospace}
+  .pill{display:inline-block;font-size:12px;padding:1px 8px;border-radius:20px;font-weight:600}
+  .pill.g{background:#e6f6ec;color:var(--green)} .pill.r{background:#fbe7e7;color:var(--red)}
+  .pill.a{background:#fdf0db;color:var(--amber)} .pill.b{background:#e8f0fe;color:var(--blue)}
+  .grp{margin:6px 0 14px}
+  .grp .gtitle{font-weight:600;color:var(--sub);font-size:13px;margin-bottom:4px}
+  .filelist{display:flex;flex-wrap:wrap;gap:6px}
+  .filelist span{background:#fbeaea;color:#a32626;border:1px solid #f3cfcf;padding:3px 8px;border-radius:6px;font-size:12.5px;font-family:"SF Mono",Menlo,Consolas,monospace}
+  .warn{background:#fff7e8;border:1px solid #f0d9a8;border-left:4px solid var(--amber);border-radius:8px;padding:14px 16px;margin:14px 0}
+  .warn b{color:var(--amber)}
+  .cmd{background:#1f2329;color:#e6edf3;border-radius:10px;padding:16px 18px;overflow:auto;font-size:12.8px;font-family:"SF Mono",Menlo,Consolas,monospace;white-space:pre}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:6px 0 2px;font-size:13px;color:var(--sub)}
+  a{color:var(--blue);text-decoration:none} a:hover{text-decoration:underline}
+  .vid{width:100%;max-height:70vh;border-radius:10px;border:1px solid var(--line);background:#000;display:block;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+  footer{color:var(--sub);font-size:12.5px;text-align:center;margin-top:30px}
+  ul{margin:8px 0;padding-left:22px} li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <h1>crosswalk-guard · 脚本分类与过程临时脚本清理报告</h1>
+  <p>生成 2026-10-03 ｜ 范围：<code>scripts/</code> 全部 102 个 .py + <code>src/redlight/</code> 生产包 ｜ 方法：通读流水线核心 + 抽取全部脚本 docstring/定义/跨脚本 import/文档引用</p>
+</header>
+
+<div class="stats">
+  <div class="stat blue"><div class="n">102</div><div class="l">scripts 脚本总数</div></div>
+  <div class="stat green"><div class="n">63</div><div class="l">最终工程需要（保留）</div></div>
+  <div class="stat red"><div class="n">39</div><div class="l">过程临时（建议归档）</div></div>
+  <div class="stat"><div class="n">51</div><div class="l">src 生产包 .py（必需）</div></div>
+</div>
+
+<section>
+  <h2><span class="tag t-info">结论</span>速览</h2>
+  <table>
+    <thead><tr><th>分层</th><th>文件数</th><th>最终工程需要？</th><th>处置建议</th></tr></thead>
+    <tbody>
+      <tr><td><code>src/redlight/</code> 生产包</td><td>51</td><td><span class="pill g">必需</span></td><td>全部保留（推理流水线本体）</td></tr>
+      <tr><td>生产入口 / 交付</td><td>4</td><td><span class="pill g">必需</span></td><td>保留（<code>generate_report.py</code> 待确认冗余）</td></tr>
+      <tr><td>核心评测框架</td><td>15</td><td><span class="pill g">必需</span></td><td>保留（质量基线）</td></tr>
+      <tr><td>质量门禁 / 测试</td><td>3</td><td><span class="pill g">必需</span></td><td>保留</td></tr>
+      <tr><td>GT 构建 / 标注闭环</td><td>23</td><td><span class="pill b">研发链</span></td><td>保留（非交付物但支撑迭代）</td></tr>
+      <tr><td>训练 / 数据制备</td><td>11</td><td><span class="pill b">研发链</span></td><td>保留（可复现再训练）</td></tr>
+      <tr><td>标定 / 环境 / 抽帧</td><td>5</td><td><span class="pill b">研发链</span></td><td>保留（一次性但可复现）</td></tr>
+      <tr><td>文档生成</td><td>2</td><td><span class="pill b">研发链</span></td><td>保留</td></tr>
+      <tr><td><b>过程临时脚本</b></td><td><b>39</b></td><td><span class="pill r">不需要</span></td><td><b>建议归档到 <code>scripts/archive/</code></b></td></tr>
+    </tbody>
+  </table>
+  <p class="muted">39 个临时脚本绝大多数是 <code>diag_*</code> 只读诊断、<code>measure_*/sweep_*</code> 实验、<code>qw_*</code> agent 验收一次性件、以及两个 <code>_</code> 前缀私有辅助件。它们只为定位特定历史 bug 服务，结论已沉淀进 <code>docs/handoff</code> 与 <code>docs/reports</code>，无持续复用价值。</p>
+</section>
+
+<section>
+  <h2><span class="tag t-keep">保留</span>最终工程需要的脚本（63 个）</h2>
+
+  <h3>2.1 生产入口 / 交付（4）</h3>
+  <table>
+    <thead><tr><th>脚本</th><th>用途</th><th>备注</th></tr></thead>
+    <tbody>
+      <tr><td><code>run_video.py</code></td><td>CLI 便捷入口 → <code>cli.run</code></td><td>README 官方入口</td></tr>
+      <tr><td><code>run_diag_generic.py</code></td><td>通用灯态时间线诊断启动器</td><td>README 官方入口</td></tr>
+      <tr><td><code>render_report.py</code></td><td>最新交付脚本：逐视频文字报告 + 带标注结果视频</td><td>最近 <code>e7e78c5</code> 提交，当前交付物</td></tr>
+      <tr><td><code>generate_report.py</code></td><td>可复现识别结果报告（617 行）</td><td><span class="pill a">待确认</span> 疑似被 <code>render_report.py</code> 取代，设计文档已归档到 <code>docs/history/</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3>2.2 核心评测框架（15）</h3>
+  <p class="muted">能力解耦评测与端到端基线：</p>
+  <div class="filelist">
+    <span>eval_violations.py</span><span>eval_light_all.py</span><span>eval_light_fast.py</span><span>eval_light_gt.py</span><span>eval_m1_light.py</span><span>eval_plate.py</span><span>eval_crosswalk_mask.py</span><span>eval_tracking.py</span><span>eval_tracking_ab_split.py</span><span>eval_tracking_gtfree.py</span><span>eval_temporal_fusion.py</span><span>eval_selection_quality.py</span><span>eval_selector_l2.py</span><span>eval_selector_l3.py</span><span>eval_selector_lso.py</span>
+  </div>
+  <div class="warn"><b>⚠ 耦合：</b><code>eval_selection_quality.py:37</code> 写有 <code>from scripts.train_governing_discriminator import recommend_tau</code>。归档判别器线相关件时必须成组处理（见下方耦合节）。</div>
+
+  <h3>2.3 质量门禁 / 测试（3）</h3>
+  <div class="filelist"><span>validate_gt.py</span><span>run_regression_test.py</span><span>run_tl_tests.py</span></div>
+
+  <h3>2.4 GT 构建 / 标注闭环（23）</h3>
+  <p class="muted">人工标注 → 反馈 → 重训 闭环工具（非交付物，但支撑后续模型迭代）：</p>
+  <div class="filelist">
+    <span>build_gt.py</span><span>gen_gt_skeleton.py</span><span>apply_annotation_gt.py</span><span>ingest_light_gt.py</span><span>build_light_gt_gallery.py</span><span>build_light_regression.py</span><span>build_eval_set.py</span><span>feedback_to_eval_set.py</span><span>serve_gallery.py</span><span>apply_classifier_retrain_feedback.py</span><span>apply_ped_signal_feedback.py</span><span>confirm_plate_labels.py</span><span>annotate_plate.py</span><span>make_light_gallery.py</span><span>make_light_gallery_v2.py</span><span>make_light_gt_template.py</span><span>make_ped_signal_gallery.py</span><span>make_plate_gallery.py</span><span>make_plate_gallery_v2.py</span><span>make_crosswalk_gallery.py</span><span>make_tracking_gallery.py</span><span>make_classifier_retrain_gallery.py</span><span>make_mismatch_gallery.py</span>
+  </div>
+
+  <h3>2.5 训练 / 数据制备（11）</h3>
+  <div class="filelist">
+    <span>train_ped_signal.py</span><span>train_classifier_retrain.py</span><span>train_governing_discriminator.py</span><span>train_l3_full.py</span><span>build_ped_signal_crops.py</span><span>collect_candidates.py</span><span>collect_candidates_dense.py</span><span>build_l3_labeling.py</span><span>mine_classifier_retrain.py</span><span>mine_negatives.py</span><span>filter_low_signal_rows.py</span>
+  </div>
+
+  <h3>2.6 标定 / 环境 / 抽帧（5）</h3>
+  <div class="filelist"><span>scan_pedestrian_signal.py</span><span>identify_pedestrian_signal.py</span><span>derive_priors.py</span><span>download_models.py</span><span>extract_frames.py</span></div>
+
+  <h3>2.7 文档生成（2）</h3>
+  <div class="filelist"><span>make_devdoc.py</span><span>make_manuals.py</span></div>
+</section>
+
+<section>
+  <h2><span class="tag t-tmp">归档</span>过程临时脚本（最终工程不需要，39 个）</h2>
+  <p class="muted">判定标准：为定位/量化某个<strong>特定历史问题</strong>而写的一次性只读诊断、阈值扫描、实验测量、agent 验收件。结论已写入 <code>docs/handoff/*</code> / <code>docs/reports/*</code>，脚本本体无持续复用价值。</p>
+
+  <div class="grp">
+    <div class="gtitle">3.1 <code>diag_*</code> 只读诊断（24）</div>
+    <div class="filelist">
+      <span>diag_01fp_repro.py</span><span>diag_05_candidate_gen.py</span><span>diag_05_prior_relocation.py</span><span>diag_0906_green_failure.py</span><span>diag_09_tp_source.py</span><span>diag_09_true_light.py</span><span>diag_base_leakage_per_video.py ⚠</span><span>diag_candidate_recall_ceiling.py</span><span>diag_classifier_feasibility.py</span><span>diag_classifier_retrain.py</span><span>diag_crosswalk_recall_ceiling.py</span><span>diag_feature_separability.py</span><span>diag_gt_crosswalk_ceiling.py</span><span>diag_plate_bucket.py</span><span>diag_plate_track_attr.py</span><span>diag_prior_motion.py</span><span>diag_selection_falsegreen.py</span><span>diag_selector_failures.py</span><span>diag_signal_timeline.py</span><span>diag_small_light_res.py</span><span>diag_structural_separability.py</span><span>diag_temporal_separability.py</span><span>diag_vehicle_track_fragmentation.py</span><span>diag_yolo_vs_gt.py</span>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="gtitle">3.2 误绿测量 / 成因重算（3）</div>
+    <div class="filelist"><span>measure_falsegreen.py</span><span>measure_falsegreen_canonical.py</span><span>recompute_cause_perframe.py</span></div>
+  </div>
+  <div class="grp">
+    <div class="gtitle">3.3 门控 / 阈值扫描 / 消融（4）</div>
+    <div class="filelist"><span>verify_gates_01fp.py</span><span>sweep_box_overlap.py</span><span>sweep_step0.py</span><span>merge_sweep_step0.py</span></div>
+  </div>
+  <div class="grp">
+    <div class="gtitle">3.4 <code>qw_*</code> agent 验收一次性件（5）</div>
+    <div class="filelist"><span>qw_b2_audit.py</span><span>qw_drift_probe.py</span><span>qw_plate_events_report.py</span><span>qw_wiring_ablation.py</span><span>qw_wiring_snapshot.py</span></div>
+  </div>
+  <div class="grp">
+    <div class="gtitle">3.5 私有辅助 / 一次性 GT 生成（3）</div>
+    <div class="filelist"><span>_agg_neg_quality.py</span><span>_gen_light_states_full.py</span><span>analyze_signal_presence.py</span></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="tag t-info">注意</span>删除 / 归档时的耦合与安全</h2>
+  <div class="warn">
+    <b>1. 成组处理判别器线：</b><code>train_governing_discriminator.py</code> ← <code>eval_selection_quality.py</code> ← <code>diag_base_leakage_per_video.py</code>。
+    <ul>
+      <li><code>eval_selection_quality.py</code> import 了 <code>train_governing_discriminator.recommend_tau</code>；</li>
+      <li><code>diag_base_leakage_per_video.py</code> import 了 <code>eval_selection_quality</code>。</li>
+    </ul>
+    若归档 <code>diag_base_leakage_per_video.py</code>（已标 ⚠）不影响前两者；但若想清掉整条 HOLD 的判别器线，三者需<strong>一起</strong>移走，否则 import 断。当前判别器线被 Jacob 拍板 HOLD，建议保留前两者，仅归档 <code>diag_base_leakage_per_video.py</code>。
+  </div>
+  <div class="warn">
+    <b>2. <code>generate_report.py</code> 与 <code>render_report.py</code> 冗余：</b>先确认 <code>render_report.py</code> 已覆盖前者全部交付能力（含 <code>tests/test_generate_report.py</code> 的 13 个单测），再决定是否归档 <code>generate_report.py</code>。不要无验证删除。
+  </div>
+  <div class="warn">
+    <b>3. 遵守项目红线（AGENTS.md §3）：</b>多 agent 协作仓库，临时脚本可能是某 agent 交接证据。建议用 <code>git mv</code> 移到 <code>scripts/archive/</code> 而非 <code>rm</code>，保留历史、不破坏他人未合并分支引用。不要对共享树 <code>reset --hard</code> / <code>checkout .</code> / <code>clean -fd</code>，归档后单独小提交并署名。
+  </div>
+</section>
+
+<section>
+  <h2><span class="tag t-info">操作</span>建议的归档命令（待确认后执行，本报告未改动任何文件）</h2>
+  <div class="cmd"># 1) 建归档目录
+mkdir -p scripts/archive
+
+# 2) 移动 39 个临时脚本（保留 git 历史）
+git mv scripts/diag_*.py scripts/archive/                                  # 24
+git mv scripts/measure_falsegreen.py scripts/measure_falsegreen_canonical.py \
+       scripts/recompute_cause_perframe.py scripts/verify_gates_01fp.py scripts/archive/
+git mv scripts/sweep_box_overlap.py scripts/sweep_step0.py scripts/merge_sweep_step0.py scripts/archive/
+git mv scripts/qw_b2_audit.py scripts/qw_drift_probe.py scripts/qw_plate_events_report.py \
+       scripts/qw_wiring_ablation.py scripts/qw_wiring_snapshot.py scripts/archive/
+git mv scripts/_agg_neg_quality.py scripts/_gen_light_states_full.py \
+       scripts/analyze_signal_presence.py scripts/archive/
+
+# 3) 单独小提交 + 署名（不碰 src/ 与其他 agent 分支）
+git commit -m "chore(scripts): 归档 39 个过程临时诊断/实验脚本到 scripts/archive" \
+  -m "Co-Authored-By: ..."</div>
+  <p class="muted">注：本报告依据脚本 docstring 与结构分类；归档前建议对 <code>generate_report.py</code> 冗余与判别器线耦合（§注意）两项做二次确认。配套 Markdown 版见同目录 <code>2026-10-03-scripts-triage.md</code>。</p>
+</section>
+
+<section>
+  <h2><span class="tag t-info">演示</span>识别效果演示 · 违章08</h2>
+  <p class="muted">下方嵌入 <code>data/output/final_report/违章08_result.mp4</code> —— 带标注结果视频（斑马线青色填充、车辆框+ID、左上角灯色、右下角 HUD、违规标红）。视频经同目录符号链接引用（不复制 98MB 原文件），双击打开本报告即可播放。</p>
+  <video class="vid" controls preload="metadata">
+    <source src="%E8%BF%9D%E7%AB%A008_result.mp4" type="video/mp4">
+    您的浏览器不支持 video 标签，请使用下方链接直接打开文件。
+  </video>
+  <p class="muted">若预览面板因临时目录隔离无法加载视频，可任选其一直接打开：
+    <a href="%E8%BF%9D%E7%AB%A008_result.mp4">同目录链接</a> ｜
+    <a href="file:///Users/jacob/personal/crosswalk-guard/docs/reports/%E8%BF%9D%E7%AB%A008_result.mp4">绝对路径 file:// 链接</a>
+    （或在文件管理器中打开 <code>data/output/final_report/违章08_result.mp4</code>）。</p>
+</section>
+
+<footer>crosswalk-guard 脚本分类报告 · 自包含 HTML · 2026-10-03</footer>
+</div>
+</body>
+</html>
