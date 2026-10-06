@@ -1,178 +1,95 @@
-# 斑马线行人绿灯压线检测工程
+# 斑马线行人绿灯违章占道检测系统
 
-纯 CV + 轻量模型方案（**不依赖 VLM 大模型**），面向**本地 Windows + CPU** 批量处理手机录制视频。
-目标：检测"**斑马线行人绿灯（或闪烁清空相位）时，车辆仍静止压在斑马线上阻碍行人过街**"的违规行为，并识别车牌号，输出标注视频 + 违规事件报告 + 证据截图（+ 规划中的 COT 小作文）。
+自动检测「**斑马线行人绿灯（或闪烁清空相位）时，车辆仍静止压在斑马线上阻碍行人过街**」的违章行为，识别车牌，输出标注视频 + 违章事件表 + 证据截图。
 
-> ⚠️ **语义更正（2026-07-11）**：本项目检测的违规 = **行人有路权（绿灯/闪烁）时车辆占道**。  
-> 🔴 红灯 = 车辆可通行，**不算违规**；❓ 未拍到灯 = 默认不判违规（仅当斑马线被遮挡时降为待复核）。  
-> 旧版"红灯压线=违规"的语义是**错的**，已废弃（详见设计文档 §5.3.1）。
+> **刚接手这个项目？先读 [`HANDOFF.md`](HANDOFF.md)（交接总纲）。**
+> 用 AI 助手继续开发？让它先读 [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md)（红线与已验证的死路，防止重踩坑）。
 
 ---
 
-## 1. 为什么不用 VLM
+## 这个系统的定位
 
-- 本场景本质是**几何 + 状态机判定**（行人绿灯 ∧ 车静止 ∧ 车压斑马线），用检测 + 跟踪 + 规则即可稳定、可复现地解决。
-- VLM 推理慢、结果有随机性、成本高，不适合做"判定"这种硬规则任务。
-- 本方案全部为确定性 CV / 轻量模型推理，CPU 可跑，结果稳定可解释。
+- **纯 CV + 轻量模型**，不依赖大模型（VLM）：车辆 YOLOv8n，红绿灯 HSV 颜色法，车牌 HyperLPR3。
+- **CPU 可跑**，面向本地 Windows 批量处理手机录制视频。结果确定性、可复现、可解释。
+- **违章语义**（唯一权威定义，E12 反转后）：
+  **违章 = 行人绿灯/闪烁　∧　车辆静止　∧　车辆压斑马线　且持续足够时长。**
+  🔴 红灯不算违章；❓ 没拍到灯默认不判（斑马线疑似遮挡时降为「待复核」）。
+  权威规格：[`docs/plans/2026-07-12-design-requirements-v2.md`](docs/plans/2026-07-12-design-requirements-v2.md)。
 
----
+## 当前成绩（全 11 视频真跑复现）
 
-## 2. 技术架构
+| 口径 | 指标 |
+|---|---|
+| 窗级（每次过街窗） | **F1=0.941　P=1.000　R=0.889** |
+| 车级（每辆违章车） | 具名召回=0.583　**误罚=0** |
+| 车牌 | 命中 5/7 |
 
-```
-视频帧
-  ├─ 车辆检测     YOLOv8n (ultralytics, COCO car/bus/truck) + IoU 跟踪
-  ├─ 斑马线检测   经典 CV 兜底 v11 (多位置条带扫描 + 车辆锚定); 可选分割模型
-  ├─ 红绿灯检测   颜色兜底 v5 (亮斑 + 均值色分类) + 时间平滑; 可选模型
-  ├─ 车牌识别     HyperLPR3 (HIGH) + 多帧加权投票(按 track_id 全局聚合)
-  ├─ 静止判定     TrackStateManagerV2 滑动窗口速度(抗抖动)
-  └─ 违规状态机   行人绿灯/闪烁 ∧ 静止 ∧ 压斑马线(footprint IoU) 且持续 duration 帧
-        ↓
-  输出: annotated.mp4 + violations.csv + evidence/*.jpg
-```
+**判断违章已经很稳、精度 100%、零误罚**；主要提升空间在模糊车牌识别。详见 `HANDOFF.md`。
 
-**关键设计（针对你的约束）：**
-- **CPU-only** → 全用 nano 级模型 + 降采样推理（默认 8fps 足够抓静止车）。
-- **机位不固定** → 斑马线/红绿灯逐帧检测，移动拍摄也能 work。
-- **部分路段拍不到红绿灯** → 灯态返回 `unknown`，相关疑似事件归入 **待复核 (status=review)**，绝不瞎判。
-- **能力解耦（2026-07-11 新增）**：最终结论 = 红绿灯识别 × 静止占道 × 车牌识别，三项能力各自准确才可能综合正确；因此评测与优化按能力**独立拆解**（见 §7）。
-
----
-
-## 3. 环境安装
-
-需要本机有 Python 3.9~3.12，并安装 [VC++ 2015-2022 运行库](https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist)（torch/onnxruntime 加载前提）。
+## 快速开始（Windows）
 
 ```bash
-cd redlight-crosswalk-violation
+# 1. 装环境(一次)
+#    - Python 3.9~3.12
+#    - Visual C++ 2015-2022 运行库(torch 加载必需)
 pip install -r requirements.txt
+pip install ultralytics hyperlpr3 python-docx
+
+# 2. 放视频
+#    把手机视频放进 input_video/
+
+# 3. 处理单个视频 → 带标记结果视频 + 违章表
+python scripts/run_video.py input_video/某视频.mp4 data/output/结果目录
+
+# 4. 批量评测(确认整体成绩)
+python scripts/eval_violations.py --detector v2 --occ-denom box
+#    应得 F1=0.941 / P=1.000 / 车级误罚=0
+
+# 5. 生成逐视频报告 + 带标注结果视频(交付物)
+python scripts/render_report.py
 ```
 
-可选：Intel CPU 加速（提速明显）
-```bash
-pip install openvino openvino-dev
-# 然后把 yolov8n.pt 导出为 OpenVINO: yolo export model=yolov8n.pt format=openvino
-```
+> 大文件（模型权重 `models/` 等）不在 git 里，通过网盘压缩包交付，解压覆盖到项目根目录即可。详见 `HANDOFF.md` 第一节。
 
----
-
-## 4. 运行
-
-### 4.1 准备输入视频
-把手机视频放到 `input_video/`（如 `input_video/违章02.mp4`）。  
-> 注：旧文档曾写 `data/input/`，实际工作目录已统一为 `input_video/`。`data/input/` 仅作占位说明。
-
-### 4.2 执行（三种入口）
-
-```bash
-# 方式 A: CLI 入口（推荐）
-python -m redlight.app.cli --video input_video/违章02.mp4 --output data/output/run_02 --preset balanced
-
-# 方式 B: 便捷脚本（等价于 A）
-python scripts/run_video.py input_video/违章02.mp4 data/output/run_02 --preset balanced
-
-# 方式 C: 诊断（只输出灯态/掩膜/占道时序，不写视频，便于快速验证）
-python scripts/run_diag_generic.py input_video/违章02.mp4 data/output/diag_02.csv balanced
-```
-
-`--preset` 可选：`strict` / `balanced` / `loose` / `very_loose`（灵敏度递增，阈值见 `src/redlight/pipeline/tracker.py` 的 `SENSITIVITY_PRESETS`）。  
-默认 `balanced`（speed=30px/s, sustain=5, duration=5, overlap=0.20）。
-
----
-
-## 5. 输出说明
+## 输出说明
 
 `--output` 目录下：
-- `annotated.mp4`：带标注视频（斑马线青色填充、车辆框+ID、STOP 标黄、疑似/违规标红、左上角灯色、右下角 HUD）。
-- `violations.csv`：事件列表，字段：
-  `event_id, track_id, status, start_ts, end_ts, vehicle_class, confidence, light_state, signal_assumption, plate, evidence_image`
-  - `status=confirmed`：**行人绿灯/闪烁 + 静止 + 压斑马线** 三条件同时满足且持续 `duration` 帧。
-  - `status=review`：压线 + 静止，但**灯态未知（画面没拍到灯）且斑马线疑似被遮挡**，需人工复核。
-  - `light_state`：`green` / `flashing` / `red` / `unknown`（语义见 §2 与设计文档 §5.3.1）。
-  - `signal_assumption`：本工程假设识别对象 = **斑马线行人信号灯**（见设计文档 Q5），便于复核。
-  - `plate`：该 track 的全局最佳车牌（多帧投票，见 §6 车牌说明）。
-- `evidence/`：每起事件的证据截图（文件名含 event_id / track_id / 车牌）。
+- `annotated.mp4`：带标注视频（斑马线青色填充、车辆框+ID、静止标黄、违章标红、灯态 HUD、车牌框）。
+- `violations.csv`：事件表（含 `status` confirmed/review、时间段、车牌、多牌 `plates`、证据图路径）。
+  - `confirmed` = 行人绿灯/闪烁 + 静止 + 压线，三条件同时成立且持续足够时长。
+  - `review` = 压线+静止但灯态未知且斑马线疑似遮挡，交人工复核。
+- `evidence/`：每起事件的证据截图。
 
-> **COT 小作文（规划中）**：按 2026-07-11 需求，后续每视频额外输出一份 `.md` 文字说明（灯态含遮挡推论 → 哪台车占道及比例 → 车牌读取时刻 → 最终结论），配合证据截图，便于定位"哪一步识别出错"。当前由 `Task #9` 跟踪，尚未接入主流程。
+## 灵敏度预设
 
----
+`--preset strict|balanced|loose|very_loose`（默认 `balanced`）。阈值定义在 `src/redlight/pipeline/tracker.py` 的 `SENSITIVITY_PRESETS`，**不在 config.yaml 里**。
 
-## 6. 参数调优（改 `configs/config.yaml`）
-
-| 参数 | 作用 | 调参建议 |
-|---|---|---|
-| `inference.fps` | 车辆检测采样帧率 | CPU 慢可降到 5；想要更稳升到 10 |
-| `inference.imgsz` | 推理尺寸 | CPU 卡可 416/320，精度换速度 |
-| `crosswalk.overlap_ratio` | 压线判定阈值(参考/可视化) | 误报多→调高(0.4)；漏报多→调低(0.2) |
-| `crosswalk.cv_min_area` | CV 兜底最小条纹面积 | 场景尺度不同要改 |
-| `traffic_light.*` | 红绿灯 v5 检测参数（见文件内注释） | 亮斑 `value_min`/`sat_min`、位置先验 `pedestrian_*`、`flicker_toggle_count` 等 |
-| `violation.min_event_gap_sec` | 同 track 两次事件最小间隔(去重) | 默认 5 |
-| `output.signal_assumption` | 信号类型假设(行人灯) | 报告标注用，一般不动 |
-| **灵敏度预设** | 静止/压线/持续阈值 | **不在此配置文件**，由 `tracker.SENSITIVITY_PRESETS` 定义（`strict/balanced/loose/very_loose`），经 `--preset` 选择 |
-
-> 注：旧文档把静止速度/持续/压线阈值写成 `stationary.speed_px_per_sec`、`stationary.sustain_frames`、`violation.duration_frames` 等独立配置键 —— **这些键已不存在**，相关逻辑统一收口到 `tracker.SENSITIVITY_PRESETS`，请勿再单独配置。
-
----
-
-## 7. 提升精度（推荐路线 + 能力解耦评测）
-
-当前开箱即用版本对"车辆检测"精度很高，瓶颈通常在**斑马线**和**红绿灯**两个模块。  
-按 2026-07-11 的"能力解耦"要求，优化分三条独立线，各自评测，最后再综合：
-
-1. **红绿灯识别**（最关键环节）：当前为 CV 颜色兜底 v5（亮斑 + 均值色分类，接住暗淡去饱和绿灯，修复 E16）。
-   若要更稳，可用 LISA / GTSDB 训练 **YOLOv8n 二分类（red/green，不含 yellow）** 替换 `method: model`，把权重放到 `models/` 并在 `configs/config.yaml` 指向它（`method` 保持 `auto`/`model` 即可自动启用）。
-2. **斑马线检测**：当前为经典 CV 兜底 **v11**（多位置条带扫描 + 车辆锚定，修复 E17 泛化失败）。
-   若要更稳，用 [CDSet-3434](https://zenodo.org/records/8289874) 或 Roboflow `crosswalk_seg` 训练 `yolov8n-seg`，得到 `crosswalk_seg.pt` 放到 `models/`。
-3. **车牌识别**：HyperLPR3 (HIGH) + `PlateConsensus` 多帧加权投票。**车牌是全局读取的** —— 不一定在违章帧，可能在视频前半或后半才看清，按 `track_id` 关联占道车（见设计文档 E19）。
-
-**模块化评测（进行中）**：`datasets/gt/events.csv` 为权威真值（事件级时段标注）；`scripts/eval_light_all.py` 已能跑红绿灯状态的 per-frame 准确率/宏 F1；最终目标把评测拆成 **红绿灯 / 静止占道 / 车牌 OCR** 三项独立指标 + 端到端事件级 P/R/F1（见设计文档 §6 与 `Task #10`）。
-
----
-
-## 8. 已知限制与对策
-
-| 限制 | 对策 |
-|---|---|
-| 合法停在**停止线前**（斑马线外侧）被误判 | 精确斑马线掩膜 + footprint IoU 阈值（`footprint=0.5` 只取车体下半部足迹，去除 YOLO 大框对车顶/天空的稀释，E15/E17 实证） |
-| 红灯前已进入、正在清空的车 | 本工程**红灯不判违规**（语义反转，见 §2）；仅绿灯/闪烁 + 静止 + 压线才违规 |
-| 移动机位下斑马线 CV 兜底不稳定 | 优先提供 `crosswalk_seg.pt` 分割模型（v11 已用多位置扫描缓解） |
-| 画面拍不到红绿灯 | 自动降级为 `unknown`，事件进"待复核"，不自动判定 |
-| 红车/反光导致颜色兜底误判 | v5 用亮斑+均值色分类 + 位置先验（路面车灯区 `ped=0` 直接剔除）已大幅缓解（E16）；仍不稳则升级小模型 |
-| 暗淡/去饱和的 LED 绿灯看不见 | v5 不再卡极端饱和像素，改用亮斑掩膜 + bbox 内 HSV 均值分类（E16 修复） |
-
----
-
-## 9. 工程结构
+## 目录地图
 
 ```
-redlight-crosswalk-violation/
-├── configs/config.yaml          # 全部可调参数(含详细注释)
-├── requirements.txt
-├── input_video/                 # 待检测视频(违章01~11.mp4) + label_result_01.csv(GT)
-├── datasets/gt/                 # 真值: events.csv(事件级) + light_state/ + violation_events/
-├── scripts/                     # 工具/诊断脚本(run_video / run_diag_generic / eval_light_all ...)
-├── models/                      # 模型权重(可选, 缺省走 CV 兜底)
-├── src/redlight/                # 源码(分层包)
-│   ├── infrastructure/          # L1: config / 几何(IoU, footprint overlap)
-│   ├── data_pipeline/           # L2: frame_sampler
-│   ├── models/                  # L3: vehicle(YOLOv8n) / crosswalk(v11) / traffic_light(v5) / plate(HyperLPR3)
-│   ├── inference/               # L4a: engine
-│   ├── evaluation/              # L4c: metrics / evaluator
-│   ├── pipeline/                # L5: dag / tracker(V2) / violation_engine(V2) / plate_consensus / visualizer
-│   └── app/                     # L6: cli
-└── data/output/                 # 运行输出
+HANDOFF.md               交接总纲(先读这个)
+docs/AGENT_GUIDE.md      AI 助手必读: 红线 + 已验证的死路
+docs/plans/              2份权威规格(需求 + GT格式)
+docs/manuals/            Word 说明书(专业版/科普版/开发过程)
+docs/history/            176份过程文档归档(追溯"为什么这么做")
+src/redlight/            生产代码(推理流水线本体)
+  pipeline/              DAG/跟踪/违章状态机/时序融合/判定
+  models/                车辆/斑马线/红绿灯/车牌检测器
+  app/cli.py             主入口 + 车牌回填三重约束(0误罚闸门)
+  evaluation/            评测框架 + 画廊生成器
+scripts/                 66个保留脚本(评测/GT构建/训练/标定/文档生成)
+scripts/legacy/          46个一次性诊断脚本(历史问题定位记录)
+configs/config.yaml      全部可调参数(检测器版本/阈值/先验)
+datasets/gt/             真值: events.csv(事件级) + light_canonical_gt.json(逐帧灯态)
+tests/                   单元+集成测试(pytest)
 ```
 
+## 开发纪律（重要）
+
+- **「0 误罚」是铁底线**：任何改动保持全 11 视频误罚=0。改车牌逻辑前先跑 `python -m pytest tests/`。
+- **改动必须全 11 视频真跑验证**，指标不回退。别凭感觉调参。
+- **先诊断后改码**：定位问题用只读诊断脚本（`scripts/legacy/` 有大量先例），量化根因再动生产码。
+- 完整红线清单见 `docs/AGENT_GUIDE.md`。
+
 ---
-
-## 10. 多 Agent 协作规范
-
-本项目有多个 agent 并行工作（算法 / 测评 / 文档）。**所有协作者必须先读 [`docs/AGENTS.md`](docs/AGENTS.md)**：含 Agent 注册表与署名规范、分支 / 输出目录隔离、红线禁止操作、共享 GT 文件协议、提交署名与合并流程。核心红线：不碰别人分支与输出目录、不对共享树 `reset/checkout/clean`、改 GT 必须分区并立即提交、每条提交带 `Co-Authored-By` 署名。
-
-## 11. 下一步
-
-把你的手机视频放到 `input_video/`，我们一起：
-1. 跑 `run_video.py` 看 baseline 效果；
-2. 用 `datasets/gt/events.csv` 真值量化红绿灯/占道/车牌三项能力（模块化评测）；
-3. 若某单项不准，按第 7 节独立微调对应模型；
-4. 接入 COT 小作文 + 截图输出（规划中）。
+*本项目曾由多个 AI agent 协同开发，现收敛为单一 main 分支交接。完整开发历史保留在 git 提交记录与 `docs/history/`。*
