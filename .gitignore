@@ -64,3 +64,6 @@ _snapshot_pre_build/
 
 # qw b2 worktree venv symlink(本地便利, 不入库)
 .venv
+
+# Office 临时锁文件(打开 docx/xlsx 时自动生成, Mac/Windows 两台机都会产生)
+~$*
