@@ -1,15 +1,29 @@
-# 核心依赖(CPU-only 环境, Win10 1709)
-numpy
-opencv-python
-pyyaml
-tqdm
+# 核心依赖 —— 版本已 pin 到「产出文档基线 F1=0.941」的原始验证环境
+# ⚠️ 重要(2026-10-06 交接教训): YOLOv8n 的检测/NMS 行为随 ultralytics/torch 版本漂移,
+#    不 pin 会导致边缘视频(如某个原本 TP)掉成 FN —— 实测新同事全新装 torch 2.14.1
+#    得到 F1=0.875(漏2个), 而本 pin 版本在原始机复现 F1=0.941(仅漏结构性难例违章04)。
+#    误罚=0 / P=1.000 跨版本稳定, 漂移只影响召回。要复现基线请用下列精确版本。
 
-# 模型后端(可选, 按环境启用)
-# ultralytics + torch : 车辆检测 YOLOv8n (torch CPU)
-# hyperlpr3           : 中文车牌识别 (HIGH)
-# 注: 本机已验证 ultralytics + hyperlpr3 可用; 缺失时自动降级 CV 兜底
+numpy==2.4.6
+opencv-python==5.0.0.93
+pyyaml==6.0.3
+tqdm==4.68.4
+
+# 模型后端(推理必需; 版本敏感, 必须 pin)
+torch==2.13.0
+torchvision==0.28.0
+ultralytics==8.4.93      # YOLOv8n 车辆检测; 换版本会改变召回, 见上方说明
+hyperlpr3==0.1.3         # 中文车牌识别(HIGH)
+onnxruntime==1.27.0
+
+# 文档生成(Word 说明书)
+python-docx
 
 # 开发/测试
 pytest
 
 # 系统前提: Visual C++ 2015-2022 Redistributable (torch/onnxruntime 加载必需)
+#
+# 若严格复现基线失败(F1≠0.941): 第一嫌疑永远是依赖版本漂移, 用
+#   pip install -r requirements.txt  (而非 pip install torch 裸名)
+# 确保装到上述精确版本。测试层(pytest)对版本不敏感, 两环境都 375 passed/1 xfailed。
